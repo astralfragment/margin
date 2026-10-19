@@ -59,8 +59,8 @@ const CELL = `border: 1px solid ${LINE}; padding: 5px 7px; font-family: ${SANS};
 const HEAD_CELL = `${CELL} font-weight: 700; color: ${INK_2};`;
 const FACTS = `font-family: ${MONO_FACE}; font-size: 8pt; color: ${INK_2};`;
 const MONO = `font-family: ${MONO_FACE}; font-size: 8pt;`;
-const FACT_KEY = `border: 1px solid ${LINE}; padding: 3px 6px; font-family: ${SANS}; font-size: 8pt; color: ${INK_2}; vertical-align: top; width: 78px;`;
-const FACT_VAL = `border: 1px solid ${LINE}; padding: 3px 6px; font-family: ${SANS}; font-size: 8pt; color: ${INK}; vertical-align: top;`;
+const FACT_LINE = `font-family: ${SANS}; font-size: 8pt; color: ${INK}; margin: 0 0 2px;`;
+const FACT_LABEL = `color: ${INK_2}; font-weight: 700;`;
 
 const CATEGORY_FILL = {
   new: STATUSES[0].fill,
@@ -92,12 +92,13 @@ function factLine(issue) {
 
 function image(src, alt, caption) {
   if (!src) return '';
-  return `<p style="margin: 8px 0 2px;"><img src="${src}" alt="${esc(alt)}" width="${IMAGE_WIDTH}" style="max-width: 100%;" /></p>
-        <p style="${SMALL} margin: 0 0 4px;">${esc(caption)}</p>`;
+  return `<p style="margin: 8px 0 2px;"><img src="${src}" alt="${esc(alt)}" width="${IMAGE_WIDTH}" style="max-width: 100%;" /></p>${
+    caption ? `\n        <p style="${SMALL} margin: 0 0 4px;">${esc(caption)}</p>` : ''
+  }`;
 }
 
-/** The per comment facts table that sits under the note. */
-function factsTable(issue, fields) {
+/** The facts that sit under the note, one short line each. */
+function factLines(issue, fields) {
   const el = issue.element;
   const rows = [
     fields.page ? ['Page', `<a href="${esc(issue.page.url)}">${esc(issue.page.url)}</a>`] : null,
@@ -121,14 +122,10 @@ function factsTable(issue, fields) {
     fields.captured ? ['Captured', esc(new Date(issue.createdAt).toLocaleString())] : null,
   ]
     .filter(Boolean)
-    .map(([key, value]) => `<tr><td style="${FACT_KEY}">${key}</td><td style="${FACT_VAL}">${value}</td></tr>`)
-    .join('\n            ');
+    .map(([key, value]) => `<p style="${FACT_LINE}"><span style="${FACT_LABEL}">${key}</span>&nbsp;&nbsp;${value}</p>`)
+    .join('\n          ');
 
-  return `<table cellspacing="0" cellpadding="0" style="border-collapse: collapse; width: 100%; margin: 0 0 4px;">
-          <tbody>
-            ${rows}
-          </tbody>
-        </table>`;
+  return rows;
 }
 
 function commentRow(issue, index, shots, fields) {
@@ -145,8 +142,8 @@ function commentRow(issue, index, shots, fields) {
                 `<p style="${P} margin: 0 0 3px;"><b style="color: ${MARK_COLOR};">${item.n}.</b> ${esc(item.note).replace(/\n/g, '<br />')}</p>`,
             )
             .join('\n          ')}
-          ${factsTable(issue, fields)}
-          ${shots === 'viewport' ? '' : image(issue.detail, `Marked region for C${index + 1}`, issue.after ? 'Marked region, before' : 'Marked region')}
+          ${factLines(issue, fields)}
+          ${shots === 'viewport' ? '' : image(issue.detail, `Marked region for C${index + 1}`)}
           ${shots === 'viewport' || !issue.after ? '' : image(issue.after, `Same region after recheck for C${index + 1}`, recheckCaption(issue))}
           ${shots === 'detail' ? '' : image(issue.shot, `Full viewport for C${index + 1}`, 'Full viewport')}
         </td>
@@ -158,14 +155,8 @@ function commentRow(issue, index, shots, fields) {
 }
 
 function commSection(group, number, shots, fields) {
-  const counts = SEVERITIES.map((s) => ({ label: s.label, n: group.issues.filter((i) => severityOf(i.severity).key === s.key).length }))
-    .filter((c) => c.n > 0)
-    .map((c) => `${c.n} ${c.label.toLowerCase()}`)
-    .join(', ');
-
   return `
   <h2 style="${H2}">COMM${number}: ${esc(routeOf(group.page))}</h2>
-  <p style="${P}">${group.issues.length} ${group.issues.length === 1 ? 'comment' : 'comments'} on this page, ${counts}.</p>
   <p style="${P}"><a href="${esc(group.page.url)}">${esc(group.page.url)}</a></p>
   <table cellspacing="0" cellpadding="0" width="${TABLE_WIDTH}" style="border-collapse: collapse; width: ${TABLE_WIDTH}px; table-layout: fixed; margin: 0 0 8px;">
     <colgroup>
