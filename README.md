@@ -24,6 +24,14 @@ No account, no server and no tracking. Everything stays in your browser. Read th
 2. Syncing tasks
 3. Workspaces and shared reviews
 4. Agent handoff
+5. Verify fixes across a whole review in one pass
+6. Responsive capture at mobile, tablet and desktop widths
+7. Accessibility check on the selected area
+8. Off-token check against a design system
+9. Linear and GitHub Issues export
+10. Figma comment sync
+11. MCP server so coding agents can read and close reviews
+12. Open, fixed and won't fix status per comment
 
 ## Development
 
