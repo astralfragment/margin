@@ -454,7 +454,7 @@
     const panel = document.createElement('div');
     panel.className = 'panel';
     panel.innerHTML = `
-      <div class="sel">${element ? element.selector : 'region'}</div>
+      <div class="sel"></div>
       <label>What is wrong<input type="text" data-title placeholder="Button label wraps at 320px" /></label>
       <label>Note<textarea data-note placeholder="What you expected, what happened"></textarea></label>
       <div class="marks" data-marks hidden></div>
@@ -472,6 +472,7 @@
         <button class="action primary" type="button" data-save>Save comment</button>
       </div>
     `;
+    panel.querySelector('.sel').textContent = element ? element.selector : 'region';
     root.append(panel);
     state.panel = { id, node: panel, rect, marks: [] };
     placePanel();
