@@ -3,6 +3,7 @@
   "version": "0.3.0",
   "private": true,
   "type": "module",
+  "license": "MIT",
   "description": "Chrome extension for marking up UI issues and exporting them as an HTML report.",
   "scripts": {
     "package": "node tools/package.mjs"
