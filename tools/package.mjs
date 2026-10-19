@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto';
-import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { createHash, createPublicKey } from 'node:crypto';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { crc32, deflateRawSync } from 'node:zlib';
@@ -84,11 +84,12 @@ function extensionId(key) {
     .join('');
 }
 
-const manifestText = readFileSync(join(EXT, 'manifest.json'), 'utf8');
-const manifest = JSON.parse(manifestText);
-if (!manifest.key) throw new Error('manifest.json has no key, so every install would get a different ID');
+const KEY_FILE = join(ROOT, 'keys', 'margin-extension-key.pem');
+if (!existsSync(KEY_FILE)) throw new Error(`${KEY_FILE} is missing, so team installs would not share one ID`);
+const key = createPublicKey(readFileSync(KEY_FILE)).export({ type: 'spki', format: 'der' }).toString('base64');
+const manifest = JSON.parse(readFileSync(join(EXT, 'manifest.json'), 'utf8'));
 const { version } = manifest;
-const id = extensionId(manifest.key);
+const id = extensionId(key);
 const teamZip = `margin-${version}.zip`;
 const storeZip = `margin-${version}-web-store.zip`;
 
@@ -107,25 +108,20 @@ function fill(file) {
 
 const files = filesIn(EXT);
 const read = (path) => readFileSync(join(EXT, path));
-const { key, ...storeManifest } = manifest;
+const json = (value) => Buffer.from(`${JSON.stringify(value, null, 2)}\n`);
 
 mkdirSync(DIST, { recursive: true });
 writeFileSync(
   join(DIST, teamZip),
   zip([
     { name: 'Install and update Margin.html', data: fill('install-guide.html') },
-    ...files.map((path) => ({ name: `Margin/${path}`, data: read(path) })),
+    ...files.map((path) => ({
+      name: `Margin/${path}`,
+      data: path === 'manifest.json' ? json({ ...manifest, key }) : read(path),
+    })),
   ]),
 );
-writeFileSync(
-  join(DIST, storeZip),
-  zip(
-    files.map((path) => ({
-      name: path,
-      data: path === 'manifest.json' ? Buffer.from(`${JSON.stringify(storeManifest, null, 2)}\n`) : read(path),
-    })),
-  ),
-);
+writeFileSync(join(DIST, storeZip), zip(files.map((path) => ({ name: path, data: read(path) }))));
 writeFileSync(join(DIST, 'Web Store listing.html'), fill('store-listing.html'));
 
 console.log(`Margin ${version}, extension ID ${id}, ${files.length} files`);
