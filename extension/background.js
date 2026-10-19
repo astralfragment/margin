@@ -423,6 +423,59 @@ const handlers = {
     return images;
   },
 
+  /**
+   * Adds a numbered marker where a report screenshot was clicked, or removes the marker nearest a right-click,
+   * then redraws both images. A click on an image cut with older padding cannot be mapped, so the image is refreshed instead.
+   * The point arrives as fractions of the clicked image, `image` says whether it was the region crop or the full viewport,
+   * and `reach` is how far from a marker's centre a right-click still counts, as a fraction of the image width.
+   * The `drop` action removes the marker at `index`, used when its note box closes empty.
+   */
+  async quickMark(msg) {
+    const issue = (await readIssues()).find((i) => i.id === msg.id);
+    if (!issue) return { error: 'Comment not found' };
+    const raw = await baseFor(issue);
+    if (!raw) return { error: 'This comment has no screenshot' };
+    const bitmap = await decode(raw.src);
+    const scale = bitmap.width / issue.viewport.width;
+    const area = msg.image === 'shot' ? { x: 0, y: 0, w: bitmap.width, h: bitmap.height } : cropAround(bitmap, issue.rect, scale).crop;
+    const stale = Boolean(msg.aspect) && Math.abs(area.w / area.h - msg.aspect) / (area.w / area.h) > 0.02;
+    const point = { x: (area.x + msg.fx * area.w) / scale, y: (area.y + msg.fy * area.h) / scale };
+    const marks = [...(issue.marks ?? [])];
+    let index = null;
+    if (!stale && msg.action === 'add') {
+      marks.push({ kind: 'dot', x: Math.round(point.x), y: Math.round(point.y), note: '' });
+      index = marks.length - 1;
+    } else if (msg.action === 'drop' && marks[msg.index]) {
+      marks.splice(msg.index, 1);
+      index = msg.index;
+    } else if (!stale && msg.action === 'remove') {
+      const reach = ((msg.reach ?? 0.03) * area.w) / scale;
+      const nearest = marks
+        .map((m, i) => ({ i, d: Math.hypot(m.x - point.x, m.y - point.y) }))
+        .sort((a, b) => a.d - b.d)[0];
+      if (!nearest || nearest.d > reach) {
+        bitmap.close();
+        return { removed: null, marks };
+      }
+      marks.splice(nearest.i, 1);
+      index = nearest.i;
+    }
+    const images = await renderImages(bitmap, { ...issue, marks });
+    bitmap.close();
+    await patchIssue(issue.id, { marks, ...images });
+    return { ...images, marks, index, stale };
+  },
+
+  /** Saves the note of one numbered marker without redrawing the images. */
+  async markNote(msg) {
+    const issue = (await readIssues()).find((i) => i.id === msg.id);
+    const marks = [...(issue?.marks ?? [])];
+    if (!marks[msg.index]) return { error: 'Marker not found' };
+    marks[msg.index] = { ...marks[msg.index], note: String(msg.note ?? '').slice(0, 2000) };
+    await patchIssue(issue.id, { marks });
+    return { marks };
+  },
+
   /** Widens the detail crops of a group that was captured with older padding. */
   async recropGroup(msg) {
     const issues = await issuesInGroup(msg.groupId);
@@ -450,13 +503,19 @@ const handlers = {
     const [{ result: width }] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: async (y) => {
+        window.__uiAnnotator?.hideForCapture(true);
         window.scrollTo({ top: y, behavior: 'instant' });
         await new Promise((r) => setTimeout(r, 350));
         return window.innerWidth;
       },
       args: [issue.viewport?.scrollY ?? 0],
     });
-    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 92 });
+    let dataUrl;
+    try {
+      dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 92 });
+    } finally {
+      await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: () => window.__uiAnnotator?.hideForCapture(false) });
+    }
     const bitmap = await createImageBitmap(await (await fetch(dataUrl)).blob());
     const { box, crop } = cropAround(bitmap, issue.rect, bitmap.width / width);
     const after = await drawRegion(bitmap, crop, box, MAX_DETAIL_WIDTH);

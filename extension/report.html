@@ -91,17 +91,17 @@
     <header>
       <h1 id="editor-title" data-editor-title>Edit image</h1>
       <div class="seg" role="toolbar" aria-label="Tools">
-        <button class="seg-btn" type="button" data-tool="select" aria-pressed="true" title="Select, move and resize (V)">Select</button>
-        <button class="seg-btn" type="button" data-tool="dot" aria-pressed="false" title="Numbered marker (M)">Marker</button>
-        <button class="seg-btn" type="button" data-tool="box" aria-pressed="false" title="Box (B)">Box</button>
-        <button class="seg-btn" type="button" data-tool="arrow" aria-pressed="false" title="Arrow (A)">Arrow</button>
+        <button class="seg-btn" type="button" data-tool="select" aria-pressed="true" title="Select, move and resize (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l12 7-5.5 1.5L10 17z" /></svg><span>Select</span></button>
+        <button class="seg-btn" type="button" data-tool="dot" aria-pressed="false" title="Numbered marker (M)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M11 9.5l1.5-1V16" /></svg><span>Marker</span></button>
+        <button class="seg-btn" type="button" data-tool="box" aria-pressed="false" title="Box (B)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="1.5" /></svg><span>Box</span></button>
+        <button class="seg-btn" type="button" data-tool="arrow" aria-pressed="false" title="Arrow (A)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19L19 5M10 5h9v9" /></svg><span>Arrow</span></button>
       </div>
       <div class="seg" role="group" aria-label="Zoom">
         <button class="seg-btn" type="button" data-zoom="out" title="Zoom out (-)" aria-label="Zoom out">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 12h12" /></svg>
         </button>
-        <button class="seg-btn" type="button" data-zoom="fit" title="Fit to window (0)">Fit</button>
-        <button class="seg-btn" type="button" data-zoom="actual" title="Actual size (1)">100%</button>
+        <button class="seg-btn" type="button" data-zoom="fit" aria-pressed="true" title="Fit to window (0)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg><span>Fit</span></button>
+        <button class="seg-btn" type="button" data-zoom="actual" aria-pressed="false" title="Actual size (1)">100%</button>
         <button class="seg-btn" type="button" data-zoom="in" title="Zoom in (+)" aria-label="Zoom in">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 6v12M6 12h12" /></svg>
         </button>
@@ -123,8 +123,7 @@
     </div>
     <footer>
       <span class="state" data-editor-state></span>
-      <button class="btn" type="button" data-editor-cancel>Cancel</button>
-      <button class="btn primary" type="button" data-editor-save>Save image</button>
+      <button class="btn primary" type="button" data-editor-close>Done</button>
     </footer>
     <div class="menu-body ctx-menu" data-editor-menu role="menu" hidden></div>
   </dialog>

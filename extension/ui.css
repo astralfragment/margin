@@ -299,14 +299,19 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { border-color
 
 /* Image editor */
 .sheet.editor[open] {
+  position: fixed; inset: 52px 0 0 288px; z-index: 20;
   display: flex; flex-direction: column;
-  width: min(1280px, 96vw); height: min(880px, 92vh); max-height: none;
-  min-width: min(560px, 96vw); min-height: min(420px, 92vh);
-  resize: both; overflow: hidden;
+  width: auto; height: auto; max-width: none; max-height: none; margin: 0;
+  overflow: hidden; border-width: 0 0 0 1px; border-radius: 0; box-shadow: var(--shadow-lg);
 }
+.sheet.editor::backdrop { background: transparent; }
+.editor-item .blank-hint { display: none; }
+.editor-item.blank .blank-hint { display: block; }
+@media (max-width: 900px) { .sheet.editor[open] { left: 0; } }
 .sheet.editor header { flex-wrap: wrap; }
-.sheet.editor .seg-btn { display: inline-flex; align-items: center; }
-.sheet.editor .seg-btn svg { width: 14px; height: 14px; }
+.sheet.editor .seg-btn { display: inline-flex; align-items: center; gap: 6px; }
+.sheet.editor .seg-btn svg { width: 14px; height: 14px; flex: none; }
+.sheet.editor .seg-btn[aria-pressed="true"] { color: var(--primary-foreground); background: var(--primary); }
 .editor-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 300px; }
 .editor-canvas { overflow: auto; padding: var(--s4); background: var(--muted); }
 .editor-stage { position: relative; margin: 0 auto; }

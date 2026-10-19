@@ -16,7 +16,6 @@ const empty = dialog.querySelector('[data-editor-empty]');
 const menu = dialog.querySelector('[data-editor-menu]');
 const zoomEl = dialog.querySelector('[data-editor-zoom]');
 const stateEl = dialog.querySelector('[data-editor-state]');
-const saveBtn = dialog.querySelector('[data-editor-save]');
 const titleEl = dialog.querySelector('[data-editor-title]');
 
 let ed = null;
@@ -57,7 +56,7 @@ function pushHistory() {
   ed.history.push(clone({ marks: ed.marks, rect: ed.rect }));
   if (ed.history.length > 100) ed.history.shift();
   ed.future = [];
-  ed.dirty = true;
+  scheduleSave();
 }
 
 /**
@@ -71,7 +70,7 @@ function travel(forward) {
   to.push(clone({ marks: ed.marks, rect: ed.rect }));
   ({ marks: ed.marks, rect: ed.rect } = from.pop());
   ed.sel = null;
-  ed.dirty = true;
+  scheduleSave();
   render();
   renderList();
 }
@@ -167,6 +166,7 @@ function renderList() {
       <span class="stack">
         <b class="kind">${MARK_LABELS[m.kind] ?? 'Marker'}</b>
         <textarea rows="2" placeholder="What this number points out"></textarea>
+        <span class="hint blank-hint">Left out until it has a note</span>
       </span>
       <button class="icon-btn danger" type="button" title="Remove ${i + 1}" aria-label="Remove ${i + 1}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M10 7V5h4v2M8 7l1 12h6l1-12" /></svg>
@@ -174,10 +174,13 @@ function renderList() {
     const note = row.querySelector('textarea');
     note.value = m.note ?? '';
     note.addEventListener('focus', () => select(i));
+    const markBlank = () => row.classList.toggle('blank', !note.value.trim());
     note.addEventListener('input', () => {
       ed.marks[i].note = note.value;
-      ed.dirty = true;
+      markBlank();
+      scheduleSave();
     });
+    markBlank();
     row.querySelector('button').addEventListener('click', () => removeMark(i));
     row.addEventListener('click', (e) => {
       if (e.target === row || e.target.classList.contains('num') || e.target.classList.contains('kind')) select(i);
@@ -364,6 +367,7 @@ function onPointerUp() {
     if (!drag.moved && m.kind === 'arrow') Object.assign(m, { x: clamp(m.x - 90, 0, ed.vw), y: clamp(m.y - 70, 0, ed.vh) });
     setTool('select');
   }
+  if (drag.moved || drag.mode === 'create') scheduleSave();
   render();
 }
 
@@ -471,6 +475,8 @@ function setZoom(next) {
   ed.zoom = clamp(next, MIN_ZOOM, MAX_ZOOM);
   stage.style.width = `${ed.vw * ed.zoom}px`;
   zoomEl.textContent = `${Math.round(ed.zoom * 100)}%`;
+  dialog.querySelector('[data-zoom="fit"]').setAttribute('aria-pressed', String(ed.fit));
+  dialog.querySelector('[data-zoom="actual"]').setAttribute('aria-pressed', String(!ed.fit && ed.zoom === 1));
   render();
 }
 
@@ -530,31 +536,47 @@ function onKey(e) {
   }
 }
 
-function requestClose() {
-  if (ed?.dirty && !confirm('Discard your changes to this image?')) return;
+/** Saves the editor's changes a moment after the last one, so edits keep without a Save button. */
+function scheduleSave() {
+  if (!ed) return;
+  ed.dirty = true;
+  clearTimeout(ed.saveTimer);
+  ed.saveTimer = setTimeout(save, 500);
+}
+
+/**
+ * Stores the annotations that have a note and the region, then redraws the comment's images.
+ * Items still without a note stay on the canvas but are left out until they get one.
+ */
+async function save() {
+  const current = ed;
+  if (!current?.dirty) return;
+  clearTimeout(current.saveTimer);
+  current.dirty = false;
+  current.saving = (current.saving ?? Promise.resolve()).then(async () => {
+    note('Saving');
+    const marks = current.marks.filter((m) => m.note?.trim());
+    const res = await current.send('annotate', { id: current.issue.id, marks, rect: current.rect });
+    if (res?.error) {
+      note(res.error);
+      return;
+    }
+    const left = current.marks.length - marks.length;
+    Object.assign(current.issue, { marks: clone(marks), shot: res.shot, detail: res.detail });
+    if (!current.base.hasBox) current.issue.rect = clone(current.rect);
+    current.onChange(current.issue);
+    if (ed === current) note(left ? `Saved. ${left} without a note left out.` : 'Saved');
+  });
+  await current.saving;
+}
+
+async function requestClose() {
+  if (!ed) return;
+  await save();
   ed = null;
   closeMenu();
   dialog.close();
 }
-
-async function save() {
-  saveBtn.disabled = true;
-  saveBtn.textContent = 'Saving';
-  const res = await ed.send('annotate', { id: ed.issue.id, marks: ed.marks, rect: ed.rect });
-  saveBtn.disabled = false;
-  saveBtn.textContent = 'Save image';
-  if (res?.error) {
-    note(res.error);
-    return;
-  }
-  const { onSaved, issue, marks, rect } = ed;
-  Object.assign(issue, { marks: clone(marks), shot: res.shot, detail: res.detail });
-  if (!ed.base.hasBox) issue.rect = clone(rect);
-  ed = null;
-  dialog.close();
-  onSaved(issue);
-}
-
 svg.addEventListener('pointerdown', onPointerDown);
 svg.addEventListener('pointermove', onPointerMove);
 svg.addEventListener('pointerup', onPointerUp);
@@ -588,8 +610,7 @@ dialog.querySelectorAll('[data-zoom]').forEach((b) =>
     setZoom(step === 'actual' ? 1 : step);
   }),
 );
-dialog.querySelector('[data-editor-cancel]').addEventListener('click', requestClose);
-saveBtn.addEventListener('click', save);
+dialog.querySelector('[data-editor-close]').addEventListener('click', requestClose);
 new ResizeObserver(() => {
   if (ed?.fit) setZoom('fit');
 }).observe(canvas);
@@ -597,10 +618,10 @@ new ResizeObserver(() => {
 /**
  * Opens the image editor on one comment.
  * @param {object} issue The stored comment.
- * @param {{ send: (type: string, payload?: object) => Promise<any>, onSaved: (issue: object) => void, label?: string }} options
- *   How to reach the background, what to do after a save, and a heading for the editor.
+ * @param {{ send: (type: string, payload?: object) => Promise<any>, onChange: (issue: object) => void, label?: string }} options
+ *   How to reach the background, what to do after each save, and a heading for the editor.
  */
-export async function openEditor(issue, { send, onSaved, label }) {
+export async function openEditor(issue, { send, onChange, label }) {
   const base = await send('editorBase', { id: issue.id });
   if (!base || base.error) {
     alert(base?.error ?? 'This comment has no screenshot');
@@ -612,7 +633,7 @@ export async function openEditor(issue, { send, onSaved, label }) {
   ed = {
     issue,
     send,
-    onSaved,
+    onChange,
     base,
     vw,
     vh: (vw * img.naturalHeight) / img.naturalWidth,
@@ -631,7 +652,8 @@ export async function openEditor(issue, { send, onSaved, label }) {
   note(base.hasBox ? 'Captured before clean screenshots were kept, so the region is fixed. Annotations still work.' : '');
   closeMenu();
   setTool('select');
-  dialog.showModal();
+  if (document.querySelector('dialog:modal')) dialog.showModal();
+  else dialog.show();
   setZoom('fit');
   renderList();
 }

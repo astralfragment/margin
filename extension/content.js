@@ -79,6 +79,19 @@
     }
     button.action.primary { background: #c1f354; border-color: #c1f354; color: #000000; }
     button.action:disabled { opacity: 0.45; cursor: not-allowed; }
+    .panel { max-height: calc(100vh - 16px); overflow: auto; }
+    .marks { display: grid; gap: 6px; }
+    .marks[hidden], .marks-hint[hidden] { display: none; }
+    .mrow { grid-template-columns: 20px 1fr; align-items: center; gap: 8px; }
+    .mrow b, .pin {
+      display: grid; place-items: center; width: 20px; height: 20px; border-radius: 999px;
+      font-size: 11px; font-weight: 800; color: #ffffff; background: #e5484d;
+    }
+    .marks-hint { font-size: 11px; color: #ada7c4; }
+    .pin {
+      position: fixed; width: 24px; height: 24px; margin: -12px 0 0 -12px; font-size: 12px;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92); cursor: context-menu;
+    }
     .ctx {
       position: fixed; min-width: 232px; padding: 4px; display: grid; gap: 2px;
       background: #000000; border: 1px solid #2f2a45; border-radius: 12px;
@@ -111,6 +124,7 @@
         <b data-group>Margin</b>
         <span data-instruction>Drag over an area</span>
         <button type="button" data-selectors aria-pressed="false">Selectors <kbd>S</kbd></button>
+        <button type="button" data-markers aria-pressed="true">Markers <kbd>M</kbd></button>
         <span><kbd>Esc</kbd> to stop</span>
       </div>
     </div>
@@ -119,10 +133,12 @@
   const hoverBox = shadow.querySelector('.hover');
   const band = shadow.querySelector('.band');
   const selectorsBtn = shadow.querySelector('[data-selectors]');
+  const markersBtn = shadow.querySelector('[data-markers]');
   const instruction = shadow.querySelector('[data-instruction]');
   const SELECTORS_KEY = 'selectorMode';
+  const MARKERS_KEY = 'markerMode';
 
-  const state = { active: false, drag: null, panel: null, menu: null, selectors: false };
+  const state = { active: false, drag: null, panel: null, menu: null, selectors: false, markers: true };
 
   const SHIELDED = ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'dblclick', 'auxclick', 'contextmenu', 'touchstart', 'touchend'];
   const COPIED = ['clientX', 'clientY', 'screenX', 'screenY', 'button', 'buttons', 'detail', 'ctrlKey', 'shiftKey', 'altKey', 'metaKey', 'pointerId', 'pointerType', 'isPrimary'];
@@ -161,16 +177,37 @@
     if (persist) chrome.storage.local.set({ [SELECTORS_KEY]: next }).catch(() => {});
   }
 
+  /**
+   * Turns numbered markers inside a fresh selection on or off and remembers the choice.
+   * @param {boolean} next Whether a click inside the selection drops a numbered marker.
+   * @param {boolean} [persist] False when the change came from storage and needs no write back.
+   */
+  function setMarkers(next, persist = true) {
+    state.markers = next;
+    markersBtn.setAttribute('aria-pressed', String(next));
+    markersBtn.title = next ? 'Click inside a selection to add numbered markers' : 'Numbered markers are off';
+    state.panel?.node.querySelector('[data-marks-hint]')?.toggleAttribute('hidden', !next);
+    if (persist) chrome.storage.local.set({ [MARKERS_KEY]: next }).catch(() => {});
+  }
+
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && SELECTORS_KEY in changes) setSelectors(changes[SELECTORS_KEY].newValue === true, false);
+    if (area !== 'local') return;
+    if (SELECTORS_KEY in changes) setSelectors(changes[SELECTORS_KEY].newValue === true, false);
+    if (MARKERS_KEY in changes) setMarkers(changes[MARKERS_KEY].newValue !== false, false);
   });
 
-  selectorsBtn.addEventListener('mousedown', (e) => e.stopPropagation());
-  selectorsBtn.addEventListener('mouseup', (e) => e.stopPropagation());
+  for (const button of [selectorsBtn, markersBtn]) {
+    button.addEventListener('mousedown', (e) => e.stopPropagation());
+    button.addEventListener('mouseup', (e) => e.stopPropagation());
+  }
   selectorsBtn.addEventListener('click', () => setSelectors(!state.selectors));
+  markersBtn.addEventListener('click', () => setMarkers(!state.markers));
   chrome.storage.local
-    .get(SELECTORS_KEY)
-    .then((bag) => setSelectors(bag[SELECTORS_KEY] === true, false))
+    .get([SELECTORS_KEY, MARKERS_KEY])
+    .then((bag) => {
+      setSelectors(bag[SELECTORS_KEY] === true, false);
+      setMarkers(bag[MARKERS_KEY] !== false, false);
+    })
     .catch(() => {});
 
   /**
@@ -315,6 +352,7 @@
       ['Comment on this element', () => captureElementAt(x, y)],
       ['Comment on the whole visible area', captureViewport],
       [state.selectors ? 'Turn selector capture off' : 'Turn selector capture on', () => setSelectors(!state.selectors)],
+      [state.markers ? 'Turn numbered markers off' : 'Turn numbered markers on', () => setMarkers(!state.markers)],
       null,
       ['Stop annotating', () => setActive(false)],
     ];
@@ -358,6 +396,7 @@
     hoverBox.hidden = true;
     root.classList.add('capturing');
     await nextFrame();
+    await new Promise((r) => setTimeout(r, 60));
 
     let res;
     try {
@@ -418,6 +457,8 @@
       <div class="sel">${element ? element.selector : 'region'}</div>
       <label>What is wrong<input type="text" data-title placeholder="Button label wraps at 320px" /></label>
       <label>Note<textarea data-note placeholder="What you expected, what happened"></textarea></label>
+      <div class="marks" data-marks hidden></div>
+      <span class="marks-hint" data-marks-hint${state.markers ? '' : ' hidden'}>Click inside the box to add numbered markers. Right-click one to remove it. Markers without a note are left out.</span>
       <label>Figma link, optional<input type="text" data-links placeholder="Paste one or more links" /></label>
       <span class="sevs-label">Severity</span>
       <div class="sevs">
@@ -432,10 +473,8 @@
       </div>
     `;
     root.append(panel);
-
-    const spot = panelSpot(rect, panel.offsetWidth, panel.offsetHeight);
-    panel.style.left = `${spot.left}px`;
-    panel.style.top = `${spot.top}px`;
+    state.panel = { id, node: panel, rect, marks: [] };
+    placePanel();
     place(band, rect);
 
     let severity = 'major';
@@ -469,6 +508,9 @@
     const save = async () => {
       if (!filled()) return;
       const note = noteInput.value.trim();
+      const marks = state.panel.marks
+        .map((m) => ({ kind: 'dot', x: m.x, y: m.y, note: m.note.trim() }))
+        .filter((m) => m.note);
       await chrome.runtime.sendMessage({
         type: 'update',
         id,
@@ -479,6 +521,7 @@
           links: parseLinks(linksInput.value),
         },
       });
+      if (marks.length) await chrome.runtime.sendMessage({ type: 'annotate', id, marks });
       closePanel(false);
       toast('Comment saved');
     };
@@ -492,8 +535,59 @@
     });
     panel.addEventListener('mousedown', (e) => e.stopPropagation());
 
-    state.panel = { id, node: panel };
     titleInput.focus();
+  }
+
+  /** Moves the open note panel clear of its selection, after it grows or shrinks. */
+  function placePanel() {
+    const { node, rect } = state.panel;
+    const spot = panelSpot(rect, node.offsetWidth, node.offsetHeight);
+    node.style.left = `${spot.left}px`;
+    node.style.top = `${spot.top}px`;
+  }
+
+  /** Redraws the numbered marker pins on the page and their note rows in the panel. */
+  function paintMarks() {
+    const { node, marks } = state.panel;
+    root.querySelectorAll('.pin').forEach((pin) => pin.remove());
+    marks.forEach((m, i) => {
+      const pin = Object.assign(document.createElement('b'), { className: 'pin', textContent: String(i + 1) });
+      pin.style.left = `${m.x}px`;
+      pin.style.top = `${m.y}px`;
+      pin.title = 'Right-click to remove';
+      pin.addEventListener('mousedown', (e) => e.stopPropagation());
+      pin.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        marks.splice(i, 1);
+        paintMarks();
+      });
+      root.append(pin);
+    });
+    const list = node.querySelector('[data-marks]');
+    list.hidden = !marks.length;
+    list.replaceChildren(
+      ...marks.map((m, i) => {
+        const row = Object.assign(document.createElement('label'), { className: 'mrow' });
+        row.innerHTML = `<b>${i + 1}</b><input type="text" placeholder="What marker ${i + 1} points out" />`;
+        const input = row.querySelector('input');
+        input.value = m.note;
+        input.addEventListener('input', () => (m.note = input.value));
+        return row;
+      }),
+    );
+    placePanel();
+  }
+
+  /**
+   * Drops the next numbered marker at a point inside the open selection and focuses its note.
+   * @param {number} x Viewport x of the click.
+   * @param {number} y Viewport y of the click.
+   */
+  function addMark(x, y) {
+    state.panel.marks.push({ x: Math.round(x), y: Math.round(y), note: '' });
+    paintMarks();
+    state.panel.node.querySelector('.mrow:last-child input')?.focus();
   }
 
   /** Closes the note panel. When `discard` is true the draft issue is deleted. */
@@ -502,6 +596,7 @@
     const { id, node } = state.panel;
     state.panel = null;
     node.remove();
+    root.querySelectorAll('.pin').forEach((pin) => pin.remove());
     band.hidden = true;
     if (discard) chrome.runtime.sendMessage({ type: 'discard', id });
   }
@@ -529,7 +624,16 @@
       if (e.button === 0) closeMenu();
       return;
     }
-    if (e.button !== 0 || state.panel) return;
+    if (e.button !== 0) return;
+    if (state.panel) {
+      const r = state.panel.rect;
+      const inside = e.clientX >= r.x && e.clientX <= r.x + r.w && e.clientY >= r.y && e.clientY <= r.y + r.h;
+      if (state.markers && inside) {
+        e.preventDefault();
+        addMark(e.clientX, e.clientY);
+      }
+      return;
+    }
     e.preventDefault();
     state.drag = { x: e.clientX, y: e.clientY };
     hoverBox.hidden = true;
@@ -560,10 +664,17 @@
   }
 
   function onKey(e) {
-    if (!state.panel && !e.ctrlKey && !e.metaKey && !e.altKey && e.key?.toLowerCase() === 's') {
+    const plain = !state.panel && !e.ctrlKey && !e.metaKey && !e.altKey;
+    if (plain && e.key?.toLowerCase() === 's') {
       e.preventDefault();
       e.stopPropagation();
       setSelectors(!state.selectors);
+      return;
+    }
+    if (plain && e.key?.toLowerCase() === 'm') {
+      e.preventDefault();
+      e.stopPropagation();
+      setMarkers(!state.markers);
       return;
     }
     if (e.key !== 'Escape') return;
@@ -620,5 +731,9 @@
     return false;
   });
 
-  window.__uiAnnotator = { setActive, isActive: () => state.active };
+  window.__uiAnnotator = {
+    setActive,
+    isActive: () => state.active,
+    hideForCapture: (hidden) => root.classList.toggle('capturing', hidden),
+  };
 })();

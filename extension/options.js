@@ -6,8 +6,14 @@ const SELECTORS_KEY = 'selectorMode';
 document.querySelector('[data-version]').textContent = `Version ${chrome.runtime.getManifest().version}`;
 const selectorsEl = document.querySelector('[data-selectors]');
 
-selectorsEl.checked = (await chrome.storage.local.get(SELECTORS_KEY))[SELECTORS_KEY] === true;
+const MARKERS_KEY = 'markerMode';
+const markersEl = document.querySelector('[data-markers]');
+const stored = await chrome.storage.local.get([SELECTORS_KEY, MARKERS_KEY]);
+
+selectorsEl.checked = stored[SELECTORS_KEY] === true;
 selectorsEl.addEventListener('change', () => chrome.storage.local.set({ [SELECTORS_KEY]: selectorsEl.checked }));
+markersEl.checked = stored[MARKERS_KEY] !== false;
+markersEl.addEventListener('change', () => chrome.storage.local.set({ [MARKERS_KEY]: markersEl.checked }));
 
 const command = (await chrome.commands.getAll()).find((c) => c.name === 'toggle-annotate');
 document.querySelector('[data-shortcut]').textContent = command?.shortcut
