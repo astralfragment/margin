@@ -1,6 +1,6 @@
 {
   "name": "ui-annotator",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Chrome extension for marking up UI issues and exporting them as an HTML report.",
