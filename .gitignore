@@ -7,3 +7,4 @@ node_modules/
 .claude/
 Thumbs.db
 .DS_Store
+store/assets/
