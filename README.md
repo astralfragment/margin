@@ -2,8 +2,6 @@
 
 Mark up UI issues on any web page, number the details, and hand over a clean review in Google Docs, Word, HTML or PDF.
 
-Margin is a Chrome extension by [Lilac Fragment](https://lilacfragment.co.za/margin/).
-
 ![Marking up a page with Margin](store/assets/1-mark-up-any-page.jpg)
 
 ## Install
