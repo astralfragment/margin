@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Welcome to Margin</title>
+  <link rel="stylesheet" href="ui.css" />
+</head>
+<body class="welcome">
+  <header class="welcome-top">
+    <span class="brand">Margin</span>
+    <button class="btn ghost" type="button" data-help>Help and settings</button>
+  </header>
+
+  <main class="welcome-main">
+    <section class="welcome-intro">
+      <h1>Mark up any page and hand over a clean review</h1>
+      <p>Margin lays a sheet over the page you are reviewing. Drag over what looks wrong, say why, and number the details. When the round is done, the whole review goes into Docs or Word in one copy.</p>
+    </section>
+
+    <section class="guide" aria-label="How a review works">
+      <div class="stage" data-stage data-step="1" aria-hidden="true">
+        <div class="mk-page">
+          <div class="mk-url">app.example.com/classes</div>
+          <div class="mk-app">
+            <div class="mk-nav"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="mk-body">
+              <div class="mk-head"><b>Classes</b><i></i></div>
+              <div class="mk-grid">
+                <div class="mk-card mk-target">
+                  <i class="mk-tag"></i><i></i><i></i>
+                  <div class="mk-band" data-show="2 3 4"></div>
+                  <svg class="mk-cursor" data-show="2" viewBox="0 0 24 24"><path d="M4 3l15 7-6 2-2 6z" fill="#ffffff" stroke="#000000" stroke-width="1.5" stroke-linejoin="round" /></svg>
+                  <div class="mk-region" data-show="5"></div>
+                  <b class="mk-dot" data-show="5" style="left: 50%; top: 50%">1</b>
+                  <b class="mk-dot" data-show="5" style="left: -1cqw; top: -1cqw">3</b>
+                </div>
+                <div class="mk-card"><i class="mk-tag"></i><i></i><i></i></div>
+                <div class="mk-card"><i class="mk-tag"></i><i></i><i></i></div>
+                <div class="mk-card"><i class="mk-tag"></i><i></i><i></i></div>
+                <div class="mk-card"><i class="mk-tag"></i><i></i><i></i></div>
+                <div class="mk-card"><i class="mk-tag"></i><i></i><i></i></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mk-dim" data-show="1 2 3 4"></div>
+        <div class="mk-bar" data-show="1 2 3 4"><b>Margin</b><span>Drag over an area</span><span class="mk-key">Selectors S</span><span><span class="mk-key">Esc</span> to stop</span></div>
+        <div class="mk-panel" data-show="3">
+          <span>What is wrong</span>
+          <i>Download button is missing</i>
+          <span>Severity</span>
+          <div class="mk-sevs"><em style="--c: #ff7a7a">Blocker</em><em class="on" style="--c: #fda856">Major</em><em style="--c: #65b2f1">Minor</em><em style="--c: #ada7c4">Nit</em></div>
+          <b class="mk-save">Save comment</b>
+        </div>
+        <div class="mk-ctx" data-show="4">
+          <span>Comment on this element</span>
+          <span>Comment on the whole visible area</span>
+          <span>Turn selector capture on</span>
+          <hr />
+          <span>Stop annotating</span>
+        </div>
+
+        <div class="mk-box" data-show="5"></div>
+        <b class="mk-dot" data-show="5" style="left: 51%; top: 26%">2</b>
+        <div class="mk-list" data-show="5">
+          <p><b>1</b>Download button is missing from the card</p>
+          <p><b>2</b>Date wraps onto two lines</p>
+          <p><b>3</b>Card corner radius does not match the others</p>
+        </div>
+
+        <div class="mk-report" data-show="6">
+          <header><b>Classes review</b><span>Word file</span><span class="lead">Copy for Docs</span></header>
+          <h3>Download button is missing</h3>
+          <ol>
+            <li>Download button is missing from the card</li>
+            <li>Date wraps onto two lines</li>
+            <li>Card corner radius does not match the others</li>
+          </ol>
+          <div class="mk-pair">
+            <figure><i></i>Before</figure>
+            <figure><i></i>After, rechecked today</figure>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <ol class="guide-steps" data-steps></ol>
+        <div class="guide-nav">
+          <button class="btn" type="button" data-back>Back</button>
+          <button class="btn action" type="button" data-next>Next</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="welcome.js"></script>
+</body>
+</html>

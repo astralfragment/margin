@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Margin review</title>
+  <link rel="stylesheet" href="ui.css" />
+</head>
+<body class="app">
+  <header class="topbar">
+    <span class="brand">Margin</span>
+    <select data-group aria-label="Review"></select>
+    <button class="icon-btn" type="button" data-rename-group title="Rename this review" aria-label="Rename this review">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L20 8l-4-4L4 16v4Z" /><path d="M14 6l4 4" /></svg>
+    </button>
+    <button class="icon-btn" type="button" data-new-group title="Start a new review" aria-label="Start a new review">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+    </button>
+
+    <span class="spacer"></span>
+    <button class="btn" type="button" data-edit>Edit comments</button>
+    <button class="btn action" type="button" data-copy>Copy for Docs</button>
+
+    <details class="menu">
+      <summary class="btn" aria-label="More actions">More</summary>
+      <div class="menu-body">
+        <span class="menu-label">Export</span>
+        <label class="menu-field">
+          Screenshots
+          <select data-shots aria-label="Screenshots to include">
+            <option value="both">Both images</option>
+            <option value="detail">Marked region only</option>
+            <option value="viewport">Full viewport only</option>
+          </select>
+        </label>
+        <button class="menu-item" type="button" data-fields>Fields shown</button>
+        <button class="menu-item" type="button" data-doc>Word file</button>
+        <button class="menu-item" type="button" data-download>HTML file</button>
+        <button class="menu-item" type="button" data-print>Print</button>
+        <div class="menu-sep"></div>
+        <span class="menu-label">Images</span>
+        <button class="menu-item" type="button" data-recrop>Redo crops</button>
+        <div class="menu-sep"></div>
+        <span class="menu-label">Help</span>
+        <button class="menu-item" type="button" data-tour>Take the tour</button>
+        <button class="menu-item" type="button" data-help>Help and settings</button>
+      </div>
+    </details>
+  </header>
+
+  <div class="workspace">
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <input type="search" data-find placeholder="Search comments" aria-label="Search comments" />
+      </div>
+      <div class="sidebar-filters" data-filters></div>
+      <nav class="index" data-index aria-label="Comments"></nav>
+      <div class="sidebar-foot" data-index-foot></div>
+    </aside>
+
+    <main class="canvas">
+      <iframe data-preview title="Report preview"></iframe>
+    </main>
+  </div>
+
+  <dialog class="sheet wide" data-edit-dialog>
+    <header>
+      <h1>Edit comments</h1>
+      <span class="state" data-edit-count></span>
+    </header>
+    <div class="sheet-body" data-edit-body></div>
+    <footer>
+      <span class="state" data-edit-note></span>
+      <button class="btn" type="button" data-edit-cancel>Cancel</button>
+      <button class="btn primary" type="button" data-edit-save>Save changes</button>
+    </footer>
+  </dialog>
+
+  <dialog class="sheet" data-fields-dialog>
+    <header>
+      <h1>Fields shown</h1>
+      <span class="state">Applies to the report, the copy and both exports</span>
+    </header>
+    <div class="sheet-body" data-fields-body></div>
+    <footer>
+      <button class="btn" type="button" data-fields-cancel>Cancel</button>
+      <button class="btn primary" type="button" data-fields-save>Save</button>
+    </footer>
+  </dialog>
+
+  <dialog class="sheet editor" data-editor aria-labelledby="editor-title">
+    <header>
+      <h1 id="editor-title" data-editor-title>Edit image</h1>
+      <div class="seg" role="toolbar" aria-label="Tools">
+        <button class="seg-btn" type="button" data-tool="select" aria-pressed="true" title="Select, move and resize (V)">Select</button>
+        <button class="seg-btn" type="button" data-tool="dot" aria-pressed="false" title="Numbered marker (M)">Marker</button>
+        <button class="seg-btn" type="button" data-tool="box" aria-pressed="false" title="Box (B)">Box</button>
+        <button class="seg-btn" type="button" data-tool="arrow" aria-pressed="false" title="Arrow (A)">Arrow</button>
+      </div>
+      <div class="seg" role="group" aria-label="Zoom">
+        <button class="seg-btn" type="button" data-zoom="out" title="Zoom out (-)" aria-label="Zoom out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 12h12" /></svg>
+        </button>
+        <button class="seg-btn" type="button" data-zoom="fit" title="Fit to window (0)">Fit</button>
+        <button class="seg-btn" type="button" data-zoom="actual" title="Actual size (1)">100%</button>
+        <button class="seg-btn" type="button" data-zoom="in" title="Zoom in (+)" aria-label="Zoom in">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 6v12M6 12h12" /></svg>
+        </button>
+      </div>
+      <span class="state" data-editor-zoom></span>
+    </header>
+    <div class="editor-body">
+      <div class="editor-canvas" data-editor-canvas data-tool="select">
+        <div class="editor-stage" data-editor-stage>
+          <img data-editor-img alt="Screenshot being annotated" draggable="false" />
+          <svg data-editor-svg aria-label="Annotations"></svg>
+        </div>
+      </div>
+      <aside class="editor-side">
+        <p class="hint">Right-click a number to remove it. Right-click a box, an arrow, the region or empty space for more actions. Double-click an item to write its note.</p>
+        <p class="hint" data-editor-empty>Pick Marker, Box or Arrow, then click or drag on the image. Each one gets a number and a note, and the notes export as a numbered list.</p>
+        <ol class="editor-list" data-editor-list></ol>
+      </aside>
+    </div>
+    <footer>
+      <span class="state" data-editor-state></span>
+      <button class="btn" type="button" data-editor-cancel>Cancel</button>
+      <button class="btn primary" type="button" data-editor-save>Save image</button>
+    </footer>
+    <div class="menu-body ctx-menu" data-editor-menu role="menu" hidden></div>
+  </dialog>
+
+  <script type="module" src="report.js"></script>
+</body>
+</html>

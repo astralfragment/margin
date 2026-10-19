@@ -1,0 +1,9 @@
+keys/
+*.pem
+dist/
+*.zip
+extension-before-fragment/
+node_modules/
+.claude/
+Thumbs.db
+.DS_Store

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Margin {{version}} Web Store listing</title>
+  <link rel="stylesheet" href="../extension/ui.css" />
+</head>
+<body class="options">
+  <header class="field">
+    <h1>Margin {{version}} for the Chrome Web Store</h1>
+    <p class="lede">Everything the store asks for, ready to paste. Upload <code>{{storeZip}}</code> from this folder. It has no pinned key, because the store refuses manifests that carry one and assigns its own ID.</p>
+  </header>
+
+  <section class="card" aria-labelledby="first">
+    <h2 id="first">First submission</h2>
+    <ol class="steps">
+      <li>Sign in to the Chrome Web Store developer dashboard with the account that should own Margin, and pay the one-time registration fee.</li>
+      <li>Click New item and upload <code>{{storeZip}}</code>.</li>
+      <li>Fill in Store listing, Privacy and Distribution with the text below.</li>
+      <li>Add at least one screenshot, 1280 by 800 or 640 by 400. The report with numbered annotations or the welcome page make good first shots.</li>
+      <li>Submit for review. Reviews usually take a few days.</li>
+    </ol>
+  </section>
+
+  <section class="card" aria-labelledby="updates">
+    <h2 id="updates">Shipping an update</h2>
+    <ol class="steps">
+      <li>Raise <code>version</code> in <code>extension/manifest.json</code>. The store rejects a version it has seen.</li>
+      <li>Run <code>npm run package</code> in the project folder.</li>
+      <li>In the dashboard, open Package, upload the new web store zip and submit.</li>
+      <li>After review, Chrome updates everyone within a few hours. The folder zip from the same run goes to anyone still on a folder install.</li>
+    </ol>
+  </section>
+
+  <section class="card" aria-labelledby="listing">
+    <h2 id="listing">Store listing</h2>
+    <dl class="keys">
+      <dt>Name</dt><dd>Margin</dd>
+      <dt>Summary</dt><dd>Mark up UI issues on any page, number the details, and export a clean review for Docs or Word.</dd>
+      <dt>Category</dt><dd>Developer Tools</dd>
+      <dt>Language</dt><dd>English</dd>
+      <dt>Description</dt>
+      <dd>
+        <p>Margin lays a sheet over the page you are reviewing. Drag over anything that looks wrong and Margin takes a screenshot of it. Write what is wrong, pick a severity, and move on to the next one.</p>
+        <p>In the report, open any screenshot to add numbered markers, boxes and arrows, each with its own note. Move or resize the marked region, zoom in, and right-click a number to remove it.</p>
+        <p>When the round is done, copy the whole review into Google Docs or download it as a Word or HTML file. Numbered notes come out as a numbered list. Recheck a comment after the fix to show it before and after.</p>
+        <p>Everything stays on your computer. Margin has no account, no server and no tracking.</p>
+      </dd>
+    </dl>
+  </section>
+
+  <section class="card" aria-labelledby="privacy">
+    <h2 id="privacy">Privacy tab</h2>
+    <dl class="keys">
+      <dt>Single purpose</dt><dd>Capture and annotate screenshots of issues on web pages, and export them as a review document.</dd>
+      <dt>activeTab</dt><dd>Takes the screenshot and shows the annotation layer only on the tab where the user starts annotating.</dd>
+      <dt>scripting</dt><dd>Adds the annotation layer to that tab when the user starts annotating.</dd>
+      <dt>storage</dt><dd>Keeps comments, screenshots and settings on the user's computer.</dd>
+      <dt>unlimitedStorage</dt><dd>Screenshots outgrow the default local storage limit after a few reviews.</dd>
+      <dt>clipboardWrite</dt><dd>Copy for Docs puts the finished review on the clipboard.</dd>
+      <dt>contextMenus</dt><dd>Adds start annotating, comment on the whole visible area, and open the report to the right-click menu.</dd>
+      <dt>Remote code</dt><dd>No. All code ships inside the package.</dd>
+      <dt>Data usage</dt><dd>Tick none of the data types. Margin collects nothing and sends nothing off the device. Certify all three statements.</dd>
+      <dt>Privacy policy</dt><dd>Only needed if the form asks. Margin stores screenshots and notes in the browser on the user's computer. It sends no data to any server and shares nothing with anyone.</dd>
+    </dl>
+  </section>
+
+  <section class="card" aria-labelledby="distribution">
+    <h2 id="distribution">Distribution</h2>
+    <p class="hint">Choose Private and limit it to your Google Workspace domain if the team signs in to Chrome with Workspace accounts. Otherwise choose Unlisted, which hides it from search and works for anyone with the link.</p>
+    <p class="hint">The store copy gets its own ID, separate from the folder install <code>{{id}}</code>. People moving over should download their reviews as Word or HTML first, then remove the folder copy.</p>
+  </section>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Margin help and settings</title>
+  <link rel="stylesheet" href="ui.css" />
+</head>
+<body class="options">
+  <header class="field">
+    <h1>Help and settings</h1>
+    <p class="lede">Margin puts a sheet over the page you are reviewing. Mark what looks wrong, number the details, and hand over the review as a Doc, a Word file or a web page.</p>
+    <p class="hint" data-version></p>
+  </header>
+
+  <section class="card" aria-labelledby="start-title">
+    <h2 id="start-title">Getting started</h2>
+    <p class="hint">The welcome tour walks through a full review in six steps. The tips point at the real buttons the first time you open the popup and the report.</p>
+    <div class="row">
+      <button class="btn action" type="button" data-welcome>Open the welcome tour</button>
+      <button class="btn" type="button" data-replay>Show the tips again</button>
+      <span class="state" data-replay-state></span>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="settings-title">
+    <h2 id="settings-title">Settings</h2>
+    <label class="setting" for="selectors">
+      <span>
+        <b>Capture selectors by default</b>
+        <span class="hint">Hovering outlines elements, a click picks one, and each comment keeps the element's CSS selector. Press <kbd>S</kbd> while annotating to switch it for the moment.</span>
+      </span>
+      <input id="selectors" type="checkbox" data-selectors />
+    </label>
+    <div class="setting">
+      <span>
+        <b>Keyboard shortcut</b>
+        <span class="hint" data-shortcut>Checking</span>
+      </span>
+      <button class="btn" type="button" data-shortcuts>Change shortcut</button>
+    </div>
+    <div class="setting">
+      <span>
+        <b>Stored on this computer</b>
+        <span class="hint" data-storage>Checking</span>
+      </span>
+      <button class="btn" type="button" data-report>Open the report</button>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="annotating-title">
+    <h2 id="annotating-title">While annotating</h2>
+    <dl class="keys">
+      <dt>Drag</dt><dd>Mark an area. A note opens beside it.</dd>
+      <dt>Click</dt><dd>Pick the element under the pointer, when selector capture is on.</dd>
+      <dt><kbd>S</kbd></dt><dd>Turn selector capture on or off.</dd>
+      <dt>Right-click</dt><dd>Comment on one element or the whole visible area, switch selectors, or stop.</dd>
+      <dt><kbd>Ctrl</kbd> <kbd>Enter</kbd></dt><dd>Save the note.</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close the menu or the note, then stop annotating.</dd>
+    </dl>
+  </section>
+
+  <section class="card" aria-labelledby="editor-title">
+    <h2 id="editor-title">In the image editor</h2>
+    <p class="hint">Open it from the report by clicking any screenshot, or with Edit image in Edit comments.</p>
+    <dl class="keys">
+      <dt><kbd>V</kbd> <kbd>M</kbd> <kbd>B</kbd> <kbd>A</kbd></dt><dd>Select, Marker, Box and Arrow.</dd>
+      <dt>Drag a handle</dt><dd>Resize a box, an arrow or the marked region.</dd>
+      <dt>Right-click a number</dt><dd>Remove that item. The rest renumber.</dd>
+      <dt>Right-click elsewhere</dt><dd>Add, duplicate, renumber, reset the region or change the zoom.</dd>
+      <dt>Double-click</dt><dd>Write the item's note.</dd>
+      <dt><kbd>Ctrl</kbd> <kbd>Z</kbd></dt><dd>Undo. Add <kbd>Shift</kbd> to redo.</dd>
+      <dt><kbd>Delete</kbd></dt><dd>Remove the selected item.</dd>
+      <dt>Arrow keys</dt><dd>Nudge the selection by one pixel, or ten with <kbd>Shift</kbd>.</dd>
+      <dt><kbd>+</kbd> <kbd>-</kbd> <kbd>0</kbd> <kbd>1</kbd></dt><dd>Zoom in, zoom out, fit and actual size.</dd>
+    </dl>
+  </section>
+
+  <section class="card" aria-labelledby="menu-title">
+    <h2 id="menu-title">Chrome's right-click menu</h2>
+    <p class="hint">Right-click any page to start or stop annotating, comment on the whole visible area, or open the review report.</p>
+  </section>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

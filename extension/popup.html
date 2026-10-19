@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Margin</title>
+  <link rel="stylesheet" href="ui.css" />
+</head>
+<body class="popup">
+  <header>
+    <h1>Margin</h1>
+    <span class="count" data-count>0 comments</span>
+  </header>
+
+  <label class="picker-label" for="review-picker">Review</label>
+  <div class="group">
+    <select id="review-picker" data-group></select>
+    <button class="icon-btn" type="button" data-rename-group title="Rename this review" aria-label="Rename this review">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L20 8l-4-4L4 16v4Z" /><path d="M14 6l4 4" /></svg>
+    </button>
+    <button class="icon-btn" type="button" data-new-group title="Start a new review" aria-label="Start a new review">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+    </button>
+  </div>
+
+  <button class="btn action" type="button" data-toggle>Start annotating</button>
+
+  <ul class="list" data-list></ul>
+
+  <div class="row">
+    <button class="btn grow" type="button" data-report>Open report</button>
+    <button class="btn ghost danger" type="button" data-clear>Delete review</button>
+  </div>
+
+  <p class="foot">
+    <span data-shortcut>Alt+Shift+A toggles annotation</span>
+    <button class="btn ghost sm" type="button" data-options>Help and settings</button>
+  </p>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

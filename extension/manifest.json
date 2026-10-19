@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Margin",
+  "version": "0.2.0",
+  "description": "Mark up UI issues on any page, number the details, and export a clean review.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArt0vZEADExpGg31w8/rEbjkhKDPeLRZleQGGZcuEK3oLmo+Z6qkMSM2qZaFS0I0fSerkkLARRy6zOyYrdmZ7mNiD8TYyVXM26fgmX0eWDfMV5StwO0XlkzjvveP/B4KsOdw0mSQYHT5rFNYyEVRNcekOO4Q6XcN0ozrTke3pgblSx1JbplHRJhIoMt6/E3XqWTxFhiELxERGh4tcJHYHC6cvBGzIR7AJ2MCdbu8gqBvZZz2tEjQs39k5bqcEbh/WUYOdQRpIyiFPTInf+TpuQtm4TD1MHI7MkvFyyfO1IfgR5AhoQVtAiI3KvH6NsQb8sAwI1UPPoWZyxpEG0VOujwIDAQAB",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "unlimitedStorage",
+    "clipboardWrite",
+    "contextMenus"
+  ],
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Margin",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "commands": {
+    "toggle-annotate": {
+      "suggested_key": {
+        "default": "Alt+Shift+A"
+      },
+      "description": "Toggle annotation mode on the current tab"
+    }
+  }
+}

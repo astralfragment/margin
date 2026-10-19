@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Install and update Margin {{version}}</title>
+  <link rel="stylesheet" href="Margin/ui.css" />
+</head>
+<body class="options">
+  <header class="field">
+    <h1>Install and update Margin</h1>
+    <p class="lede">Version {{version}}. Margin runs in Chrome or Edge from a folder on your computer. Everything you capture stays on this computer.</p>
+  </header>
+
+  <section class="card" aria-labelledby="install">
+    <h2 id="install">Install</h2>
+    <ol class="steps">
+      <li>Unzip this file into a folder you will keep, such as Documents. Chrome loads Margin from that folder every time it starts, so do not delete it.</li>
+      <li>In Chrome, open <code>chrome://extensions</code>. In Edge, open <code>edge://extensions</code>.</li>
+      <li>Turn on Developer mode. It is at the top right in Chrome and on the left in Edge.</li>
+      <li>Click Load unpacked and choose the Margin folder, the one with <code>manifest.json</code> inside.</li>
+      <li>Pin Margin from the puzzle piece in the toolbar. The welcome tour opens in a new tab.</li>
+    </ol>
+  </section>
+
+  <section class="card" aria-labelledby="update">
+    <h2 id="update">Update to a new version</h2>
+    <ol class="steps">
+      <li>Unzip the new version.</li>
+      <li>Replace everything inside your existing Margin folder with the contents of the new Margin folder.</li>
+      <li>On the extensions page, click the reload arrow on the Margin card.</li>
+      <li>Check the version on the card, or at the top of Help and settings in Margin. Your reviews and screenshots stay.</li>
+    </ol>
+    <p class="hint">Never click Remove to update. Removing Margin deletes every review and screenshot it holds.</p>
+  </section>
+
+  <section class="card" aria-labelledby="earlier">
+    <h2 id="earlier">Coming from a build before 0.2.0</h2>
+    <p class="hint">Earlier builds were a separate install, so this version starts empty. Before you remove the old one, open its report and download each review as a Word or HTML file. Then remove the old Margin card and install this version.</p>
+  </section>
+
+  <section class="card" aria-labelledby="store">
+    <h2 id="store">Chrome Web Store version</h2>
+    <p class="hint">Once Margin is in the Chrome Web Store, install it from the link the team shares and it updates itself. It is a separate install from this folder, so export your reviews here first, then remove this copy.</p>
+  </section>
+
+  <section class="card" aria-labelledby="trouble">
+    <h2 id="trouble">If something goes wrong</h2>
+    <dl class="keys">
+      <dt>Manifest file is missing</dt><dd>You picked the outer folder. Choose the Margin folder that has <code>manifest.json</code> directly inside.</dd>
+      <dt>Developer mode warning</dt><dd>Chrome reminds you about folder installs now and then. Close the message, Margin keeps working.</dd>
+      <dt>Nothing happens on a page</dt><dd>Chrome blocks extensions on its own pages, the Web Store and the new tab page. Try a normal website.</dd>
+      <dt>The shortcut does nothing</dt><dd>Set or change it at <code>chrome://extensions/shortcuts</code>.</dd>
+      <dt>Reviews are gone</dt><dd>Check the ID on the Margin card reads <code>{{id}}</code>. A different ID means an older build or a second install.</dd>
+    </dl>
+  </section>
+
+  <section class="card" aria-labelledby="remove">
+    <h2 id="remove">Remove Margin</h2>
+    <p class="hint">Download any review you want to keep as a Word or HTML file first. Then click Remove on the Margin card and delete the folder.</p>
+  </section>
+</body>
+</html>
