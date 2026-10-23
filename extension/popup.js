@@ -1,6 +1,9 @@
 import { issuesInGroup, removeIssue } from './lib/store.js';
 import { severityOf } from './lib/severity.js';
 import { tourOnce } from './lib/tour.js';
+import { applyTheme } from './lib/theme.js';
+
+applyTheme();
 
 const listEl = document.querySelector('[data-list]');
 const countEl = document.querySelector('[data-count]');

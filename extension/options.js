@@ -1,6 +1,13 @@
 import { readIssues } from './lib/store.js';
 import { resetTours } from './lib/tour.js';
 import { PROVIDERS, readConnections, requestAccess, connect, disconnect } from './lib/oauth.js';
+import { THEME_KEY, THEMES, applyTheme } from './lib/theme.js';
+
+applyTheme();
+const themeEl = document.querySelector('[data-theme-choice]');
+themeEl.innerHTML = THEMES.map((t) => `<option value="${t.key}">${t.label}</option>`).join('');
+themeEl.value = (await chrome.storage.local.get(THEME_KEY))[THEME_KEY] ?? 'light';
+themeEl.addEventListener('change', () => chrome.storage.local.set({ [THEME_KEY]: themeEl.value }));
 
 const SELECTORS_KEY = 'selectorMode';
 

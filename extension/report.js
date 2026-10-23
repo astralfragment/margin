@@ -18,6 +18,7 @@ import { FACT_FIELDS, withDefaults } from './lib/fields.js';
 import { openEditor } from './editor.js';
 import { startTour, tourOnce } from './lib/tour.js';
 import { wireSend } from './send.js';
+import { applyTheme } from './lib/theme.js';
 
 const send = (type, payload = {}) => chrome.runtime.sendMessage({ type, ...payload });
 const frame = document.querySelector('[data-preview]');
@@ -183,7 +184,13 @@ const slug = (group?.name ?? hosts[0] ?? 'report').replace(/[^a-z0-9.]+/gi, '-')
 const basename = `ui-issues-${slug}-${stamp(generatedAt)}`;
 
 document.title = title;
-frame.addEventListener('load', () => wireFilters(frame.contentDocument));
+applyTheme((theme) => {
+  if (frame.contentDocument) frame.contentDocument.documentElement.dataset.theme = theme;
+});
+frame.addEventListener('load', () => {
+  frame.contentDocument.documentElement.dataset.theme = document.documentElement.dataset.theme ?? 'light';
+  wireFilters(frame.contentDocument);
+});
 frame.srcdoc = previewDoc(issues, options);
 
 /* Sidebar index ---------------------------------------------------------- */

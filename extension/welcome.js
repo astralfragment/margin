@@ -1,3 +1,6 @@
+import { applyTheme } from './lib/theme.js';
+
+applyTheme();
 const command = (await chrome.commands.getAll()).find((c) => c.name === 'toggle-annotate');
 const shortcut = command?.shortcut || 'the shortcut you set in Chrome';
 
