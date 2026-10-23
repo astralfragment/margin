@@ -212,6 +212,8 @@ if (group) {
 
 const issues = await issuesInGroup(groupId);
 const ordered = sortIssues(issues);
+/** A comment's number, which is the order it was made in and stays the same in the report, popup and overlay. */
+const numberOf = (issue) => issues.indexOf(issue) + 1;
 const generatedAt = new Date();
 const hosts = hostsOf(issues);
 const title = group?.name ?? (hosts.length === 1 ? `UI issue report, ${hosts[0]}` : 'UI issue report');
@@ -297,7 +299,7 @@ indexEl.innerHTML = ordered.length
         const status = statusOf(issue.status);
         return `<button class="index-row${issue.jira?.key ? ' linked' : ''}" type="button" data-jump="${index + 1}" data-sev="${sev.key}" data-status="${status.key}"
             data-text="${escapeText(`${issue.title ?? ''} ${issue.note ?? ''} ${issue.element?.selector ?? ''} ${hostOf(issue.page?.url)}`.toLowerCase())}">
-          <span class="n">${pad(index + 1)}</span>
+          <span class="n">${pad(numberOf(issue))}</span>
           <span class="dot"></span>
           <span class="label">
             <b data-key="${escapeText(issue.jira?.key ?? '')}">${escapeText(issue.title || 'Untitled comment')}</b>
@@ -722,7 +724,7 @@ let imagesChanged = false;
 function editImage(issue, index) {
   openEditor(issue, {
     send,
-    label: `Edit image, comment ${pad(index + 1)}`,
+    label: `Edit image, comment ${pad(numberOf(issue))}`,
     onChange: (saved) => {
       refreshPreview();
       if (!editDialog.open) return;
@@ -751,7 +753,7 @@ function editRow(issue, index) {
   const row = document.createElement('div');
   row.className = 'edit-row';
   row.innerHTML = `
-    <span class="n">${pad(index + 1)}</span>
+    <span class="n">${pad(numberOf(issue))}</span>
     <span class="stack">
       <select data-field="severity" aria-label="Severity">
         ${SEVERITIES.map((s) => `<option value="${s.key}">${s.label}</option>`).join('')}
@@ -980,7 +982,7 @@ function paintWalk() {
     return;
   }
   const issue = list[at];
-  const n = ordered.indexOf(issue) + 1;
+  const n = numberOf(issue);
   const sev = severityOf(issue.severity);
   paintVerify(
     `${at + 1} of ${list.length}`,

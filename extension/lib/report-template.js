@@ -248,13 +248,13 @@ export function recheckCaption(issue) {
   return issue.checkedAt ? `After, rechecked ${new Date(issue.checkedAt).toLocaleString()}` : 'After recheck';
 }
 
-function issueCard(issue, index, shots, fields, widths) {
+function issueCard(issue, index, shots, fields, widths, number = index + 1) {
   const sev = severityOf(issue.severity);
   const status = statusOf(issue.status);
   return `
     <article class="issue" id="c-${index + 1}" data-sev="${esc(sev.key)}" data-status="${esc(status.key)}">
       <header>
-        <span class="num">${String(index + 1).padStart(2, '0')}</span>
+        <span class="num">${String(number).padStart(2, '0')}</span>
         <h2>${esc(issue.title || 'Untitled issue')}</h2>
         ${
           fields.jira && issue.jira?.key
@@ -317,7 +317,7 @@ export function renderBody(issues, { title = 'UI issue report', generatedAt = ne
       : '';
 
   const body = sorted.length
-    ? sorted.map((issue, index) => issueCard(issue, index, shots, withDefaults(fields), widths)).join('\n')
+    ? sorted.map((issue, index) => issueCard(issue, index, shots, withDefaults(fields), widths, issues.indexOf(issue) + 1)).join('\n')
     : '<p class="empty">No issues captured.</p>';
 
   return `<div class="wrap">

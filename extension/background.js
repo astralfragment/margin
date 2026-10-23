@@ -902,11 +902,6 @@ const handlers = {
     return { ok: true };
   },
 
-  /** The review new comments go to, as stored, so the overlay can read its name, Jira issue and Figma file. */
-  async activeReview() {
-    return activeGroup();
-  },
-
   /**
    * The active review's comments made on one page, without their images, numbered in the order they were made,
    * plus how many comments the review holds. The overlay draws these as flags.
