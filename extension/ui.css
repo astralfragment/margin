@@ -242,6 +242,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { border-color
 .sheet header .state, .sheet footer .state { margin-left: auto; }
 .sheet footer .state { margin-left: 0; margin-right: auto; }
 .sheet-body { padding: var(--s4); overflow: auto; max-height: 64vh; display: grid; gap: var(--s2); }
+.sheet [hidden] { display: none; }
 
 /* Segmented control */
 .seg { display: inline-flex; padding: 2px; background: var(--muted); border-radius: var(--radius-sm); }

@@ -1,5 +1,6 @@
 import { readIssues } from './lib/store.js';
 import { resetTours } from './lib/tour.js';
+import { PROVIDERS, readConnections, requestAccess, connect, disconnect } from './lib/oauth.js';
 
 const SELECTORS_KEY = 'selectorMode';
 
@@ -33,6 +34,54 @@ function size(bytes) {
 const [issues, bytes] = await Promise.all([readIssues(), chrome.storage.local.getBytesInUse(null)]);
 document.querySelector('[data-storage]').textContent =
   `${issues.length} ${issues.length === 1 ? 'comment' : 'comments'} with their screenshots, ${size(bytes)}. Delete a review from the popup to free space.`;
+
+const CONNECTION_HINTS = {
+  jira: 'Not connected. Connect to create Jira issues with the screenshots attached.',
+  figma: 'Not connected. Connect to post comments on the Figma frames your links point at.',
+};
+
+/** Shows each service's signed-in account, or what connecting it does. */
+async function paintConnections() {
+  const all = await readConnections();
+  for (const row of document.querySelectorAll('[data-connection]')) {
+    const current = all[row.dataset.connection];
+    const who = [current?.account?.name, current?.account?.email].filter(Boolean).join(', ') || 'your account';
+    const sites = current?.sites?.map((site) => site.name).join(', ');
+    row.dataset.connected = String(Boolean(current));
+    row.querySelector('[data-connection-state]').textContent = current
+      ? `Connected as ${who}.${sites ? ` Jira sites ${sites}.` : ''}`
+      : CONNECTION_HINTS[row.dataset.connection];
+    const button = row.querySelector('[data-connection-toggle]');
+    button.textContent = current ? 'Disconnect' : 'Connect';
+    button.classList.toggle('action', !current);
+  }
+}
+
+for (const row of document.querySelectorAll('[data-connection]')) {
+  const provider = row.dataset.connection;
+  const button = row.querySelector('[data-connection-toggle]');
+  const state = row.querySelector('[data-connection-state]');
+  button.addEventListener('click', async () => {
+    if (row.dataset.connected === 'true') {
+      await disconnect(provider);
+      return paintConnections();
+    }
+    const access = requestAccess(provider);
+    button.disabled = true;
+    state.textContent = `Waiting for ${PROVIDERS[provider].name} sign-in`;
+    try {
+      if (!(await access)) throw new Error(`Margin needs permission to reach ${PROVIDERS[provider].name}. Choose Allow to connect.`);
+      await connect(provider);
+      await paintConnections();
+    } catch (err) {
+      state.textContent = err.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+paintConnections();
 
 document.querySelector('[data-report]').addEventListener('click', () => chrome.runtime.sendMessage({ type: 'openReport' }));
 document.querySelector('[data-welcome]').addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') }));

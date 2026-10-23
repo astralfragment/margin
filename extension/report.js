@@ -17,6 +17,7 @@ import { STATUSES, statusOf } from './lib/status.js';
 import { FACT_FIELDS, withDefaults } from './lib/fields.js';
 import { openEditor } from './editor.js';
 import { startTour, tourOnce } from './lib/tour.js';
+import { wireSend } from './send.js';
 
 const send = (type, payload = {}) => chrome.runtime.sendMessage({ type, ...payload });
 const frame = document.querySelector('[data-preview]');
@@ -598,6 +599,8 @@ document.querySelector('[data-recrop]').addEventListener('click', async (event) 
   }
   location.reload();
 });
+
+wireSend({ ordered, group, shots, reviewTitle: docsOptions.title, send });
 
 /* Fields shown ----------------------------------------------------------- */
 
