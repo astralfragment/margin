@@ -276,7 +276,7 @@ async function start(seed, capture) {
   ({ identifier: bootScript } = await page.send('Page.addScriptToEvaluateOnNewDocument', { source: boot(seed, capture) }));
   const loaded = page.once('Page.loadEventFired');
   await page.send('Page.navigate', { url: SITE });
-  await loaded;
+  await Promise.race([loaded, sleep(20000)]);
   await sleep(1200);
   await evaluate('window.__bg.then(() => 1)');
   await evaluate(CONTENT);
@@ -336,7 +336,7 @@ try {
 
   const loaded = page.once('Page.loadEventFired');
   await page.send('Page.navigate', { url: SITE });
-  await loaded;
+  await Promise.race([loaded, sleep(20000)]);
   await sleep(1500);
   const at = await evaluate(MEASURE);
   const { data: raw } = await page.send('Page.captureScreenshot', { format: 'jpeg', quality: 90 });
@@ -491,6 +491,34 @@ try {
   await until(`${sh('.panel [data-error][hidden]')}`);
   check((await evaluate(`${sh('[data-title]')}.value`)) === 'Hero thumbnails look like decoration', 'Try again keeps the draft');
   check(await evaluate(`!${sh('[data-save]')}.disabled`), 'Save comes back after a good capture');
+  await tap('[data-cancel]');
+  await tap('[data-confirm]');
+  await until(`!${sh('.panel')}`);
+
+  console.log('Save without screenshot');
+  await evaluate('window.__failCapture = true; 1');
+  await drag({ x: 40, y: 330, w: 560, h: 80 });
+  await until(`${sh('.panel [data-error]:not([hidden])')}`);
+  await type('Heading has no screenshot');
+  await tap('[data-no-shot]');
+  await until(`!${sh('.panel')}`);
+  await evaluate('window.__failCapture = false; 1');
+  const plain = (await issues()).find((i) => i.title === 'Heading has no screenshot');
+  check(Boolean(plain) && plain.hasShot === false, 'Save without screenshot stores the comment with no image');
+  await evaluate(`chrome.runtime.sendMessage({ type: 'discard', id: ${JSON.stringify(plain?.id ?? '')} }).then(() => 1)`);
+
+  console.log('Redraw');
+  await drag({ x: 40, y: 330, w: 560, h: 80 });
+  await until(`${sh('.panel [data-title]')}`);
+  await type('Heading weight');
+  const first = (await issues()).at(-1).id;
+  await tap('[data-redraw]');
+  check(await evaluate(`!${sh('.panel')}`), 'Redraw closes the card');
+  await drag({ x: 30, y: 420, w: 560, h: 100 });
+  await until(`${sh('.panel [data-title]')}`);
+  check((await evaluate(`${sh('[data-title]')}.value`)) === 'Heading weight', 'Redraw keeps the draft');
+  await sleep(300);
+  check(!(await issues()).some((i) => i.id === first), 'Redraw drops the old capture');
   await tap('[data-cancel]');
   await tap('[data-confirm]');
   await until(`!${sh('.panel')}`);
