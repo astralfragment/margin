@@ -149,7 +149,13 @@ export async function connect(provider) {
   if (params.get('error')) throw new Error(`${p.name} sign-in was cancelled.`);
   const tokens = await swap(provider, { grant: 'code', code: params.get('code'), code_verifier: verifier });
   await writeConnection(provider, { ...tokens, connectedAt: new Date().toISOString() });
-  const details = provider === 'jira' ? await jiraDetails() : await figmaDetails();
+  let details;
+  try {
+    details = provider === 'jira' ? await jiraDetails() : await figmaDetails();
+  } catch (err) {
+    await writeConnection(provider, null);
+    throw new Error(`${p.name} sign-in worked, but reading the account failed. ${err.message}`);
+  }
   await writeConnection(provider, { ...(await connection(provider)), ...details });
   return connection(provider);
 }

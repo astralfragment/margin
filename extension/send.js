@@ -68,7 +68,8 @@ function connectCard(host, provider, name, body, done) {
   const state = card.querySelector('[data-connect-state]');
   card.querySelector('[data-connect]').addEventListener('click', async (event) => {
     const access = requestAccess(provider);
-    event.currentTarget.disabled = true;
+    const button = event.currentTarget;
+    button.disabled = true;
     state.textContent = `Waiting for ${name} sign-in`;
     try {
       if (!(await access)) throw new Error(`Margin needs permission to reach ${name}. Choose Allow to connect.`);
@@ -76,7 +77,7 @@ function connectCard(host, provider, name, body, done) {
       done();
     } catch (err) {
       state.textContent = err.message;
-      event.currentTarget.disabled = false;
+      button.disabled = false;
     }
   });
 }
