@@ -20,7 +20,7 @@
 
 Margin is a Chrome extension for UI reviews. Drag over anything on a web page that looks wrong, write what is wrong, and pin numbered notes on the details. When you are done, Margin turns the whole review into a document a developer or client can act on straight away.
 
-It needs no account and has no server. Everything stays in your browser.
+It needs no account. Everything stays in your browser until you choose to send a review to Jira or Figma.
 
 ## What it does
 
@@ -31,6 +31,8 @@ It needs no account and has no server. Everything stays in your browser.
 - **Capture selectors when you need them.** Selector capture is off by default and one key turns it on.
 - **Check the fix.** Recheck takes a fresh shot of the same area, so the review shows before and after.
 - **Export it your way.** Copy for Docs pastes into Google Docs with images and numbered lists intact. Word, HTML and PDF exports are one click away.
+- **Send it to Jira.** Connect once and Margin creates the issues with the screenshots attached, one per comment or one for the review. Without signing in, it opens Jira's own create form with the text filled in.
+- **Post it to Figma.** Connect once and each comment lands on the frame its Figma link points at, with the numbered notes as a list.
 - **Clean screenshots.** Margin hides its own interface before every capture.
 
 ## Install
@@ -48,7 +50,7 @@ To run it from source:
 1. Open any page and click the Margin icon, or press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd>.
 2. Drag over what looks wrong, write a note and save it.
 3. Right-click the page and choose Open the review report.
-4. Click Copy for Docs, or open More for Word, HTML and Print.
+4. Click Copy for Docs, or open More for Word, HTML, Print, Jira issues and Figma comments.
 
 | Key | While annotating |
 | --- | --- |
@@ -60,7 +62,13 @@ To run it from source:
 
 ## Privacy and permissions
 
-Margin makes no network requests. Reviews, screenshots and settings live in the browser's local extension storage until you delete them or remove the extension. The source is all here, so you can check.
+Margin makes no network requests until you send a review to Jira or Figma. Reviews, screenshots and settings live in the browser's local extension storage until you delete them or remove the extension. The source is all here, so you can check.
+
+Sending is opt-in. When you connect Jira or Figma, Chrome asks you to let Margin reach that service, and Margin then talks to it directly. Only what you send leaves your browser. That is the comment titles, notes, numbered notes, page addresses and Figma links, plus the screenshots for Jira. The sign-in tokens stay in the extension's local storage. Disconnect, under Connections in Help and settings, deletes them and hands the permission back.
+
+Atlassian and Figma only finish a sign-in for apps that prove a private secret, and a secret cannot ship inside an extension. So one step of the sign-in goes through a small helper on lilacfragment.co.za, whose source is [server/margin-oauth.php](server/margin-oauth.php). It swaps the one-time sign-in code for tokens and renews them when they run out. It stores nothing and never sees your reviews. The web host's standard access log records the address of each request, which carries the one-time code. Those codes expire within minutes and only work together with the secret.
+
+Jira's create form needs no sign-in at all. Margin opens it in a new tab with the text filled in. Find my site asks for access to atlassian.net, so Margin can see which Jira site you have open and list its projects through your existing Jira sign-in.
 
 | Permission | Why Margin needs it |
 | --- | --- |
@@ -70,8 +78,12 @@ Margin makes no network requests. Reviews, screenshots and settings live in the 
 | `unlimitedStorage` | Screenshots quickly outgrow the default storage limit |
 | `clipboardWrite` | Copy for Docs puts the review on the clipboard |
 | `contextMenus` | Adds the right-click actions |
+| `identity` | Opens the Jira or Figma sign-in window when you connect |
+| `api.atlassian.com`, optional | Asked for when you connect Jira, to create issues and attach screenshots |
+| `api.figma.com`, optional | Asked for when you connect Figma, to post comments |
+| `*.atlassian.net`, optional | Asked for when you press Find my site, to spot your Jira site and its projects |
 
-There are no host permissions, so Margin cannot read pages in the background.
+The install itself has no host permissions, so Margin cannot read pages in the background.
 
 ## Project layout
 
@@ -81,7 +93,9 @@ There are no host permissions, so Margin cannot read pages in the background.
 | `extension/background.js` | Screenshots, image rendering, storage and the right-click menu |
 | `extension/report.html` | The review report and its exports |
 | `extension/editor.js` | The image editor for markers, boxes and arrows |
-| `extension/lib/` | Shared helpers for storage, templates and the guided tour |
+| `extension/send.js` | The Send to Jira and Send to Figma dialogs of the report |
+| `extension/lib/` | Shared helpers for storage, templates, sign-in, Jira, Figma and the guided tour |
+| `server/` | The sign-in helper that runs on lilacfragment.co.za, and its settings template |
 | `extension/welcome.html` | The first-run guide |
 | `extension/options.html` | Help and settings |
 | `tools/` | Packaging and the scripts that render the store images |

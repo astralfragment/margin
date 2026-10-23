@@ -44,6 +44,10 @@
         <button class="menu-item" type="button" data-open-review>Open review file</button>
         <input type="file" accept=".json,application/json" data-review-input hidden />
         <div class="menu-sep"></div>
+        <span class="menu-label">Send</span>
+        <button class="menu-item" type="button" data-send-jira>Jira issues</button>
+        <button class="menu-item" type="button" data-send-figma>Figma comments</button>
+        <div class="menu-sep"></div>
         <span class="menu-label">Images</span>
         <button class="menu-item" type="button" data-recrop>Redo crops</button>
         <div class="menu-sep"></div>
@@ -101,6 +105,32 @@
     <footer>
       <button class="btn" type="button" data-fields-cancel>Cancel</button>
       <button class="btn primary" type="button" data-fields-save>Save</button>
+    </footer>
+  </dialog>
+
+  <dialog class="sheet" data-jira-dialog>
+    <header>
+      <h1>Send to Jira</h1>
+      <span class="state" data-jira-account></span>
+    </header>
+    <div class="sheet-body" data-jira-body></div>
+    <footer>
+      <span class="state" data-jira-state></span>
+      <button class="btn" type="button" data-jira-close>Close</button>
+      <button class="btn primary" type="button" data-jira-go>Create issues</button>
+    </footer>
+  </dialog>
+
+  <dialog class="sheet" data-figma-dialog>
+    <header>
+      <h1>Send to Figma</h1>
+      <span class="state" data-figma-account></span>
+    </header>
+    <div class="sheet-body" data-figma-body></div>
+    <footer>
+      <span class="state" data-figma-state></span>
+      <button class="btn" type="button" data-figma-close>Close</button>
+      <button class="btn primary" type="button" data-figma-go>Post comments</button>
     </footer>
   </dialog>
 

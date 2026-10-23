@@ -95,6 +95,15 @@ function cleanIssue(issue) {
         note: text(mark.note, 1000),
       })),
     links: (Array.isArray(issue.links) ? issue.links : []).map(webUrl).filter(Boolean),
+    jira: issue.jira?.key && webUrl(issue.jira.url) ? { key: text(issue.jira.key, 40), url: webUrl(issue.jira.url) } : undefined,
+    figmaPosts: (Array.isArray(issue.figmaPosts) ? issue.figmaPosts : [])
+      .filter((post) => post && typeof post === 'object')
+      .map((post) => ({
+        fileKey: text(post.fileKey, 80),
+        nodeId: text(post.nodeId, 80),
+        commentId: text(post.commentId, 80),
+        at: Number.isNaN(Date.parse(post.at)) ? null : post.at,
+      })),
     shot: image(issue.shot),
     detail: image(issue.detail),
     after: image(issue.after),

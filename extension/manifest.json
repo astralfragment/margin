@@ -9,7 +9,13 @@
     "storage",
     "unlimitedStorage",
     "clipboardWrite",
-    "contextMenus"
+    "contextMenus",
+    "identity"
+  ],
+  "optional_host_permissions": [
+    "https://api.atlassian.com/*",
+    "https://api.figma.com/*",
+    "https://*.atlassian.net/*"
   ],
   "options_page": "options.html",
   "background": {
