@@ -52,6 +52,25 @@
     action: { async setBadgeBackgroundColor() {}, async setBadgeText() {} },
     contextMenus: { async removeAll() {}, create() {}, onClicked: noopEvent },
     commands: { onCommand: noopEvent, getAll: async () => [{ name: 'toggle-annotate', shortcut: 'Alt+Shift+A' }] },
-    tabs: { query: async () => [{ id: 1, url: 'https://lilacfragment.co.za/' }], async create() {} },
+    tabs: {
+      query: async () => [{ id: 1, windowId: 1, url: window.__TAB_URL ?? 'https://lilacfragment.co.za/', title: 'Lilac Fragment' }],
+      async create() {},
+      async update() {},
+      captureVisibleTab: async () => window.__CAPTURE ?? blankCapture(),
+    },
+    scripting: {
+      executeScript: async ({ func, args = [] }) => (func ? [{ result: await func(...args) }] : [{ result: undefined }]),
+    },
   };
+
+  /** A plain capture the size of the window, used when no stand-in screenshot was seeded. */
+  function blankCapture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.92);
+  }
 })();

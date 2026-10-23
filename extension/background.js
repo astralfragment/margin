@@ -315,8 +315,9 @@ function cleanRect(rect, viewport) {
   };
 }
 
-/** Keeps the toolbar badge in step with the stored issue count. */
+/** Keeps the toolbar badge in step with the stored issue count, unless a verify run is showing its progress there. */
 async function refreshBadge() {
+  if (verifyRun) return;
   const count = (await readIssues()).length;
   await chrome.action.setBadgeBackgroundColor({ color: '#1f2937' });
   await chrome.action.setBadgeText({ text: count ? String(count) : '' });
@@ -350,6 +351,7 @@ const handlers = {
       groupId: (await activeGroup()).id,
       createdAt: new Date().toISOString(),
       severity: 'major',
+      status: 'open',
       title: '',
       note: '',
       page: { url: sender.tab.url, title: sender.tab.title ?? '' },
@@ -451,7 +453,7 @@ const handlers = {
     const images = await renderImages(bitmap, { ...issue, rect, marks });
     bitmap.close();
     const regionMoved = JSON.stringify(rect) !== JSON.stringify(issue.rect);
-    await patchIssue(issue.id, { rect, marks, ...images, ...(regionMoved ? { after: null, checkedAt: null } : {}) });
+    await patchIssue(issue.id, { rect, marks, ...images, ...(regionMoved ? { after: null, checkedAt: null, change: null } : {}) });
     return images;
   },
 
@@ -532,30 +534,203 @@ const handlers = {
     if (!issue) return { error: 'Comment not found' };
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.id || !samePage(tab.url, issue.page?.url)) return { error: 'Open the page this comment was made on' };
-    const [{ result: width }] = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: async (y) => {
-        window.__uiAnnotator?.hideForCapture(true);
-        window.scrollTo({ top: y, behavior: 'instant' });
-        await new Promise((r) => setTimeout(r, 350));
-        return window.innerWidth;
-      },
-      args: [issue.viewport?.scrollY ?? 0],
-    });
-    let dataUrl;
+    await setOverlayHidden(tab.id, true);
+    let patch;
     try {
-      dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 92 });
+      patch = await recaptureRegion(tab, issue);
     } finally {
-      await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: () => window.__uiAnnotator?.hideForCapture(false) });
+      await setOverlayHidden(tab.id, false);
     }
-    const bitmap = await createImageBitmap(await (await fetch(dataUrl)).blob());
-    const { box, crop } = cropAround(bitmap, issue.rect, bitmap.width / width);
-    const after = await drawRegion(bitmap, crop, box, MAX_DETAIL_WIDTH);
-    bitmap.close();
-    await patchIssue(issue.id, { after, checkedAt: new Date().toISOString() });
+    await patchIssue(issue.id, patch);
+    return { ok: true };
+  },
+
+  /**
+   * Starts rechecking every comment in a group whose page is open. From the popup that is the active tab.
+   * From the report it is the most recent tab in the window that Margin may capture, since Chrome only
+   * shows the address of tabs Margin was opened on. Replies at once, and the run reports through storage.
+   */
+  async verifyStart(msg, sender) {
+    if (verifyRun) return { error: 'A check is already running' };
+    const issues = await issuesInGroup(msg.groupId);
+    const report = sender.tab?.url?.startsWith(chrome.runtime.getURL('')) ? sender.tab : null;
+    const candidates = report
+      ? (await chrome.tabs.query({ windowId: report.windowId })).filter((t) => t.id !== report.id)
+      : await chrome.tabs.query({ active: true, currentWindow: true });
+    const tab = candidates
+      .filter((t) => t.id && issues.some((issue) => samePage(t.url, issue.page?.url)))
+      .sort((a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0))[0];
+    if (!tab) return { error: 'noTab' };
+    const targets = issues.filter((issue) => samePage(tab.url, issue.page?.url));
+    verifyRun = { cancelled: false };
+    runVerify(verifyRun, tab, targets, msg.groupId, report);
+    return { started: true, total: targets.length };
+  },
+
+  /** Stops the verify run after the capture in progress. */
+  async verifyCancel() {
+    if (verifyRun) verifyRun.cancelled = true;
     return { ok: true };
   },
 };
+
+const CAPTURE_GAP = 600;
+const RUN_KEY = 'verifyRun';
+const DIFF_WIDTH = 240;
+const DIFF_CELL = 2;
+const DIFF_LEVEL = 32;
+let lastCaptureAt = 0;
+let verifyRun = null;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Captures the visible tab no sooner than CAPTURE_GAP after the previous capture, because Chrome
+ * allows about two a second, and tries once more after a longer pause if Chrome still refuses.
+ * @param {number} windowId The window whose visible tab is captured.
+ */
+async function throttledCapture(windowId) {
+  for (let attempt = 0; ; attempt += 1) {
+    const wait = lastCaptureAt + CAPTURE_GAP - Date.now();
+    if (wait > 0) await sleep(wait);
+    lastCaptureAt = Date.now();
+    try {
+      return await chrome.tabs.captureVisibleTab(windowId, { format: 'jpeg', quality: 92 });
+    } catch (err) {
+      if (attempt > 0 || !/MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND/.test(String(err?.message ?? err))) throw err;
+      await sleep(CAPTURE_GAP * 2);
+    }
+  }
+}
+
+/**
+ * Hides or shows Margin's overlay on a tab, so it stays out of the capture.
+ * @param {number} tabId The tab.
+ * @param {boolean} hidden True to hide it.
+ */
+async function setOverlayHidden(tabId, hidden) {
+  await chrome.scripting.executeScript({ target: { tabId }, func: (h) => window.__uiAnnotator?.hideForCapture(h), args: [hidden] });
+}
+
+/**
+ * Scrolls a tab to where a comment was made and cuts the same region from a fresh capture.
+ * The region is cut at the same page coordinates, so a different window width gives a shifted crop,
+ * and the change hint is left out in that case.
+ * @param {chrome.tabs.Tab} tab The tab showing the comment's page.
+ * @param {object} issue The stored comment.
+ */
+async function recaptureRegion(tab, issue) {
+  const [{ result: width }] = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: async (y) => {
+      window.scrollTo({ top: y, behavior: 'instant' });
+      await new Promise((r) => setTimeout(r, 350));
+      return window.innerWidth;
+    },
+    args: [issue.viewport?.scrollY ?? 0],
+  });
+  const bitmap = await decode(await throttledCapture(tab.windowId));
+  const { box, crop } = cropAround(bitmap, issue.rect, bitmap.width / width);
+  const after = await drawRegion(bitmap, crop, box, MAX_DETAIL_WIDTH);
+  const change = width === issue.viewport?.width ? await regionChange(issue, bitmap, box) : null;
+  bitmap.close();
+  return { after, checkedAt: new Date().toISOString(), change };
+}
+
+/**
+ * How much a comment's marked region differs between its clean base screenshot and a new capture, from 0 to 1.
+ * Both are shrunk to a grey grid of about DIFF_CELL CSS pixels a cell, at most DIFF_WIDTH cells wide,
+ * and the share of cells that moved by more than DIFF_LEVEL is returned.
+ * Null when the base has the region outline burned in or is missing.
+ * @param {object} issue The stored comment.
+ * @param {ImageBitmap} bitmap The new capture.
+ * @param {{x:number,y:number,w:number,h:number}} box The marked region in the new capture.
+ */
+async function regionChange(issue, bitmap, box) {
+  const raw = await readRaw(issue.id);
+  if (!raw || raw.hasBox) return null;
+  const base = await decode(raw.src);
+  const width = Math.max(1, Math.min(DIFF_WIDTH, Math.round(issue.rect.w / DIFF_CELL)));
+  const height = Math.max(1, Math.round((width * issue.rect.h) / issue.rect.w));
+  const grey = (img, src) => {
+    const ctx = new OffscreenCanvas(width, height).getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, src.x, src.y, src.w, src.h, 0, 0, width, height);
+    const { data } = ctx.getImageData(0, 0, width, height);
+    return Array.from({ length: width * height }, (_, i) => data[i * 4] * 0.299 + data[i * 4 + 1] * 0.587 + data[i * 4 + 2] * 0.114);
+  };
+  const before = grey(base, cropAround(base, issue.rect, base.width / issue.viewport.width).box);
+  base.close();
+  const now = grey(bitmap, box);
+  const moved = before.filter((v, i) => Math.abs(v - now[i]) > DIFF_LEVEL).length;
+  return Math.round((moved / before.length) * 1000) / 1000;
+}
+
+/**
+ * Rechecks each comment in turn on one tab, with the overlay hidden, and puts the scroll position back after.
+ * Escape on the page, the Cancel button or leaving the tab stops it. Progress shows on the badge and in storage.
+ * When it ends the report opens on the verify view, or the report that started it comes back to the front.
+ * @param {{cancelled: boolean}} run The live run, flagged when cancelled.
+ * @param {chrome.tabs.Tab} tab The tab being checked.
+ * @param {object[]} targets The comments made on that tab's page.
+ * @param {string} groupId The review they belong to.
+ * @param {chrome.tabs.Tab | null} report The report tab that started the run, if it was not the popup.
+ */
+async function runVerify(run, tab, targets, groupId, report) {
+  const state = { state: 'running', groupId, page: tab.url, title: tab.title ?? '', total: targets.length, done: 0, checked: [], failed: [] };
+  const publish = () => chrome.storage.local.set({ [RUN_KEY]: { ...state, at: Date.now() } });
+  const target = { tabId: tab.id };
+  let left = false;
+  let startY = 0;
+  await publish();
+  try {
+    if (report) await chrome.tabs.update(tab.id, { active: true });
+    [{ result: startY }] = await chrome.scripting.executeScript({
+      target,
+      func: () => {
+        window.__uiAnnotator?.hideForCapture(true);
+        window.__marginVerifyKey = (event) => {
+          if (event.key === 'Escape') chrome.runtime.sendMessage({ type: 'verifyCancel' });
+        };
+        window.addEventListener('keydown', window.__marginVerifyKey, true);
+        return window.scrollY;
+      },
+    });
+    for (const issue of targets) {
+      const [front] = await chrome.tabs.query({ active: true, windowId: tab.windowId });
+      left = front?.id !== tab.id;
+      if (run.cancelled || left) break;
+      await chrome.action.setBadgeText({ text: `${state.done + 1}/${state.total}` });
+      try {
+        await patchIssue(issue.id, await recaptureRegion(tab, issue));
+        state.checked.push(issue.id);
+      } catch {
+        state.failed.push(issue.id);
+      }
+      state.done += 1;
+      await publish();
+    }
+  } finally {
+    await chrome.scripting
+      .executeScript({
+        target,
+        func: (y) => {
+          window.removeEventListener('keydown', window.__marginVerifyKey, true);
+          delete window.__marginVerifyKey;
+          window.__uiAnnotator?.hideForCapture(false);
+          window.scrollTo({ top: y, behavior: 'instant' });
+        },
+        args: [startY ?? 0],
+      })
+      .catch(() => {});
+    state.state = run.cancelled || left ? 'cancelled' : 'done';
+    await publish();
+    verifyRun = null;
+    await refreshBadge();
+    if (report && !left) await chrome.tabs.update(report.id, { active: true }).catch(() => {});
+    else if (!report && !left && state.checked.length) {
+      await chrome.tabs.create({ url: chrome.runtime.getURL(`report.html?group=${groupId}&verify=1`) });
+    }
+  }
+}
 
 /** True when two URLs are the same page, ignoring the query and hash. */
 function samePage(a, b) {

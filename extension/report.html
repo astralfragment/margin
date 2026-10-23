@@ -17,6 +17,7 @@
     </button>
 
     <span class="spacer"></span>
+    <button class="btn" type="button" data-verify title="Recheck every comment on the page you last opened Margin on">Verify this page</button>
     <button class="btn" type="button" data-edit>Edit comments</button>
     <button class="btn action" type="button" data-copy>Copy for Docs</button>
 
@@ -59,6 +60,7 @@
         <input type="search" data-find placeholder="Search comments" aria-label="Search comments" />
       </div>
       <div class="sidebar-filters" data-filters></div>
+      <div class="sidebar-filters" data-status-filters></div>
       <nav class="index" data-index aria-label="Comments"></nav>
       <div class="sidebar-foot" data-index-foot></div>
     </aside>
@@ -79,6 +81,15 @@
       <button class="btn" type="button" data-edit-cancel>Cancel</button>
       <button class="btn primary" type="button" data-edit-save>Save changes</button>
     </footer>
+  </dialog>
+
+  <dialog class="sheet wide verify" data-verify-dialog aria-labelledby="verify-title">
+    <header>
+      <h1 id="verify-title">Verify fixes</h1>
+      <span class="state" data-verify-state></span>
+    </header>
+    <div class="sheet-body" data-verify-body></div>
+    <footer data-verify-foot></footer>
   </dialog>
 
   <dialog class="sheet" data-fields-dialog>

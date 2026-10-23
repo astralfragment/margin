@@ -1,4 +1,5 @@
 import { severityOf } from './severity.js';
+import { statusOf } from './status.js';
 import { environmentText, escapeHtml as esc, recheckCaption, routeOf } from './report-template.js';
 import { groupByPage } from './docs-template.js';
 import { DEFAULT_FIELDS, withDefaults } from './fields.js';
@@ -34,7 +35,7 @@ const oneLine = (text) => String(text ?? '').replace(/\s*\n\s*/g, ' ').trim();
  * @param {{ heading?: string, fields?: Record<string, boolean> }} [options] The heading prefix and which detail rows to include.
  */
 export function commentMarkdown(issue, { heading = '###', fields = DEFAULT_FIELDS } = {}) {
-  const lines = [`${heading} ${oneLine(issue.title) || 'Untitled comment'}`, '', `**${severityOf(issue.severity).label}**`];
+  const lines = [`${heading} ${oneLine(issue.title) || 'Untitled comment'}`, '', `**${severityOf(issue.severity).label}**, ${statusOf(issue.status).label}`];
   if (issue.note) lines.push('', issue.note.trim());
   const marks = markList(issue);
   if (marks.length) lines.push('', ...marks.map((item) => `${item.n}. ${oneLine(item.note)}`));
@@ -71,7 +72,7 @@ export function commentHtml(issue, fields = DEFAULT_FIELDS) {
   const marks = markList(issue);
   const facts = factPairs(issue, withDefaults(fields));
   return `<div>
-  <p><b>${esc(oneLine(issue.title) || 'Untitled comment')}</b><br />${esc(severityOf(issue.severity).label)}</p>
+  <p><b>${esc(oneLine(issue.title) || 'Untitled comment')}</b><br />${esc(severityOf(issue.severity).label)}, ${esc(statusOf(issue.status).label)}</p>
   ${issue.note ? `<p>${esc(issue.note.trim()).replace(/\n/g, '<br />')}</p>` : ''}
   ${marks.length ? `<ol>${marks.map((item) => `<li value="${item.n}">${esc(oneLine(item.note))}</li>`).join('')}</ol>` : ''}
   ${facts.length ? `<p>${facts.map(([label, value]) => `${esc(label)}: ${esc(value.replace(/`/g, ''))}`).join('<br />')}</p>` : ''}
