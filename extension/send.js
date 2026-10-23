@@ -1,5 +1,5 @@
 import { connection, requestAccess, connect } from './lib/oauth.js';
-import { listProjects, defaultType, createIssues, linkFields, createLink, siteOrigin, openSites, sessionProjects } from './lib/jira.js';
+import { listProjects, defaultType, createIssues, commentOnTicket, linkFields, createLink, siteOrigin, openSites, sessionProjects } from './lib/jira.js';
 import { figmaTargets, figmaMessage, postComment } from './lib/figma.js';
 import { patchGroup } from './lib/store.js';
 
@@ -47,9 +47,25 @@ function fillTypes(select, projects, projectId, chosen) {
  * @param {number} count How many comments will be sent.
  * @param {string} mode The mode to pick.
  */
-const modePicks = (count, mode) => `
-  <label class="pick"><input type="radio" name="jira-mode" value="each"${mode === 'review' ? '' : ' checked'} /><b>One issue per comment</b><span class="hint">${count} ${count === 1 ? 'issue' : 'issues'}</span></label>
-  <label class="pick"><input type="radio" name="jira-mode" value="review"${mode === 'review' ? ' checked' : ''} /><b>One issue for the whole review</b><span class="hint">Every comment as a numbered section</span></label>`;
+const modePicks = (count, mode, ticket) => {
+  const whole = ticket ? 'ticket' : 'review';
+  return `
+  <label class="pick"><input type="radio" name="jira-mode" value="each"${mode === whole ? '' : ' checked'} /><b>One issue per comment</b><span class="hint">${count} ${count === 1 ? 'issue' : 'issues'}${ticket ? `, each linked to ${esc(ticket)}` : ''}</span></label>
+  <label class="pick"><input type="radio" name="jira-mode" value="${whole}"${mode === whole ? ' checked' : ''} /><b>${ticket ? `One comment on ${esc(ticket)}` : 'One issue for the whole review'}</b><span class="hint">Every comment as a numbered section</span></label>`;
+};
+
+/**
+ * True when two addresses share an origin.
+ * @param {string} a One address.
+ * @param {string} b The other.
+ */
+function sameOrigin(a, b) {
+  try {
+    return new URL(a).origin === new URL(b).origin;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * A card that signs in to a service from inside a dialog, then calls back.
@@ -126,13 +142,16 @@ export function wireSend({ ordered, group, shots, reviewTitle, send }) {
     jiraAccount.textContent = `Connected as ${who}`;
     const choice = (await chrome.storage.local.get(CHOICE_KEY))[CHOICE_KEY] ?? {};
     const pending = ordered.filter((issue) => !issue.jira?.key);
+    const ticket = group?.jira?.key ?? null;
+    const ticketSite = ticket ? current.sites.find((s) => sameOrigin(s.url, group.jira.url)) : null;
     jiraBody.innerHTML = `
+      ${ticket ? `<p class="hint">This review is linked to <b>${esc(ticket)}</b>${group.jira.summary ? ` ${esc(group.jira.summary)}` : ''}. A change here applies to this send only.</p>` : ''}
       <div class="grid-3">
         <div class="field"><label for="jira-site">Site</label><select id="jira-site" data-site></select></div>
         <div class="field"><label for="jira-project">Project</label><select id="jira-project" data-project></select></div>
         <div class="field"><label for="jira-type">Issue type</label><select id="jira-type" data-type></select></div>
       </div>
-      ${modePicks(pending.length, choice.mode)}
+      ${modePicks(pending.length, ticket ? 'each' : choice.mode, ticket)}
       <p class="hint">Severity sets the priority, the numbered marker notes become a numbered list, and the screenshots are attached.${
         pending.length < ordered.length ? ` ${ordered.length - pending.length} comments already have an issue and are left out of one issue per comment.` : ''
       }</p>
@@ -141,7 +160,7 @@ export function wireSend({ ordered, group, shots, reviewTitle, send }) {
     const projectEl = jiraBody.querySelector('[data-project]');
     const typeEl = jiraBody.querySelector('[data-type]');
     let projects = [];
-    fill(siteEl, current.sites, choice.siteId);
+    fill(siteEl, current.sites, ticketSite?.id ?? choice.siteId);
 
     const paintTypes = () => fillTypes(typeEl, projects, projectEl.value, choice.typeId);
     const loadProjects = async () => {
@@ -150,7 +169,8 @@ export function wireSend({ ordered, group, shots, reviewTitle, send }) {
       jiraGo.disabled = true;
       try {
         projects = await listProjects(siteEl.value);
-        fill(projectEl, projects.map((p) => ({ id: p.id, name: `${p.name} (${p.key})` })), choice.projectId);
+        const ticketProject = ticket && siteEl.value === ticketSite?.id ? projects.find((p) => p.key === ticket.split('-')[0]) : null;
+        fill(projectEl, projects.map((p) => ({ id: p.id, name: `${p.name} (${p.key})` })), ticketProject?.id ?? choice.projectId);
         paintTypes();
         jiraGo.disabled = !projects.length;
         jiraState.textContent = projects.length ? '' : 'This site has no projects you can create issues in.';
@@ -159,12 +179,41 @@ export function wireSend({ ordered, group, shots, reviewTitle, send }) {
         jiraState.textContent = err.message;
       }
     };
+    const paintGo = () => {
+      jiraGo.textContent = jiraMode() === 'ticket' ? `Comment on ${ticket}` : 'Create issues';
+    };
     siteEl.addEventListener('change', loadProjects);
     projectEl.addEventListener('change', paintTypes);
+    jiraBody.querySelectorAll('[name="jira-mode"]').forEach((radio) => radio.addEventListener('change', paintGo));
     jiraGo.hidden = false;
-    jiraGo.textContent = 'Create issues';
-    jiraRun = () => runJira({ siteEl, projectEl, typeEl, current });
+    paintGo();
+    jiraRun = () => (jiraMode() === 'ticket' ? runTicketComment(current) : runJira({ siteEl, projectEl, typeEl, current }));
     await loadProjects();
+  }
+
+  /**
+   * Posts the whole review as one comment on the linked ticket, with the screenshots attached to it.
+   * @param {object} current The stored Jira connection.
+   */
+  async function runTicketComment(current) {
+    const key = group.jira.key;
+    const site = current.sites.find((s) => sameOrigin(s.url, group.jira.url)) ?? current.sites[0];
+    const resultsEl = jiraBody.querySelector('[data-results]');
+    jiraGo.disabled = true;
+    jiraState.textContent = `Commenting on ${key}`;
+    resultsEl.hidden = false;
+    try {
+      const result = await commentOnTicket({ site, key, issues: ordered, shots, reviewTitle });
+      resultsEl.innerHTML = `<div class="plan-card"><b><a href="${esc(result.url)}" target="_blank" rel="noopener">${esc(key)}</a> has the review as a comment</b>${
+        result.warning ? `<p class="hint">${esc(result.warning)}</p>` : ''
+      }</div>`;
+      jiraState.textContent = 'Comment added';
+      jiraGo.hidden = true;
+    } catch (err) {
+      resultsEl.innerHTML = `<div class="plan-card plan-block"><b>The comment was not added to ${esc(key)}</b><p class="hint">${esc(err.message)}</p></div>`;
+      jiraState.textContent = '';
+      jiraGo.disabled = false;
+    }
   }
 
   /**
@@ -193,6 +242,7 @@ export function wireSend({ ordered, group, shots, reviewTitle, send }) {
       mode,
       shots,
       reviewTitle,
+      linkTo: mode === 'each' ? group?.jira?.key : undefined,
       onProgress: (done, total) => {
         jiraState.textContent = `Created ${done} of ${total}`;
       },
@@ -200,7 +250,7 @@ export function wireSend({ ordered, group, shots, reviewTitle, send }) {
     for (const result of results.filter((r) => r.key)) {
       const jira = { key: result.key, url: result.url };
       if (mode === 'review') {
-        if (group) await patchGroup(group.id, { jira });
+        if (group) await patchGroup(group.id, { jira: { ...group.jira, ...jira } });
       } else {
         await send('update', { id: result.issues[0].id, patch: { jira } });
         result.issues[0].jira = jira;
@@ -258,7 +308,7 @@ export function wireSend({ ordered, group, shots, reviewTitle, send }) {
       jiraBody.querySelector('[data-project-field]').hidden = !projects.length;
       jiraBody.querySelector('[data-type-field]').hidden = !projects.length;
       if (projects.length) {
-        fill(projectEl, projects.map((p) => ({ id: p.id, name: `${p.name} (${p.key})` })));
+        fill(projectEl, projects.map((p) => ({ id: p.id, name: `${p.name} (${p.key})` })), projects.find((p) => p.key === group?.jira?.key?.split('-')[0])?.id);
         paintTypes();
       }
     };
@@ -317,7 +367,8 @@ export function wireSend({ ordered, group, shots, reviewTitle, send }) {
     });
     jiraRun = () => openForm(ordered);
 
-    const stored = (await chrome.storage.local.get(SITE_KEY))[SITE_KEY];
+    const linked = siteOrigin(group?.jira?.url);
+    const stored = linked ?? (await chrome.storage.local.get(SITE_KEY))[SITE_KEY];
     const found = !stored && (await chrome.permissions.contains(SITES_PERMISSION)) ? (await openSites())[0] : null;
     if (stored || found) input.value = new URL(stored || found).host;
     paintLinks();
@@ -327,7 +378,7 @@ export function wireSend({ ordered, group, shots, reviewTitle, send }) {
   jiraGo.addEventListener('click', () => jiraRun?.());
   jiraDialog.querySelector('[data-jira-close]').addEventListener('click', () => jiraDialog.close());
   document.querySelector('[data-send-jira]').addEventListener('click', () => {
-    document.querySelector('.menu').open = false;
+    document.querySelector('.menu:not(.review-menu)').open = false;
     openJira();
   });
 
@@ -355,39 +406,97 @@ export function wireSend({ ordered, group, shots, reviewTitle, send }) {
     if (!figmaDialog.open) figmaDialog.showModal();
   }
 
-  /** Lists the comments that carry Figma links, ticked unless already posted, and says which links are skipped. */
+  const linkedFile = group?.figma?.fileKey ? group.figma : null;
+  const framePicks = new Map();
+
+  /**
+   * The frames a comment posts to: its own Figma frame links, or the frame picked here from the review's linked file.
+   * @param {object} issue The comment.
+   * @param {number} i Its place in the report.
+   */
+  function targetsFor(issue, i) {
+    const own = figmaTargets(issue).targets;
+    if (own.length || !framePicks.has(i)) return own;
+    return [{ fileKey: linkedFile.fileKey, nodeId: framePicks.get(i), url: linkedFile.url }];
+  }
+
+  /**
+   * A frame picker over the review's linked file, grouped by page.
+   * @param {number} i The comment's place in the report.
+   */
+  function framePicker(i) {
+    const pages = [...new Set(linkedFile.frames.map((frame) => frame.page))];
+    return `<select data-frame="${i}" aria-label="Pick frame"><option value="">Pick frame</option>${pages
+      .map(
+        (page) =>
+          `<optgroup label="${esc(page)}">${linkedFile.frames
+            .filter((frame) => frame.page === page)
+            .map((frame) => `<option value="${esc(frame.id)}"${framePicks.get(i) === frame.id ? ' selected' : ''}>${esc(frame.name)}</option>`)
+            .join('')}</optgroup>`,
+      )
+      .join('')}</select>`;
+  }
+
+  /** Counts the ticked comments that have somewhere to post, and names the count on the button. */
+  function paintFigmaGo() {
+    const ready = [...figmaBody.querySelectorAll('[data-post]:checked')].filter((box) => targetsFor(ordered[Number(box.dataset.post)], Number(box.dataset.post)).length).length;
+    figmaGo.disabled = !ready;
+    figmaGo.textContent = ready ? `Post ${ready} ${ready === 1 ? 'comment' : 'comments'}` : 'Post comments';
+  }
+
+  /**
+   * Lists the comments that carry Figma links, ticked unless already posted, and says which links are skipped.
+   * When the review links a Figma file, comments without a frame can pick one from it for this send.
+   */
   function paintFigma() {
-    const linked = ordered.map((issue, i) => ({ issue, i, ...figmaTargets(issue) })).filter((row) => row.targets.length || row.skipped.length);
+    const picking = Boolean(linkedFile?.frames?.length);
+    const linked = ordered
+      .map((issue, i) => ({ issue, i, ...figmaTargets(issue) }))
+      .filter((row) => picking || row.targets.length || row.skipped.length);
     const without = ordered.length - linked.length;
+    const context = linkedFile
+      ? `<p class="hint">Posting to <b>${esc(linkedFile.name || 'the linked Figma file')}</b>${picking ? '. Comments without a frame can pick one here, for this send only.' : '.'}</p>`
+      : '';
     figmaBody.innerHTML = linked.length
-      ? `${linked
+      ? `${context}${linked
           .map(({ issue, i, targets, skipped }) => {
             const posted = Boolean(issue.figmaPosts?.length);
-            return `<div class="plan-card"${targets.length ? '' : ' data-skip'}>
-              <label class="pick"><input type="checkbox" data-post="${i}"${targets.length && !posted ? ' checked' : ''}${targets.length ? '' : ' disabled'} /><b>${pad(i + 1)} ${esc(issue.title || 'Untitled comment')}</b></label>
-              <div class="plan-meta">${targets.map((t) => `<span class="tag">Frame ${esc(t.nodeId)}</span>`).join('')}${posted ? '<span class="tag">Posted before</span>' : ''}</div>
+            const ready = targetsFor(issue, i).length > 0;
+            return `<div class="plan-card"${ready ? '' : ' data-skip'}>
+              <label class="pick"><input type="checkbox" data-post="${i}"${ready && !posted ? ' checked' : ''}${ready ? '' : ' disabled'} /><b>${pad(i + 1)} ${esc(issue.title || 'Untitled comment')}</b></label>
+              <div class="plan-meta">${targets.map((t) => `<span class="tag">Frame ${esc(t.nodeId)}</span>`).join('')}${!targets.length && picking ? framePicker(i) : ''}${posted ? '<span class="tag">Posted before</span>' : ''}</div>
               ${skipped.map((s) => `<p class="hint">Skipped ${esc(s.url)}. ${s.reason === 'no-node' ? 'This link has no frame in it. In Figma, right-click the frame and choose Copy link to selection.' : 'This is not a Figma file link.'}</p>`).join('')}
             </div>`;
           })
           .join('')}${without ? `<p class="hint">${without} ${without === 1 ? 'comment has' : 'comments have'} no Figma link and ${without === 1 ? 'is' : 'are'} left out.</p>` : ''}`
-      : '<p class="hint">No comment in this review has a Figma link. Add one in Edit comments, then send again.</p>';
-    figmaGo.disabled = !figmaBody.querySelector('[data-post]:checked');
+      : `${context}<p class="hint">No comment in this review has a Figma link. Add one in Edit comments, then send again.</p>`;
+    paintFigmaGo();
   }
 
-  figmaBody.addEventListener('change', () => {
-    figmaGo.disabled = !figmaBody.querySelector('[data-post]:checked');
+  figmaBody.addEventListener('change', (event) => {
+    const select = event.target.closest('[data-frame]');
+    if (select) {
+      const i = Number(select.dataset.frame);
+      if (select.value) framePicks.set(i, select.value);
+      else framePicks.delete(i);
+      const box = figmaBody.querySelector(`[data-post="${i}"]`);
+      box.disabled = !select.value;
+      box.checked = Boolean(select.value);
+    }
+    paintFigmaGo();
   });
 
   /** Posts every ticked comment to each frame it links to and records what was posted. */
   async function runFigma() {
-    const picked = [...figmaBody.querySelectorAll('[data-post]:checked')].map((box) => ordered[Number(box.dataset.post)]);
+    const picked = [...figmaBody.querySelectorAll('[data-post]:checked')].map((box) => Number(box.dataset.post));
     figmaGo.disabled = true;
     let posted = 0;
     const failures = [];
-    for (const issue of picked) {
+    for (const i of picked) {
+      const issue = ordered[i];
       const message = figmaMessage(issue);
       const posts = [...(issue.figmaPosts ?? [])];
-      for (const target of figmaTargets(issue).targets) {
+      for (const target of targetsFor(issue, i)) {
         try {
           const id = await postComment(target, message);
           posts.push({ fileKey: target.fileKey, nodeId: target.nodeId, commentId: id, at: new Date().toISOString() });
@@ -412,7 +521,7 @@ export function wireSend({ ordered, group, shots, reviewTitle, send }) {
   figmaGo.addEventListener('click', runFigma);
   figmaDialog.querySelector('[data-figma-close]').addEventListener('click', () => figmaDialog.close());
   document.querySelector('[data-send-figma]').addEventListener('click', () => {
-    document.querySelector('.menu').open = false;
+    document.querySelector('.menu:not(.review-menu)').open = false;
     openFigma();
   });
 

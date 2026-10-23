@@ -37,10 +37,10 @@ div.WordSection1 { page: WordSection1; }
 `;
 
 const SEV_COLOR = {
-  blocker: '#d92020',
-  major: '#b26a00',
-  minor: '#1f5fd0',
-  nit: '#5c6270',
+  blocker: '#ce2c31',
+  major: '#c2410c',
+  minor: '#0d74ce',
+  nit: '#60646c',
 };
 
 /** Review workflow states. Everything the extension captures starts at New. */
@@ -63,6 +63,13 @@ const FACTS = `font-family: ${MONO_FACE}; font-size: 8pt; color: ${INK_2};`;
 const MONO = `font-family: ${MONO_FACE}; font-size: 8pt;`;
 const FACT_LINE = `font-family: ${SANS}; font-size: 8pt; color: ${INK}; margin: 0 0 2px;`;
 const FACT_LABEL = `color: ${INK_2}; font-weight: 700;`;
+
+/**
+ * Text linked to an address, or the plain text when there is no address.
+ * @param {string} label The words shown.
+ * @param {string} [url] Where they link to.
+ */
+const linked = (label, url) => (url ? `<a href="${esc(url)}">${esc(label)}</a>` : esc(label));
 
 const CATEGORY_FILL = {
   new: STATUSES[0].fill,
@@ -278,9 +285,9 @@ export function buildDocsHtml(
   <h1 style="${H1}">${esc(title)}</h1>
   <p style="${SMALL}">Date: ${esc(generatedAt.toLocaleString())}${
     group?.jira?.key
-      ? `, ticket <a href="${esc(group.jira.url)}">${esc(group.jira.key)}</a>, ${esc(group.jira.status ?? 'New')}`
+      ? `, ticket ${linked(group.jira.key, group.jira.url)}, ${esc(group.jira.status || 'New')}`
       : ''
-  }</p>
+  }${group?.figma?.fileKey ? `, file ${linked(group.figma.name || 'Figma file', group.figma.url)}` : ''}</p>
 
   <h2 style="${H2}">Introduction, important notes</h2>
   <p style="${P}">${total} ${total === 1 ? 'comment' : 'comments'} across ${groups.length} ${groups.length === 1 ? 'page' : 'pages'}: ${counts}. Each comment carries the element selector, the marked region, and the viewport it was captured at. Every comment starts at New and shows Fixed or Won't fix once it is verified.</p>

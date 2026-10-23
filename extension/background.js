@@ -738,12 +738,18 @@ const handlers = {
     if (parsed.error) return { error: parsed.error };
     const previous = await activeGroup();
     const group = await addGroup(`${parsed.name} (imported)`);
+    if (parsed.jira || parsed.figma) await patchGroup(group.id, { jira: parsed.jira, figma: parsed.figma });
     await setActiveGroup(previous.id);
     const added = parsed.issues.map(({ raw, ...issue }) => ({ ...issue, id: crypto.randomUUID(), groupId: group.id, raw }));
     for (const { id, raw } of added) if (raw) await writeRaw(id, raw);
     await writeIssues([...(await readIssues()), ...added.map(({ raw, ...issue }) => issue)]);
     await refreshBadge();
     return { group, count: added.length };
+  },
+
+  /** The review new comments go to, as stored, with its linked ticket and file. */
+  async activeReview() {
+    return activeGroup();
   },
 
   /** The base screenshot the image editor draws on, and whether its region can still move. */

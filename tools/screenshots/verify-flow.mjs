@@ -338,8 +338,8 @@ try {
   console.log('Popup');
   await size(360, 600);
   await open(`http://127.0.0.1:${WEB_PORT}/dist/.verify/popup.html`, boot(done));
-  await until(`!document.querySelector('[data-verify-row]').hidden`);
-  check((await evaluate(`document.querySelector('[data-verify]').textContent`)) === 'Verify 3 comments on this page', 'popup offers to verify this page');
+  await until(`!document.querySelector('[data-verify]').hidden`);
+  check((await evaluate(`document.querySelector('[data-verify]').textContent`)) === 'Recheck 3', 'popup offers to recheck this page');
   await shoot('7-popup');
 } finally {
   await browser?.send('Browser.close').catch(() => {});
