@@ -714,6 +714,7 @@ async function runVerify(run, tab, targets, groupId, report) {
         target,
         func: (y) => {
           window.removeEventListener('keydown', window.__marginVerifyKey, true);
+          delete window.__marginVerifyKey;
           window.__uiAnnotator?.hideForCapture(false);
           window.scrollTo({ top: y, behavior: 'instant' });
         },
