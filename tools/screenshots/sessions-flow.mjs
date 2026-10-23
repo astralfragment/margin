@@ -546,6 +546,16 @@ try {
   await until(`!window.__bag.groups[0].figma`);
   check(Boolean(await evaluate(`window.__bag.groups[0].jira?.key === 'SS-112'`)), 'removing the file later keeps the ticket');
 
+  console.log('Popup with a review started from the report');
+  await size(344, 600);
+  const fromReport = { groups: [{ id: 'g9', name: 'Started in the report', createdAt: new Date().toISOString(), jira: linkedGroup.jira }], activeGroupId: 'g9', connections, tours: { popup: true, report: true } };
+  await open(popup, boot(fromReport));
+  await until(`document.querySelector('[data-links] .quiet-link')`);
+  check((await textOf('[data-toggle-label]')) === 'Start annotating' && (await textOf('[data-review-name]')) === 'Started in the report', 'an empty review from the report opens on any site');
+  await open(popup, boot(rendered, `window.__TAB_URL = 'file:///C:/work/mock.html';`));
+  await sleep(300);
+  check(await evaluate(`document.querySelector('[data-restricted]').hidden && !document.querySelector('[data-toggle]').disabled`), 'a file page is not treated as a Chrome page');
+
   console.log('Popup on a restricted page');
   await size(344, 600);
   await open(popup, boot(rendered, `window.__TAB_URL = 'chrome://extensions/';`));

@@ -62,7 +62,7 @@ const pageName = (page) => routeOf(page).split(' > ').at(-1);
 const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 const currentUrl = tab?.url ?? '';
 const host = hostOf(currentUrl);
-const restricted = !host || RESTRICTED.test(currentUrl);
+const restricted = !currentUrl || RESTRICTED.test(currentUrl);
 
 const state = { groups: [], issues: [], group: null, picked: false, refreshing: false, refreshFailed: false };
 
@@ -75,11 +75,13 @@ async function load() {
 }
 
 /**
- * True when a review was started on this site or has comments on it.
+ * True when a review was started on this site, has comments on it, or is empty and not tied to a site yet.
  * @param {object} group The review.
  */
 function belongsHere(group) {
-  return group.site === host || state.issues.some((issue) => issue.groupId === group.id && hostOf(issue.page?.url) === host);
+  const issues = state.issues.filter((issue) => issue.groupId === group.id);
+  if (!group.site && !issues.length) return true;
+  return group.site === host || issues.some((issue) => hostOf(issue.page?.url) === host);
 }
 
 /** Whether the popup shows the active review, rather than the offer to start one. */

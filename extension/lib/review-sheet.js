@@ -52,7 +52,7 @@ const COPY = {
     search: 'Search recent files or paste a link',
     invalid: 'That is not a Figma file link. In Figma, choose Share and then Copy link.',
     notFound: () => 'No Figma file at that link. Check the link, it stays here to fix.',
-    noAccess: () => 'You do not have access to this Figma file',
+    noAccess: () => 'You do not have access to this Figma file. Connecting Figma again in Help and settings may fix it.',
     looking: (v) => `Looking up ${v.name || 'the Figma file'}`,
     removed: (v) => `${v.name || 'Figma file'} removed`,
     title: (v) => v.name || 'Figma file',
