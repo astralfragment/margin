@@ -11,7 +11,7 @@ const EARLY = 60_000;
 export const PROVIDERS = {
   jira: {
     name: 'Jira',
-    clientId: '',
+    clientId: '1xXommTXRvh9zWsepxPDNFA14JBaeIZf',
     origins: ['https://api.atlassian.com/*'],
     scopes: ['read:jira-work', 'write:jira-work', 'read:me', 'offline_access'],
     authorize: (p) =>
