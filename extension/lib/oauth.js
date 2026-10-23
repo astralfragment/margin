@@ -27,7 +27,7 @@ export const PROVIDERS = {
   },
   figma: {
     name: 'Figma',
-    clientId: '',
+    clientId: 'sUWE6I43tQ1EEtbX7W5QRe',
     origins: ['https://api.figma.com/*'],
     scopes: ['file_comments:write', 'current_user:read'],
     authorize: (p) =>
