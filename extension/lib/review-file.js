@@ -15,7 +15,7 @@ const SEVERITY_KEYS = new Set(['blocker', 'major', 'minor', 'nit']);
 
 /**
  * Builds the file contents for a review.
- * @param {{ name: string }} group The review being saved.
+ * @param {{ name: string, jira?: object, figma?: object }} group The review being saved, with its linked ticket and file.
  * @param {object[]} issues Its comments.
  * @param {Record<string, { src: string, hasBox: boolean } | null>} raws Each comment's clean screenshot, by comment id.
  */
@@ -25,6 +25,8 @@ export function buildReviewFile(group, issues, raws) {
     version: REVIEW_VERSION,
     exportedAt: new Date().toISOString(),
     name: group?.name ?? 'Imported review',
+    jira: group?.jira,
+    figma: group?.figma,
     issues: issues.map((issue) => ({ ...issue, raw: raws[issue.id] ?? null })),
   });
 }
@@ -44,6 +46,53 @@ function webUrl(value) {
   } catch {
     return '';
   }
+}
+
+/**
+ * Keeps a time only when it parses as a date.
+ * @param {unknown} value The ISO time to check.
+ */
+const isoTime = (value) => (typeof value === 'string' && !Number.isNaN(Date.parse(value)) ? value : undefined);
+
+const JIRA_KEY = /^[A-Z][A-Z0-9_]*-\d+$/;
+const STATUS_CATEGORIES = new Set(['new', 'indeterminate', 'done']);
+
+/**
+ * Rebuilds a review's linked Jira ticket from known fields, or returns undefined when it has no valid key.
+ * @param {any} jira The ticket from a file or a message.
+ */
+export function cleanJiraLink(jira) {
+  const key = text(jira?.key, 40).toUpperCase();
+  if (!JIRA_KEY.test(key)) return undefined;
+  return {
+    key,
+    url: webUrl(jira.url),
+    summary: text(jira.summary, 300),
+    status: text(jira.status, 60),
+    statusCategory: STATUS_CATEGORIES.has(jira.statusCategory) ? jira.statusCategory : '',
+    assignee: text(jira.assignee, 120),
+    description: text(jira.description),
+    fetchedAt: isoTime(jira.fetchedAt),
+  };
+}
+
+/**
+ * Rebuilds a review's linked Figma file from known fields, or returns undefined when it has no valid file key.
+ * @param {any} figma The file from a file or a message.
+ */
+export function cleanFigmaLink(figma) {
+  const fileKey = text(figma?.fileKey, 80);
+  if (!/^[A-Za-z0-9]+$/.test(fileKey)) return undefined;
+  return {
+    fileKey,
+    url: webUrl(figma.url),
+    name: text(figma.name, 200),
+    frames: (Array.isArray(figma.frames) ? figma.frames : [])
+      .filter((frame) => frame && typeof frame === 'object')
+      .slice(0, 300)
+      .map((frame) => ({ id: text(frame.id, 40), name: text(frame.name, 200), page: text(frame.page, 200) })),
+    fetchedAt: isoTime(figma.fetchedAt),
+  };
 }
 
 /**
@@ -159,5 +208,9 @@ export function parseReviewFile(contents) {
   }
   if (data?.format !== REVIEW_FORMAT || !Array.isArray(data.issues)) return { error: 'That file is not a Margin review file' };
   if (data.version > REVIEW_VERSION) return { error: 'That review was saved by a newer Margin. Update Margin and try again.' };
-  return { name: text(data.name, 120) || 'Imported review', issues: data.issues.filter((issue) => issue && typeof issue === 'object').map(cleanIssue) };
+  return {
+    name: text(data.name, 120) || 'Imported review',
+    jira: cleanJiraLink(data.jira),
+    figma: cleanFigmaLink(data.figma),
+    issues: data.issues.filter((issue) => issue && typeof issue === 'object').map(cleanIssue) };
 }
