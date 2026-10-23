@@ -441,9 +441,10 @@
   async function refreshReview() {
     const ask = (msg) => chrome.runtime.sendMessage(msg).catch(() => null);
     const [review, page] = await Promise.all([ask({ type: 'activeReview' }), ask({ type: 'pageComments', url: location.href })]);
-    if (review?.group) {
-      state.review = review.group;
-      groupLabel.textContent = review.group.name;
+    const group = review?.group ?? (review?.id ? review : null);
+    if (group) {
+      state.review = group;
+      groupLabel.textContent = group.name;
     }
     if (Array.isArray(page?.comments)) {
       state.total = page.total ?? page.comments.length;

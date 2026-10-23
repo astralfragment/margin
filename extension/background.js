@@ -898,7 +898,7 @@ const handlers = {
 
   /** The review new comments go to, as stored, so the overlay can read its name, Jira issue and Figma file. */
   async activeReview() {
-    return { group: await activeGroup() };
+    return activeGroup();
   },
 
   /**

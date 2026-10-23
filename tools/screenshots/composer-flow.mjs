@@ -401,6 +401,12 @@ try {
   await shoot('03-composer-empty');
 
   await type('Hero thumbnails look like decoration');
+  await press('4');
+  check(
+    (await evaluate(`${sh('.seg [aria-pressed="true"]')}.dataset.sev`)) === 'major' && (await evaluate(`${sh('[data-title]')}.value`)).endsWith('4'),
+    'digits typed in the title stay in the title',
+  );
+  await evaluate(`(() => { const t = ${sh('[data-title]')}; t.value = t.value.slice(0, -1); t.dispatchEvent(new Event('input')); })()`);
   await press('Tab');
   await press('2');
   check((await evaluate(`${sh('.seg [aria-pressed="true"]')}.dataset.sev`)) === 'major', '2 picks Major when focus is out of the text fields');
