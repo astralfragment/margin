@@ -4,6 +4,8 @@ import {
   renderBody,
   wireFilters,
   sortIssues,
+  routeOf,
+  recheckCaption,
   REPORT_CSS,
   PREVIEW_DARK_CSS,
 } from './lib/report-template.js';
@@ -11,6 +13,7 @@ import { buildDocsHtml, buildDocsText } from './lib/docs-template.js';
 import { buildMarkdown, commentHtml, commentMarkdown } from './lib/share-template.js';
 import { buildReviewFile } from './lib/review-file.js';
 import { SEVERITIES, severityOf } from './lib/severity.js';
+import { STATUSES, statusOf } from './lib/status.js';
 import { FACT_FIELDS, withDefaults } from './lib/fields.js';
 import { openEditor } from './editor.js';
 import { startTour, tourOnce } from './lib/tour.js';
@@ -178,10 +181,15 @@ frame.srcdoc = previewDoc(issues, options);
 const indexEl = document.querySelector('[data-index]');
 const filtersEl = document.querySelector('[data-filters]');
 const findEl = document.querySelector('[data-find]');
+const statusFiltersEl = document.querySelector('[data-status-filters]');
 let filter = 'all';
+let statusFilter = 'all';
 
 const counts = Object.fromEntries(
   SEVERITIES.map((s) => [s.key, ordered.filter((i) => severityOf(i.severity).key === s.key).length]),
+);
+const statusCounts = Object.fromEntries(
+  STATUSES.map((s) => [s.key, ordered.filter((i) => statusOf(i.status).key === s.key).length]),
 );
 
 filtersEl.innerHTML = [
@@ -191,17 +199,29 @@ filtersEl.innerHTML = [
   ),
 ].join('');
 
+const statusesUsed = STATUSES.filter((s) => statusCounts[s.key] > 0);
+statusFiltersEl.innerHTML =
+  statusesUsed.length > 1
+    ? [
+        '<button class="filter-btn" type="button" data-status-filter="all" aria-pressed="true">Any status</button>',
+        ...statusesUsed.map(
+          (s) => `<button class="filter-btn" type="button" data-status-filter="${s.key}" aria-pressed="false">${escapeText(s.label)} ${statusCounts[s.key]}</button>`,
+        ),
+      ].join('')
+    : '';
+
 indexEl.innerHTML = ordered.length
   ? ordered
       .map((issue, index) => {
         const sev = severityOf(issue.severity);
-        return `<button class="index-row${issue.jira?.key ? ' linked' : ''}" type="button" data-jump="${index + 1}" data-sev="${sev.key}"
+        const status = statusOf(issue.status);
+        return `<button class="index-row${issue.jira?.key ? ' linked' : ''}" type="button" data-jump="${index + 1}" data-sev="${sev.key}" data-status="${status.key}"
             data-text="${escapeText(`${issue.title ?? ''} ${issue.note ?? ''} ${issue.element?.selector ?? ''} ${hostOf(issue.page?.url)}`.toLowerCase())}">
           <span class="n">${pad(index + 1)}</span>
           <span class="dot"></span>
           <span class="label">
             <b data-key="${escapeText(issue.jira?.key ?? '')}">${escapeText(issue.title || 'Untitled comment')}</b>
-            <span>${escapeText(hostOf(issue.page?.url))}</span>
+            <span>${status.key === 'open' ? '' : `<span class="tag">${escapeText(status.label)}</span> `}${escapeText(hostOf(issue.page?.url))}</span>
           </span>
         </button>`;
       })
@@ -216,8 +236,9 @@ function applyFilter() {
   let shown = 0;
   for (const row of rows) {
     const bySeverity = filter === 'all' || row.dataset.sev === filter;
+    const byStatus = statusFilter === 'all' || row.dataset.status === statusFilter;
     const byText = !term || row.dataset.text.includes(term);
-    const visible = bySeverity && byText;
+    const visible = bySeverity && byStatus && byText;
     row.hidden = !visible;
     if (visible) shown += 1;
     const card = frame.contentDocument?.getElementById(`c-${row.dataset.jump}`);
@@ -232,6 +253,14 @@ filtersEl.addEventListener('click', (event) => {
   if (!button) return;
   filter = button.dataset.filter;
   filtersEl.querySelectorAll('[data-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+  applyFilter();
+});
+
+statusFiltersEl.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-status-filter]');
+  if (!button) return;
+  statusFilter = button.dataset.statusFilter;
+  statusFiltersEl.querySelectorAll('[data-status-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
   applyFilter();
 });
 
@@ -641,9 +670,14 @@ function editRow(issue, index) {
   row.className = 'edit-row';
   row.innerHTML = `
     <span class="n">${pad(index + 1)}</span>
-    <select data-field="severity">
-      ${SEVERITIES.map((s) => `<option value="${s.key}">${s.label}</option>`).join('')}
-    </select>
+    <span class="stack">
+      <select data-field="severity" aria-label="Severity">
+        ${SEVERITIES.map((s) => `<option value="${s.key}">${s.label}</option>`).join('')}
+      </select>
+      <select data-field="status" aria-label="Status">
+        ${STATUSES.map((s) => `<option value="${s.key}">${escapeText(s.label)}</option>`).join('')}
+      </select>
+    </span>
     <span class="stack">
       <input type="text" data-field="title" placeholder="What is wrong" />
       <textarea data-field="note" placeholder="Expected, actual, steps"></textarea>
@@ -666,6 +700,7 @@ function editRow(issue, index) {
     </button>
   `;
   row.querySelector('[data-field="severity"]').value = severityOf(issue.severity).key;
+  row.querySelector('[data-field="status"]').value = statusOf(issue.status).key;
   row.querySelector('[data-field="title"]').value = issue.title ?? '';
   row.querySelector('[data-field="note"]').value = issue.note ?? '';
   row.querySelector('[data-field="links"]').value = (issue.links ?? []).join(' ');
@@ -724,14 +759,265 @@ document.querySelector('[data-edit-save]').addEventListener('click', async (even
       .filter((part) => /^https?:\/\//i.test(part));
     const patch = {
       severity: row.querySelector('[data-field="severity"]').value,
+      status: row.querySelector('[data-field="status"]').value,
       title: row.querySelector('[data-field="title"]').value.trim(),
       note: row.querySelector('[data-field="note"]').value.trim(),
       links,
     };
     const changed =
       links.join(' ') !== (issue.links ?? []).join(' ') ||
+      statusOf(issue.status).key !== patch.status ||
       ['severity', 'title', 'note'].some((key) => (issue[key] ?? '') !== patch[key]);
     if (changed) await send('update', { id: issue.id, patch });
   }
   location.reload();
 });
+
+/* Verify fixes ----------------------------------------------------------- */
+
+const verifyDialog = document.querySelector('[data-verify-dialog]');
+const verifyBody = document.querySelector('[data-verify-body]');
+const verifyFoot = document.querySelector('[data-verify-foot]');
+const verifyState = document.querySelector('[data-verify-state]');
+const STALE_RUN_MS = 60_000;
+const CHANGED_SHARE = 0.003;
+let verifyChanged = false;
+let awaitingRun = false;
+let walk = null;
+
+/** True when two URLs are the same page, ignoring the query and hash. */
+function samePage(a, b) {
+  try {
+    const x = new URL(a);
+    const y = new URL(b);
+    return x.origin === y.origin && x.pathname === y.pathname;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The pages of this review other than one, each with how many comments it has.
+ * @param {string} [except] A page address to leave out.
+ */
+function pagesBesides(except) {
+  const pages = [];
+  for (const issue of ordered) {
+    if (!issue.page?.url || samePage(issue.page.url, except)) continue;
+    const found = pages.find((p) => samePage(p.page.url, issue.page.url));
+    if (found) found.count += 1;
+    else pages.push({ page: issue.page, count: 1 });
+  }
+  return pages;
+}
+
+/**
+ * Lists pages with a link to each, for comments that can only be checked on their own page.
+ * @param {{page: {url: string, title?: string}, count: number}[]} pages The pages to list.
+ * @param {string} heading The line above the list.
+ */
+function pagesHtml(pages, heading) {
+  if (!pages.length) return '';
+  return `<span class="menu-label">${escapeText(heading)}</span>
+    <ul class="verify-pages">${pages
+      .map(
+        ({ page, count }) => `<li>
+          <span class="stack"><b>${escapeText(routeOf(page))}</b><span class="hint">${count} ${count === 1 ? 'comment' : 'comments'}</span></span>
+          <a class="btn sm" href="${escapeText(page.url)}" target="_blank" rel="noopener">Open this page to verify</a>
+        </li>`,
+      )
+      .join('')}</ul>`;
+}
+
+/**
+ * Fills the verify sheet.
+ * @param {string} state The line in the header.
+ * @param {string} body The sheet contents.
+ * @param {string} foot The footer contents.
+ */
+function paintVerify(state, body, foot) {
+  verifyState.textContent = state;
+  verifyBody.innerHTML = body;
+  verifyFoot.innerHTML = foot;
+  if (!verifyDialog.open) verifyDialog.showModal();
+}
+
+/** Explains that Margin can only capture a page it was opened on, and links every page of the review. */
+function showNoTab() {
+  walk = null;
+  paintVerify(
+    '',
+    `<p class="hint">Margin can capture a page only after you open Margin on it. Open the page, click Margin in the toolbar and press Verify there.</p>
+    ${pagesHtml(pagesBesides(), 'Pages in this review')}`,
+    '<button class="btn" type="button" data-verify-close>Close</button>',
+  );
+}
+
+/**
+ * Shows how far a verify run has got, with a way to stop it.
+ * @param {{done: number, total: number, page: string, title?: string}} run The run record.
+ */
+function showProgress(run) {
+  walk = null;
+  paintVerify(
+    `${run.done} of ${run.total} checked`,
+    `<p>Checking ${Math.min(run.done + 1, run.total)} of ${run.total} on ${escapeText(routeOf({ url: run.page, title: run.title }))}</p>
+    <p class="hint">Press Escape on the page or Cancel here to stop. Leaving the page's tab stops it too.</p>`,
+    '<button class="btn" type="button" data-verify-cancel>Cancel</button>',
+  );
+}
+
+/**
+ * What the pixel comparison suggests for one comment. It is only a hint and never sets a status.
+ * @param {{change?: number | null}} issue The rechecked comment.
+ */
+function changeHint(issue) {
+  if (typeof issue.change !== 'number') return 'No change hint for this one, the window size or the first screenshot differs.';
+  if (issue.change < CHANGED_SHARE) return 'Looks unchanged.';
+  const percent = Math.round(issue.change * 100);
+  return `Looks changed, ${percent ? `about ${percent}%` : 'under 1%'} of the marked region differs.`;
+}
+
+const VERIFY_KEYS = { f: 'fixed', o: 'open', w: 'wontfix' };
+
+/** Draws the comment the walk is on, or the summary once every one has been seen. */
+function paintWalk() {
+  const { list, at, run } = walk;
+  const others = pagesHtml(pagesBesides(run.page), 'Comments on other pages');
+  if (at >= list.length) {
+    const tally = STATUSES.map((s) => `${list.filter((i) => statusOf(i.status).key === s.key).length} ${s.label.toLowerCase()}`).join(', ');
+    paintVerify(
+      `${list.length} checked`,
+      `<p>${list.length} ${list.length === 1 ? 'comment' : 'comments'} checked, ${escapeText(tally)}.</p>
+      ${run.failed.length ? `<p class="hint">${run.failed.length} could not be captured. Try Recheck from the popup on those.</p>` : ''}
+      ${others}`,
+      `<button class="btn ghost" type="button" data-verify-move="-1"${list.length ? '' : ' disabled'}>Previous</button>
+      <button class="btn primary" type="button" data-verify-close>Done</button>`,
+    );
+    verifyFoot.querySelector('[data-verify-close]').focus();
+    return;
+  }
+  const issue = list[at];
+  const n = ordered.indexOf(issue) + 1;
+  const sev = severityOf(issue.severity);
+  paintVerify(
+    `${at + 1} of ${list.length}`,
+    `<div class="verify-item">
+      <div class="row">
+        <span class="n">${pad(n)}</span>
+        <span class="title">${escapeText(issue.title || 'Untitled comment')}</span>
+        <span class="chip" data-sev="${sev.key}"><i></i>${sev.label}</span>
+        <span class="tag">${escapeText(statusOf(issue.status).label)}</span>
+      </div>
+      ${issue.note ? `<p class="hint">${escapeText(issue.note)}</p>` : ''}
+      <div class="grid-2 verify-pair">
+        <figure>${issue.detail ? `<img alt="Marked region before, comment ${n}" src="${issue.detail}" />` : '<p class="hint">No image of the region</p>'}<figcaption>Before</figcaption></figure>
+        <figure>${issue.after ? `<img alt="Same region now, comment ${n}" src="${issue.after}" />` : '<p class="hint">No image of the region</p>'}<figcaption>${escapeText(recheckCaption(issue))}</figcaption></figure>
+      </div>
+      <p class="hint">${escapeText(changeHint(issue))}</p>
+    </div>
+    ${others}`,
+    `<span class="state"><kbd>F</kbd> fixed <kbd>O</kbd> still open <kbd>W</kbd> won't fix <kbd>Left</kbd> <kbd>Right</kbd> move</span>
+    <button class="btn ghost" type="button" data-verify-move="-1"${at ? '' : ' disabled'}>Previous</button>
+    <button class="btn ghost" type="button" data-verify-move="1">Skip</button>
+    <button class="btn" type="button" data-verify-pick="wontfix">Won't fix</button>
+    <button class="btn" type="button" data-verify-pick="open">Still open</button>
+    <button class="btn action" type="button" data-verify-pick="fixed">Fixed</button>`,
+  );
+  verifyFoot.querySelector('[data-verify-pick="fixed"]').focus();
+}
+
+/**
+ * Opens the walk over the comments a run checked, in report order, after loading their new images.
+ * @param {{checked: string[], failed: string[], page: string}} run The finished run record.
+ */
+async function showWalk(run) {
+  const fresh = new Map((await issuesInGroup(groupId)).map((issue) => [issue.id, issue]));
+  for (const issue of issues) {
+    const saved = fresh.get(issue.id);
+    if (saved) Object.assign(issue, { after: saved.after, checkedAt: saved.checkedAt, change: saved.change, status: saved.status });
+  }
+  refreshPreview();
+  walk = { list: ordered.filter((issue) => run.checked.includes(issue.id)), at: 0, run };
+  paintWalk();
+}
+
+/**
+ * Saves the status picked for the comment on screen and moves on. Only the reviewer sets a status.
+ * @param {string} status The picked status key.
+ */
+async function pickStatus(status) {
+  const issue = walk.list[walk.at];
+  await send('update', { id: issue.id, patch: { status } });
+  issue.status = status;
+  verifyChanged = true;
+  walk.at += 1;
+  paintWalk();
+}
+
+/**
+ * Steps the walk forward or back, stopping at the first comment and at the summary.
+ * @param {number} step 1 for the next comment, -1 for the one before.
+ */
+function moveWalk(step) {
+  walk.at = Math.max(0, Math.min(walk.list.length, walk.at + step));
+  paintWalk();
+}
+
+document.querySelector('[data-verify]').addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  const res = await send('verifyStart', { groupId });
+  button.disabled = false;
+  if (res?.error === 'noTab') return showNoTab();
+  if (res?.error) return flash(button, res.error === 'A check is already running' ? 'Already running' : 'Failed');
+  awaitingRun = true;
+  showProgress({ done: 0, total: res.total, page: '' });
+});
+
+verifyDialog.addEventListener('click', (event) => {
+  const pick = event.target.closest('[data-verify-pick]');
+  if (pick) return pickStatus(pick.dataset.verifyPick);
+  const move = event.target.closest('[data-verify-move]');
+  if (move && walk) return moveWalk(Number(move.dataset.verifyMove));
+  if (event.target.closest('[data-verify-cancel]')) return send('verifyCancel');
+  if (event.target.closest('[data-verify-close]')) verifyDialog.close();
+});
+
+document.addEventListener('keydown', (event) => {
+  if (!walk || !verifyDialog.open || event.ctrlKey || event.metaKey || event.altKey || event.target.closest?.('input, textarea, select')) return;
+  const key = event.key.toLowerCase();
+  if (VERIFY_KEYS[key] && walk.at < walk.list.length) {
+    event.preventDefault();
+    pickStatus(VERIFY_KEYS[key]);
+  } else if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+    event.preventDefault();
+    moveWalk(event.key === 'ArrowRight' ? 1 : -1);
+  }
+});
+
+verifyDialog.addEventListener('close', () => {
+  walk = null;
+  if (verifyChanged) location.reload();
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  const run = area === 'local' ? changes.verifyRun?.newValue : null;
+  if (!run || !awaitingRun) return;
+  if (run.state === 'running') return showProgress(run);
+  awaitingRun = false;
+  showWalk(run);
+});
+
+const opened = new URL(location.href);
+if (opened.searchParams.get('verify')) {
+  opened.searchParams.delete('verify');
+  history.replaceState(null, '', opened);
+  const { verifyRun: run } = await chrome.storage.local.get('verifyRun');
+  if (run?.state === 'running' && Date.now() - run.at < STALE_RUN_MS) {
+    awaitingRun = true;
+    showProgress(run);
+  } else if (run && run.state !== 'running' && run.groupId === groupId) {
+    showWalk(run);
+  }
+}

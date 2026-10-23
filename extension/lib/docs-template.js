@@ -1,4 +1,5 @@
 import { SEVERITIES, severityOf } from './severity.js';
+import { statusOf as reviewStatusOf } from './status.js';
 import { environmentText, escapeHtml as esc, recheckCaption, routeOf, sortIssues } from './report-template.js';
 import { DEFAULT_FIELDS, withDefaults } from './fields.js';
 import { markList } from './marks.js';
@@ -68,8 +69,17 @@ const CATEGORY_FILL = {
   done: STATUSES[4].fill,
 };
 
-/** Linked comments carry their live Jira status, everything else starts at New. */
+/** Margin's own verdicts, shown in place of the workflow state once a comment is marked. */
+const VERDICT_FILL = { fixed: STATUSES[4].fill, wontfix: '#eef0f3' };
+
+/**
+ * The Status cell. A comment marked fixed or won't fix says so, linked comments carry their live Jira status,
+ * and everything else starts at New.
+ * @param {object} issue The stored comment.
+ */
 function statusOf(issue) {
+  const verdict = reviewStatusOf(issue.status);
+  if (VERDICT_FILL[verdict.key]) return { label: verdict.label, fill: VERDICT_FILL[verdict.key] };
   if (!issue.jira?.status) return STATUSES[0];
   return {
     label: issue.jira.status,
@@ -179,7 +189,8 @@ function commSection(group, number, shots, fields) {
 }
 
 function statusLegend() {
-  const cells = STATUSES.map(
+  const verdicts = ['fixed', 'wontfix'].map((key) => ({ label: reviewStatusOf(key).label, fill: VERDICT_FILL[key] }));
+  const cells = [...STATUSES, ...verdicts].map(
     (s) => `<td style="${CELL} background: ${s.fill}; text-align: center;">${s.label}</td>`,
   ).join('\n      ');
   return `<table cellspacing="0" cellpadding="0" style="border-collapse: collapse; width: 100%; margin: 0 0 8px;">
@@ -209,7 +220,7 @@ export function buildDocsText(issues, { title = 'UI review comments' } = {}) {
     lines.push(`COMM${index + 1}: ${routeOf(group.page)}`, group.page.url, '');
     group.issues.forEach((issue, i) => {
       const sev = severityOf(issue.severity);
-      lines.push(`C${i + 1}  [${sev.label}] ${issue.title || 'Untitled issue'}`);
+      lines.push(`C${i + 1}  [${sev.label}, ${statusOf(issue).label}] ${issue.title || 'Untitled issue'}`);
       if (issue.note) lines.push(`    ${issue.note.replace(/\n/g, '\n    ')}`);
       markList(issue).forEach((item) => lines.push(`    ${item.n}. ${item.note.replace(/\n/g, ' ')}`));
       if (issue.after) lines.push(`    ${recheckCaption(issue)}`);
@@ -252,7 +263,7 @@ export function buildDocsHtml(
   }</p>
 
   <h2 style="${H2}">Introduction, important notes</h2>
-  <p style="${P}">${total} ${total === 1 ? 'comment' : 'comments'} across ${groups.length} ${groups.length === 1 ? 'page' : 'pages'}: ${counts}. Each comment carries the element selector, the marked region, and the viewport it was captured at. Every comment starts at New.</p>
+  <p style="${P}">${total} ${total === 1 ? 'comment' : 'comments'} across ${groups.length} ${groups.length === 1 ? 'page' : 'pages'}: ${counts}. Each comment carries the element selector, the marked region, and the viewport it was captured at. Every comment starts at New and shows Fixed or Won't fix once it is verified.</p>
 
   <h3 style="${H3}">Statuses</h3>
   ${statusLegend()}
