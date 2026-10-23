@@ -3,6 +3,8 @@
  * without a server. Imports are treated as untrusted, so every value is rebuilt
  * from known fields and checked before it is stored.
  */
+import { statusOf } from './status.js';
+
 export const REVIEW_FORMAT = 'margin-review';
 export const REVIEW_VERSION = 1;
 
@@ -58,6 +60,7 @@ function cleanIssue(issue) {
   const el = issue.element && typeof issue.element === 'object' ? issue.element : null;
   return {
     severity: SEVERITY_KEYS.has(issue.severity) ? issue.severity : 'major',
+    status: statusOf(issue.status).key,
     title: text(issue.title, 300),
     note: text(issue.note),
     createdAt: Number.isNaN(Date.parse(issue.createdAt)) ? new Date().toISOString() : issue.createdAt,
@@ -96,6 +99,7 @@ function cleanIssue(issue) {
     detail: image(issue.detail),
     after: image(issue.after),
     checkedAt: issue.after && !Number.isNaN(Date.parse(issue.checkedAt)) ? issue.checkedAt : null,
+    change: issue.after ? optionalNumber(issue.change) ?? null : null,
     raw: image(issue.raw?.src) ? { src: issue.raw.src, hasBox: Boolean(issue.raw.hasBox) } : null,
   };
 }
