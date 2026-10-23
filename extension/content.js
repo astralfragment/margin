@@ -73,6 +73,7 @@
     .sev i { width: 8px; height: 8px; border-radius: 2px; background: currentColor; }
     .sev[aria-pressed="true"] { color: #000000; background: var(--sev); border-color: var(--sev); }
     .row { display: flex; gap: 8px; justify-content: flex-end; }
+    .row .lead { margin-right: auto; }
     button.action {
       padding: 7px 12px; font-size: 13px; font-weight: 800; border-radius: 12px; cursor: pointer;
       background: #1c1830; color: #ada7c4; border: 1px solid #756c95;
@@ -223,6 +224,41 @@
     }
   }
 
+  /**
+   * Records how to find a region again after the layout reflows, whatever selector capture is set to.
+   * The anchor is the element under the region's centre, widened until it covers a quarter of the region,
+   * with the region stored as fractions of that element's box. Returns null when nothing sits under the region.
+   * @param {{x:number,y:number,w:number,h:number}} rect The captured region in viewport pixels.
+   */
+  function anchorFor(rect) {
+    try {
+      let el = elementAt(rect.x + rect.w / 2, rect.y + rect.h / 2);
+      const area = (box) => box.width * box.height;
+      while (el && el.parentElement && el !== document.body && area(el.getBoundingClientRect()) < (rect.w * rect.h) / 4) {
+        el = el.parentElement;
+      }
+      if (!el) return null;
+      const box = el.getBoundingClientRect();
+      if (!box.width || !box.height) return null;
+      const selector = cssPath(el);
+      const round = (v) => Math.round(v * 10000) / 10000;
+      return {
+        selector,
+        nth: Math.max(0, [...document.querySelectorAll(selector)].indexOf(el)),
+        tag: el.localName,
+        text: (el.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 80),
+        box: {
+          fx: round((rect.x - box.left) / box.width),
+          fy: round((rect.y - box.top) / box.height),
+          fw: round(rect.w / box.width),
+          fh: round(rect.h / box.height),
+        },
+      };
+    } catch {
+      return null;
+    }
+  }
+
   /** Returns the page element under a viewport point, ignoring our own overlay. */
   function elementAt(x, y) {
     host.style.display = 'none';
@@ -336,6 +372,21 @@
     capture(fitRect({ x: r.left, y: r.top, w: r.width, h: r.height }), element);
   }
 
+  /**
+   * Asks the background to capture comments again at mobile, tablet and desktop widths, then reports how it went.
+   * @param {{ ids?: string[], page?: boolean }} which The comments to capture, or every comment on this page.
+   */
+  async function captureWidths(which) {
+    let res;
+    try {
+      res = await chrome.runtime.sendMessage({ type: 'captureWidths', ...which });
+    } catch (err) {
+      res = { error: String(err.message ?? err) };
+    }
+    toast(res?.error ?? res?.message ?? 'Widths captured', 4200);
+    return res;
+  }
+
   function closeMenu() {
     state.menu?.remove();
     state.menu = null;
@@ -351,6 +402,7 @@
     const items = [
       ['Comment on this element', () => captureElementAt(x, y)],
       ['Comment on the whole visible area', captureViewport],
+      ['Capture comments on this page at three widths', () => captureWidths({ page: true })],
       [state.selectors ? 'Turn selector capture off' : 'Turn selector capture on', () => setSelectors(!state.selectors)],
       [state.markers ? 'Turn numbered markers off' : 'Turn numbered markers on', () => setMarkers(!state.markers)],
       null,
@@ -392,6 +444,7 @@
   }
 
   async function capture(rect, element = elementFor(rect)) {
+    const anchor = anchorFor(rect);
     band.hidden = true;
     hoverBox.hidden = true;
     root.classList.add('capturing');
@@ -404,6 +457,7 @@
         type: 'capture',
         rect,
         element,
+        anchor,
         viewport: {
           width: window.innerWidth,
           height: window.innerHeight,
@@ -468,6 +522,7 @@
         ).join('')}
       </div>
       <div class="row">
+        <button class="action lead" type="button" data-widths title="Capture this selection again at mobile, tablet and desktop widths">All widths</button>
         <button class="action" type="button" data-cancel>Discard</button>
         <button class="action primary" type="button" data-save>Save comment</button>
       </div>
@@ -527,6 +582,14 @@
       toast('Comment saved');
     };
 
+    const widthsBtn = panel.querySelector('[data-widths]');
+    widthsBtn.addEventListener('click', async () => {
+      widthsBtn.disabled = true;
+      widthsBtn.textContent = 'Capturing';
+      const res = await captureWidths({ ids: [id] });
+      widthsBtn.textContent = res?.error ? 'Failed' : 'Widths saved';
+      widthsBtn.disabled = !res?.error;
+    });
     panel.querySelector('[data-save]').addEventListener('click', save);
     panel.querySelector('[data-cancel]').addEventListener('click', () => closePanel(true));
     panel.addEventListener('keydown', (e) => {
@@ -723,6 +786,10 @@
       sendResponse({ active: setActive(!state.active) });
     }
     else if (msg?.type === 'stop') sendResponse({ active: setActive(false) });
+    else if (msg?.type === 'toast') {
+      if (state.active) toast(msg.text, 4200);
+      sendResponse({ ok: true });
+    }
     else if (msg?.type === 'captureViewport') {
       if (msg.groupName) shadow.querySelector('[data-group]').textContent = msg.groupName;
       setActive(true);
