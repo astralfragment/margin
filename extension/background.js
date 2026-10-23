@@ -632,8 +632,9 @@ const handlers = {
     return { active: await toggleTab(tab) };
   },
 
+  /** Stores a new comment for a marked region, with its screenshots unless `skipShot` asks to save it without one. */
   async capture(msg, sender) {
-    const { raw, shot, detail } = await captureShots(sender.tab, msg);
+    const { raw, shot, detail } = msg.skipShot ? { raw: null, shot: null, detail: null } : await captureShots(sender.tab, msg);
     const issue = {
       id: crypto.randomUUID(),
       groupId: (await activeGroup()).id,
@@ -651,7 +652,7 @@ const handlers = {
       shot,
       detail,
     };
-    await writeRaw(issue.id, { src: raw, hasBox: false });
+    if (raw) await writeRaw(issue.id, { src: raw, hasBox: false });
     await addIssue(issue);
     await refreshBadge();
     return { id: issue.id };
@@ -893,6 +894,38 @@ const handlers = {
   async verifyCancel() {
     if (verifyRun) verifyRun.cancelled = true;
     return { ok: true };
+  },
+
+  /** The review new comments go to, as stored, so the overlay can read its name, Jira issue and Figma file. */
+  async activeReview() {
+    return { group: await activeGroup() };
+  },
+
+  /**
+   * The active review's comments made on one page, without their images, numbered in the order they were made,
+   * plus how many comments the review holds. The overlay draws these as flags.
+   */
+  async pageComments(msg, sender) {
+    const group = await activeGroup();
+    const issues = await issuesInGroup(group.id);
+    const url = msg.url ?? sender.tab?.url;
+    return {
+      total: issues.length,
+      comments: issues
+        .map((issue, index) => ({ issue, n: index + 1 }))
+        .filter(({ issue }) => samePage(url, issue.page?.url))
+        .map(({ issue, n }) => ({
+          id: issue.id,
+          n,
+          title: issue.title,
+          severity: issue.severity,
+          status: issue.status,
+          rect: issue.rect,
+          anchor: issue.anchor ?? null,
+          viewport: issue.viewport,
+          frame: issue.figmaFrame?.name ?? '',
+        })),
+    };
   },
 };
 

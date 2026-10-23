@@ -70,6 +70,16 @@ function cleanAnchor(anchor) {
 }
 
 /**
+ * Rebuilds the Figma frame a comment points at, or returns undefined when it has no file key or node id.
+ * @param {any} frame The frame from the file.
+ */
+function cleanFigmaFrame(frame) {
+  const usable = typeof frame?.fileKey === 'string' && typeof frame.nodeId === 'string' && frame.fileKey && frame.nodeId;
+  if (!usable) return undefined;
+  return { fileKey: text(frame.fileKey, 200), nodeId: text(frame.nodeId, 200), name: text(frame.name, 300), page: text(frame.page, 300) };
+}
+
+/**
  * Rebuilds a comment's mobile, tablet and desktop shots, keeping only those with a valid image.
  * @param {any} shots The shots from the file.
  */
@@ -127,6 +137,7 @@ function cleanIssue(issue) {
       })),
     links: (Array.isArray(issue.links) ? issue.links : []).map(webUrl).filter(Boolean),
     jira: issue.jira?.key && webUrl(issue.jira.url) ? { key: text(issue.jira.key, 40), url: webUrl(issue.jira.url) } : undefined,
+    figmaFrame: cleanFigmaFrame(issue.figmaFrame),
     figmaPosts: (Array.isArray(issue.figmaPosts) ? issue.figmaPosts : [])
       .filter((post) => post && typeof post === 'object')
       .map((post) => ({
