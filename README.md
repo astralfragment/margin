@@ -29,8 +29,12 @@ It needs no account. Everything stays in your browser until you choose to send a
 - **Edit the image.** Add markers, boxes and arrows, resize them and zoom in. Changes save as you go.
 - **Right-click for more.** Comment on one element or the whole visible screen without leaving the page.
 - **Capture selectors when you need them.** Selector capture is off by default and one key turns it on.
-- **Check the fix.** Recheck takes a fresh shot of the same area, so the review shows before and after.
-- **Export it your way.** Copy for Docs pastes into Google Docs with images and numbered lists intact. Word, HTML and PDF exports are one click away.
+- **Capture three widths at once.** All widths shoots the same selection at mobile, tablet and desktop sizes, and puts your window back exactly as it was.
+- **Track each comment.** Every comment is Open, Fixed or Won't fix, and the report filters by status as well as severity.
+- **Verify fixes in one pass.** Verify this page rechecks every comment on the open page, then walks you through before and after side by side. A pixel comparison hints at what changed.
+- **Export it your way.** Copy for Docs pastes into Google Docs with images and numbered lists intact. Word, HTML and PDF exports are one click away. Copy as Markdown suits GitHub, Slack and coding agents, and any single comment copies on its own.
+- **Share without a server.** Save review file packs the whole review, screenshots included, into one file a teammate can open in their own Margin.
+- **Browser details.** Each comment records the browser, system and page zoom it was captured in.
 - **Send it to Jira.** Connect once and Margin creates the issues with the screenshots attached, one per comment or one for the review. Without signing in, it opens Jira's own create form with the text filled in.
 - **Post it to Figma.** Connect once and each comment lands on the frame its Figma link points at, with the numbered notes as a list.
 - **Clean screenshots.** Margin hides its own interface before every capture.
@@ -50,7 +54,7 @@ To run it from source:
 1. Open any page and click the Margin icon, or press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd>.
 2. Drag over what looks wrong, write a note and save it.
 3. Right-click the page and choose Open the review report.
-4. Click Copy for Docs, or open More for Word, HTML, Print, Jira issues and Figma comments.
+4. Click Copy for Docs, or open More for Word, HTML, Print, Markdown, review files, Jira issues and Figma comments.
 
 | Key | While annotating |
 | --- | --- |
@@ -110,18 +114,14 @@ Margin is plain JavaScript modules with no build step and no dependencies. Edit 
 
 ## Roadmap
 
-1. Jira integration
-2. Syncing tasks
-3. Workspaces and shared reviews
-4. Agent handoff
-5. Verify fixes across a whole review in one pass
-6. Responsive capture at mobile, tablet and desktop widths
-7. Accessibility check on the selected area
-8. Off-token check against a design system
-9. Linear and GitHub Issues export
-10. Figma comment sync
-11. MCP server so coding agents can read and close reviews
-12. Open, fixed and won't fix status per comment
+1. Syncing tasks, so a status change in Jira shows in Margin
+2. Workspaces and shared reviews
+3. Agent handoff
+4. Two-way Figma comment sync, with Jira links added to frames as dev resources
+5. Accessibility check on the selected area
+6. Off-token check against a design system
+7. Linear and GitHub Issues export
+8. MCP server so coding agents can read and close reviews
 
 Ideas and bug reports are welcome in [Issues](https://github.com/astralfragment/margin/issues).
 
