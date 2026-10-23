@@ -17,6 +17,7 @@ function factPairs(issue, fields) {
   return [
     fields.page && issue.page?.url ? ['Page', issue.page.url] : null,
     fields.figma && issue.links?.length ? ['Figma', issue.links.join(' ')] : null,
+    fields.jira && issue.jira?.key ? ['Jira', `${issue.jira.key} ${issue.jira.url ?? ''}`.trim()] : null,
     fields.selector && el?.selector ? ['Selector', `\`${el.selector}\``] : null,
     fields.text && el?.text ? ['Text', el.text] : null,
     fields.position
