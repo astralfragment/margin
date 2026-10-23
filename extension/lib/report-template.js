@@ -19,7 +19,7 @@ export const REPORT_CSS = `
   --bg: #ffffff; --surface: #f7f8fb; --line: #e2e5ee;
   --ink: #12151c; --ink-2: #565d73;
   --accent: #e5484d;
-  --sev-blocker: #d92020; --sev-major: #b26a00; --sev-minor: #1f5fd0; --sev-nit: #6b7280;
+  --sev-blocker: #ce2c31; --sev-major: #c2410c; --sev-minor: #0d74ce; --sev-nit: #60646c;
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 40px;
   --radius: 8px;
 }
@@ -106,7 +106,7 @@ export const PREVIEW_DARK_CSS = `
   color-scheme: dark;
   --bg: #0d1017; --surface: #141924; --line: #262c3b;
   --ink: #e9ecf5; --ink-2: #99a1b8;
-  --sev-blocker: #f2585b; --sev-major: #f0a93a; --sev-minor: #62a0f5; --sev-nit: #9aa2b6;
+  --sev-blocker: #ff9592; --sev-major: #ffa057; --sev-minor: #70b8ff; --sev-nit: #b0b4ba;
 }
 `;
 
