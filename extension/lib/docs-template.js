@@ -1,5 +1,5 @@
 import { SEVERITIES, severityOf } from './severity.js';
-import { escapeHtml as esc, recheckCaption, routeOf, sortIssues } from './report-template.js';
+import { environmentText, escapeHtml as esc, recheckCaption, routeOf, sortIssues } from './report-template.js';
 import { DEFAULT_FIELDS, withDefaults } from './fields.js';
 import { markList } from './marks.js';
 
@@ -120,6 +120,7 @@ function factLines(issue, fields) {
         ]
       : null,
     fields.captured ? ['Captured', esc(new Date(issue.createdAt).toLocaleString())] : null,
+    fields.browser && issue.env ? ['Browser', esc(environmentText(issue))] : null,
   ]
     .filter(Boolean)
     .map(([key, value]) => `<p style="${FACT_LINE}"><span style="${FACT_LABEL}">${key}</span>&nbsp;&nbsp;${value}</p>`)
@@ -191,7 +192,7 @@ function statusLegend() {
 }
 
 /** Groups issues by page, keeping first capture order, sorted by severity inside. */
-function groupByPage(issues) {
+export function groupByPage(issues) {
   const groups = new Map();
   for (const issue of issues) {
     const key = issue.page?.url ?? '';

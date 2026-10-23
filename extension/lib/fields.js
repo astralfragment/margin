@@ -12,6 +12,7 @@ export const FACT_FIELDS = [
   { key: 'styles', label: 'Styles' },
   { key: 'position', label: 'Position' },
   { key: 'captured', label: 'Captured' },
+  { key: 'browser', label: 'Browser' },
 ];
 
 export const DEFAULT_FIELDS = Object.fromEntries(FACT_FIELDS.map((f) => [f.key, f.key !== 'element']));

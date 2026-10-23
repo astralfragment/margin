@@ -1,0 +1,254 @@
+- generic [ref=f1e2]:
+  - complementary "Free projects" [ref=f1e3]:
+    - generic [ref=f1e4]:
+      - paragraph [ref=f1e6]: 3 free projects for SA businesses.
+      - button "Apply" [ref=f1e7] [cursor=pointer]
+      - button "Close" [ref=f1e9] [cursor=pointer]
+  - banner [ref=f1e11]:
+    - generic [ref=f1e12]:
+      - link "Lilac Fragment" [ref=f1e13] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f1e14]:
+          - generic [ref=f1e15]: Lilac Fragment
+          - generic [aria-hidden] [ref=f1e16]: lilac/fragment.
+      - button "Menu" [ref=f1e18] [cursor=pointer]
+  - main [ref=f1e20]:
+    - generic [ref=f1e24]:
+      - link "Margin" [ref=f1e25] [cursor=pointer]:
+        - /url: /margin/
+      - generic [ref=f1e26]:
+        - heading "Margin support." [level=1] [ref=f1e27]
+        - paragraph [ref=f1e28]: Install, update and get help with the Margin extension for Chrome.
+      - link "Download this guide as a PDF" [ref=f1e29] [cursor=pointer]:
+        - /url: /downloads/margin-support-guide.pdf
+      - link "Read the Margin privacy policy" [ref=f1e36] [cursor=pointer]:
+        - /url: /margin/privacy/
+    - generic [ref=f1e42]:
+      - generic [ref=f1e43]:
+        - heading "Install Margin." [level=2] [ref=f1e44]
+        - list [ref=f1e45]:
+          - listitem [ref=f1e46]: Open Margin on the Chrome Web Store in Google Chrome.
+          - listitem [ref=f1e47]: Click Add to Chrome, then Add extension.
+          - listitem [ref=f1e48]: Click the puzzle piece next to the address bar and pin Margin so its button is always in view.
+          - listitem [ref=f1e49]: The welcome tour opens. It walks through a full review in six steps.
+        - button "Open the Chrome Web Store (opens in a new tab)" [ref=f1e50] [cursor=pointer]:
+          - text: Open the Chrome Web Store
+          - generic [ref=f1e51]: (opens in a new tab)
+      - generic [ref=f1e52]:
+        - heading "Install from a zip." [level=2] [ref=f1e53]
+        - paragraph [ref=f1e54]: Use the zip if you cannot install from the Chrome Web Store, for example on a work computer that blocks it. It works in Chrome and Edge.
+        - list [ref=f1e55]:
+          - listitem [ref=f1e56]: Download the Margin zip and unzip it into a folder you will keep, such as Documents. Chrome loads Margin from that folder every time it starts.
+          - listitem [ref=f1e57]: Open chrome://extensions in Chrome, or edge://extensions in Edge.
+          - listitem [ref=f1e58]: Turn on Developer mode.
+          - listitem [ref=f1e59]: Click Load unpacked and choose the Margin folder, the one with manifest.json inside.
+          - listitem [ref=f1e60]: Pin Margin from the puzzle piece in the toolbar. The welcome tour opens.
+        - paragraph [ref=f1e61]: A zip install does not update itself, and it keeps its reviews apart from a Chrome Web Store install. To move from one to the other, download your reviews as Word or HTML files first.
+        - button "Download Margin 0.3.0" [ref=f1e62] [cursor=pointer]
+      - generic [ref=f1e63]:
+        - heading "Start a review." [level=2] [ref=f1e64]
+        - list [ref=f1e65]:
+          - listitem [ref=f1e66]: Open the page you want to review and click the Margin button, or press Alt+Shift+A.
+          - listitem [ref=f1e67]: Drag over anything that looks wrong. Write what is wrong, pick a severity and save the note.
+          - listitem [ref=f1e68]: Press Esc when you are done, then open the report from the Margin button or the right-click menu.
+          - listitem [ref=f1e69]: In the report, click a screenshot to add numbered markers, boxes and arrows.
+        - paragraph [ref=f1e70]: You can see every shortcut in Help and settings. Right-click the Margin button and choose Options to open it.
+      - generic [ref=f1e71]:
+        - heading "Update Margin." [level=2] [ref=f1e72]
+        - paragraph [ref=f1e73]: Chrome updates a Chrome Web Store install for you. A new version usually reaches everyone within a few hours of release, and your reviews and settings stay as they are.
+        - paragraph [ref=f1e74]: To update straight away, open chrome://extensions in the address bar, turn on Developer mode in the top right corner, and click Update.
+        - paragraph [ref=f1e75]: To update a zip install, download the new zip and replace everything inside your Margin folder with the new files. Then click the reload arrow on the Margin card in chrome://extensions. Your reviews stay. Never click Remove to update, because removing Margin deletes its reviews.
+      - generic [ref=f1e76]:
+        - heading "Fix common problems." [level=2] [ref=f1e77]
+        - paragraph [ref=f1e78]: If Margin does not start on a page, reload the page and try again. Chrome does not let extensions run on its own pages, such as chrome:// pages and the Chrome Web Store.
+        - paragraph [ref=f1e79]: If the shortcut does nothing, another app may be using it. Open chrome://extensions/shortcuts and pick a new one for Margin.
+        - paragraph [ref=f1e80]: If Chrome says the manifest file is missing, you chose the outer folder. Choose the Margin folder that has manifest.json directly inside.
+        - paragraph [ref=f1e81]: If the welcome tips no longer show, open Help and settings and click Show the tips again.
+      - generic [ref=f1e82]:
+        - heading "Remove Margin." [level=2] [ref=f1e83]
+        - paragraph [ref=f1e84]: Download any reviews you want to keep as Word or HTML files first. Then right-click the Margin button and choose Remove from Chrome. Removing Margin deletes its saved reviews from your computer.
+    - generic [ref=f1e88]:
+      - generic [ref=f1e89]:
+        - heading "Common questions." [level=2] [ref=f1e90]
+        - button "Ask us on WhatsApp" [ref=f1e91] [cursor=pointer]
+      - region [ref=f1e92]:
+        - generic [ref=f1e93]:
+          - heading [level=3] [ref=f1e94]:
+            - button "Where are my reviews saved?" [expanded] [ref=f1e95] [cursor=pointer]
+          - region "Where are my reviews saved?" [ref=f1e100]:
+            - generic [ref=f1e101]: In Chrome on your computer. Margin keeps your comments, screenshots and settings in the browser and sends nothing to any server. There is no account to sign in to.
+        - heading [level=3] [ref=f1e103]:
+          - button "Does Margin collect any data?" [ref=f1e104] [cursor=pointer]
+        - heading [level=3] [ref=f1e108]:
+          - button "How do I share a review with my team?" [ref=f1e109] [cursor=pointer]
+        - heading [level=3] [ref=f1e113]:
+          - button "Which browsers does it work in?" [ref=f1e114] [cursor=pointer]
+        - heading [level=3] [ref=f1e118]:
+          - button "Can I move my reviews to another computer?" [ref=f1e119] [cursor=pointer]
+        - heading [level=3] [ref=f1e123]:
+          - button "How do I remove a numbered marker?" [ref=f1e124] [cursor=pointer]
+    - generic [ref=f1e130]:
+      - heading "Still stuck?" [level=2] [ref=f1e131]
+      - paragraph [ref=f1e132]: Email us with what you tried and a screenshot if you can. A person at Lilac Fragment will reply.
+      - generic [ref=f1e133]:
+        - link "hello@lilacfragment.co.za" [ref=f1e134] [cursor=pointer]:
+          - /url: mailto:hello@lilacfragment.co.za?subject=Margin%20support
+        - link "WhatsApp 083 440 4541 (opens in a new tab)" [ref=f1e135] [cursor=pointer]:
+          - /url: https://wa.me/27834404541?text=Hi%20Lilac%20Fragment%2C%20I'd%20like%20to%20ask%20about%20
+          - text: WhatsApp 083 440 4541
+          - generic [ref=f1e136]: (opens in a new tab)
+  - contentinfo [ref=f1e137]:
+    - generic [ref=f1e138]:
+      - generic [ref=f1e139]:
+        - generic [ref=f1e140]:
+          - link "Lilac Fragment" [ref=f1e141] [cursor=pointer]:
+            - /url: /
+            - generic [ref=f1e142]:
+              - generic [ref=f1e143]: Lilac Fragment
+              - generic [aria-hidden] [ref=f1e144]: lilac/fragment.
+          - paragraph [ref=f1e145]: Websites, online shops and automation for businesses in South Africa and abroad.
+        - generic [ref=f1e146]:
+          - link "hello@lilacfragment.co.za" [ref=f1e147] [cursor=pointer]:
+            - /url: mailto:hello@lilacfragment.co.za
+          - link "WhatsApp 083 440 4541" [ref=f1e151] [cursor=pointer]:
+            - /url: https://wa.me/27834404541?text=Hi%20Lilac%20Fragment%2C%20I'd%20like%20to%20ask%20about%20
+          - link "LinkedIn (opens in a new tab)" [ref=f1e154] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/lilacfragment/
+            - text: LinkedIn
+            - generic [ref=f1e158]: (opens in a new tab)
+          - link "Facebook (opens in a new tab)" [ref=f1e159] [cursor=pointer]:
+            - /url: https://www.facebook.com/profile.php?id=61595316752968
+            - text: Facebook
+            - generic [ref=f1e162]: (opens in a new tab)
+      - generic [ref=f1e163]:
+        - navigation "E-commerce" [ref=f1e164]:
+          - paragraph [ref=f1e165]: E-commerce
+          - list [ref=f1e166]:
+            - listitem [ref=f1e167]:
+              - link "Shopify development" [ref=f1e168] [cursor=pointer]:
+                - /url: /services/shopify/
+            - listitem [ref=f1e169]:
+              - link "E-commerce migrations" [ref=f1e170] [cursor=pointer]:
+                - /url: /services/website-migrations/
+            - listitem [ref=f1e171]:
+              - link "Shopify apps and integrations" [ref=f1e172] [cursor=pointer]:
+                - /url: /services/custom-plugins/
+            - listitem [ref=f1e173]:
+              - link "Order and stock automation" [ref=f1e174] [cursor=pointer]:
+                - /url: /services/automation/
+            - listitem [ref=f1e175]:
+              - link "Customer and CRM setup" [ref=f1e176] [cursor=pointer]:
+                - /url: /services/crm-integration/
+            - listitem [ref=f1e177]:
+              - link "E-commerce marketing" [ref=f1e178] [cursor=pointer]:
+                - /url: /services/digital-marketing/
+            - listitem [ref=f1e179]:
+              - link "Store maintenance" [ref=f1e180] [cursor=pointer]:
+                - /url: /services/content-management/
+        - navigation "Websites & apps" [ref=f1e181]:
+          - paragraph [ref=f1e182]: Websites & apps
+          - list [ref=f1e183]:
+            - listitem [ref=f1e184]:
+              - link "Website and web app development" [ref=f1e185] [cursor=pointer]:
+                - /url: /services/websites-and-apps/
+            - listitem [ref=f1e186]:
+              - link "Website migrations" [ref=f1e187] [cursor=pointer]:
+                - /url: /services/website-migrations/
+            - listitem [ref=f1e188]:
+              - link "Website maintenance" [ref=f1e189] [cursor=pointer]:
+                - /url: /services/content-management/
+            - listitem [ref=f1e190]:
+              - link "Custom plugins" [ref=f1e191] [cursor=pointer]:
+                - /url: /services/custom-plugins/
+        - navigation "AI & automation" [ref=f1e192]:
+          - paragraph [ref=f1e193]: AI & automation
+          - list [ref=f1e194]:
+            - listitem [ref=f1e195]:
+              - link "AI integration" [ref=f1e196] [cursor=pointer]:
+                - /url: /services/ai-integration/
+            - listitem [ref=f1e197]:
+              - link "Business process automation" [ref=f1e198] [cursor=pointer]:
+                - /url: /services/automation/
+            - listitem [ref=f1e199]:
+              - link "Robotic process automation (RPA)" [ref=f1e200] [cursor=pointer]:
+                - /url: /services/rpa/
+            - listitem [ref=f1e201]:
+              - link "CRM integration" [ref=f1e202] [cursor=pointer]:
+                - /url: /services/crm-integration/
+            - listitem [ref=f1e203]:
+              - link "Back-office support (BPO)" [ref=f1e204] [cursor=pointer]:
+                - /url: /services/bpo/
+        - navigation "Design & marketing" [ref=f1e205]:
+          - paragraph [ref=f1e206]: Design & marketing
+          - list [ref=f1e207]:
+            - listitem [ref=f1e208]:
+              - link "UI/UX design" [ref=f1e209] [cursor=pointer]:
+                - /url: /services/ui-ux-design/
+            - listitem [ref=f1e210]:
+              - link "Digital marketing" [ref=f1e211] [cursor=pointer]:
+                - /url: /services/digital-marketing/
+            - listitem [ref=f1e212]:
+              - link "Brand and print design" [ref=f1e213] [cursor=pointer]:
+                - /url: /services/print-design/
+        - navigation "Resources" [ref=f1e214]:
+          - paragraph [ref=f1e215]: Resources
+          - list [ref=f1e216]:
+            - listitem [ref=f1e217]:
+              - link "Technical website audit" [ref=f1e218] [cursor=pointer]:
+                - /url: /website-check/
+            - listitem [ref=f1e219]:
+              - link "Email domain health check" [ref=f1e220] [cursor=pointer]:
+                - /url: /free/email-domain-check/
+            - listitem [ref=f1e221]:
+              - link "Project brief builder" [ref=f1e222] [cursor=pointer]:
+                - /url: /free/project-brief-builder/
+            - listitem [ref=f1e223]:
+              - link "Automation savings calculator" [ref=f1e224] [cursor=pointer]:
+                - /url: /free/automation-savings-calculator/
+            - listitem [ref=f1e225]:
+              - link "SEO starter checklist" [ref=f1e226] [cursor=pointer]:
+                - /url: /free/seo-checklist/
+            - listitem [ref=f1e227]:
+              - link "Shopify launch checklist" [ref=f1e228] [cursor=pointer]:
+                - /url: /free/shopify-launch-checklist/
+            - listitem [ref=f1e229]:
+              - link "Website privacy and trust checklist" [ref=f1e230] [cursor=pointer]:
+                - /url: /free/website-privacy-checklist/
+            - listitem [ref=f1e231]:
+              - link "Guides" [ref=f1e232] [cursor=pointer]:
+                - /url: /guides/
+        - navigation "Company" [ref=f1e233]:
+          - paragraph [ref=f1e234]: Company
+          - list [ref=f1e235]:
+            - listitem [ref=f1e236]:
+              - link "About us" [ref=f1e237] [cursor=pointer]:
+                - /url: /about-us/
+            - listitem [ref=f1e238]:
+              - link "How we work" [ref=f1e239] [cursor=pointer]:
+                - /url: /how-we-work/
+            - listitem [ref=f1e240]:
+              - link "Fixed-price projects" [ref=f1e241] [cursor=pointer]:
+                - /url: /how-we-work/#projects
+            - listitem [ref=f1e242]:
+              - link "Project management" [ref=f1e243] [cursor=pointer]:
+                - /url: /how-we-work/#project-management
+            - listitem [ref=f1e244]:
+              - link "Margin for Chrome" [ref=f1e245] [cursor=pointer]:
+                - /url: /margin/
+            - listitem [ref=f1e246]:
+              - link "Margin support" [ref=f1e247] [cursor=pointer]:
+                - /url: /margin/support/
+            - listitem [ref=f1e248]:
+              - link "Pricing" [ref=f1e249] [cursor=pointer]:
+                - /url: /pricing/
+            - listitem [ref=f1e250]:
+              - link "Contact" [ref=f1e251] [cursor=pointer]:
+                - /url: /contact-us/
+            - listitem [ref=f1e252]:
+              - link "Privacy" [ref=f1e253] [cursor=pointer]:
+                - /url: /privacy/
+    - generic [ref=f1e254]:
+      - separator [ref=f1e255]
+      - generic [ref=f1e256]:
+        - paragraph [ref=f1e257]: © 2026 Lilac Fragment. South Africa.
+        - paragraph [ref=f1e258]: Lilac Fragment is a registered Shopify Partner.

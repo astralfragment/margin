@@ -1,0 +1,279 @@
+- generic [ref=f2e2]:
+  - complementary "Free projects" [ref=f2e3]:
+    - generic [ref=f2e4]:
+      - generic [ref=f2e5]:
+        - generic [ref=f2e6]: Free
+        - paragraph [ref=f2e7]: 3 free projects for SA businesses.
+      - button "Apply" [ref=f2e8] [cursor=pointer]
+      - button "Close" [ref=f2e10] [cursor=pointer]
+  - banner [ref=f2e12]:
+    - generic [ref=f2e13]:
+      - link "Lilac Fragment" [ref=f2e14] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f2e15]:
+          - generic [ref=f2e16]: Lilac Fragment
+          - generic [aria-hidden] [ref=f2e17]: lilac/fragment.
+      - navigation [ref=f2e19]:
+        - list [ref=f2e20]:
+          - listitem [ref=f2e21]:
+            - button "Services" [ref=f2e22] [cursor=pointer]
+          - listitem [ref=f2e25]:
+            - button "Shopify" [ref=f2e26] [cursor=pointer]
+          - listitem [ref=f2e29]:
+            - button "Automation" [ref=f2e30] [cursor=pointer]
+          - listitem [ref=f2e33]:
+            - button "Resources" [ref=f2e34] [cursor=pointer]
+          - listitem [ref=f2e37]:
+            - link "Pricing" [ref=f2e38] [cursor=pointer]:
+              - /url: /pricing/
+          - listitem [ref=f2e39]:
+            - button "Company" [ref=f2e40] [cursor=pointer]
+      - button "Get a free proposal" [ref=f2e44] [cursor=pointer]
+  - main [ref=f2e45]:
+    - generic [ref=f2e49]:
+      - paragraph [ref=f2e50]: A Chrome extension by Lilac Fragment
+      - generic [ref=f2e51]:
+        - heading "Margin." [level=1] [ref=f2e52]
+        - paragraph [ref=f2e53]: Mark up UI issues on any page, number the details, and hand over a clean review in Google Docs or Word.
+      - generic [ref=f2e54]:
+        - button "Add to Chrome (opens the Chrome Web Store in a new tab)" [ref=f2e55] [cursor=pointer]:
+          - text: Add to Chrome
+          - generic [ref=f2e56]: (opens the Chrome Web Store in a new tab)
+        - button "Help and support" [ref=f2e57] [cursor=pointer]
+      - paragraph [ref=f2e58]:
+        - text: Cannot use the Chrome Web Store?
+        - link "Download the zip" [ref=f2e59] [cursor=pointer]:
+          - /url: /margin/support/#install-from-a-zip
+        - text: and install it yourself.
+      - paragraph [ref=f2e60]: No account, no server and no tracking.
+    - generic [ref=f2e71]:
+      - generic [ref=f2e72]:
+        - heading "A review in three steps." [level=2] [ref=f2e73]
+        - paragraph [ref=f2e74]: Margin lays a sheet over the page you are reviewing. Nothing on the page changes.
+      - list [ref=f2e75]:
+        - listitem [ref=f2e76]:
+          - generic [ref=f2e77]:
+            - generic [aria-hidden] [ref=f2e78]: "1"
+            - heading "Mark what looks wrong." [level=3] [ref=f2e79]
+            - paragraph [ref=f2e80]: Start Margin on the page you are reviewing. Drag over anything that looks wrong and Margin takes a screenshot of it.
+          - img "Margin open on the Lilac Fragment home page, with a box around the hero buttons, two numbered markers and a note beside them." [ref=f2e81]
+        - listitem [ref=f2e82]:
+          - generic [ref=f2e83]:
+            - generic [aria-hidden] [ref=f2e84]: "2"
+            - heading "Say why and number the details." [level=3] [ref=f2e85]
+            - paragraph [ref=f2e86]: Write what is wrong and pick a severity. Then add numbered markers, boxes and arrows to the screenshot, each with its own note.
+          - img "The Margin image editor with a numbered marker and a numbered arrow on a screenshot, and a note for each." [ref=f2e87]
+        - listitem [ref=f2e88]:
+          - generic [ref=f2e89]:
+            - generic [aria-hidden] [ref=f2e90]: "3"
+            - heading "Hand over the review." [level=3] [ref=f2e91]
+            - paragraph [ref=f2e92]: Copy the whole review into Google Docs, or download it as a Word or HTML file. Recheck a comment after the fix to show it before and after.
+          - img "The Margin report with three issues by severity, and a before and after screenshot of the first one." [ref=f2e93]
+    - generic [ref=f2e95]:
+      - list [ref=f2e96]:
+        - listitem [ref=f2e97]:
+          - heading "Four severities" [level=3] [ref=f2e98]
+          - paragraph [ref=f2e99]: Blocker, major, minor and nit, so the team can see what to fix first.
+        - listitem [ref=f2e100]:
+          - heading "Selectors when you want them" [level=3] [ref=f2e101]
+          - paragraph [ref=f2e102]: Click an element to keep its CSS selector with the comment. Press S to switch it on or off.
+        - listitem [ref=f2e103]:
+          - heading "Before and after" [level=3] [ref=f2e104]
+          - paragraph [ref=f2e105]: Recheck a comment once it is fixed and the report shows both screenshots side by side.
+        - listitem [ref=f2e106]:
+          - heading "Keyboard first" [level=3] [ref=f2e107]
+          - paragraph [ref=f2e108]: Press Alt+Shift+A to start and Esc to stop. The editor has shortcuts for every tool.
+      - generic [ref=f2e109]:
+        - heading "Your reviews stay on your computer." [level=2] [ref=f2e110]
+        - paragraph [ref=f2e111]: Margin keeps comments, screenshots and settings in Chrome. It has no account, no server and no tracking, and it sends nothing off your computer.
+    - generic [ref=f2e114]:
+      - generic [ref=f2e115]:
+        - heading "Questions about Margin." [level=2] [ref=f2e116]
+        - button "Ask us on WhatsApp" [ref=f2e117] [cursor=pointer]
+      - region [ref=f2e118]:
+        - generic [ref=f2e119]:
+          - heading [level=3] [ref=f2e120]:
+            - button "Where are my reviews saved?" [expanded] [ref=f2e121] [cursor=pointer]
+          - region "Where are my reviews saved?" [ref=f2e126]:
+            - generic [ref=f2e127]: In Chrome on your computer. Margin keeps your comments, screenshots and settings in the browser and sends nothing to any server. There is no account to sign in to.
+        - heading [level=3] [ref=f2e129]:
+          - button "Does Margin collect any data?" [ref=f2e130] [cursor=pointer]
+        - heading [level=3] [ref=f2e134]:
+          - button "How do I share a review with my team?" [ref=f2e135] [cursor=pointer]
+        - heading [level=3] [ref=f2e139]:
+          - button "Which browsers does it work in?" [ref=f2e140] [cursor=pointer]
+        - heading [level=3] [ref=f2e144]:
+          - button "Can I move my reviews to another computer?" [ref=f2e145] [cursor=pointer]
+        - heading [level=3] [ref=f2e149]:
+          - button "How do I remove a numbered marker?" [ref=f2e150] [cursor=pointer]
+    - generic [ref=f2e154]:
+      - generic [ref=f2e155]:
+        - heading "Get a browser extension built for your team." [level=2] [ref=f2e156]
+        - paragraph [ref=f2e157]: We build Chrome extensions and plugins around the way your team works.
+      - button "Tell us what you need" [ref=f2e158] [cursor=pointer]
+      - generic [ref=f2e159]:
+        - paragraph [ref=f2e160]: Or write to us directly
+        - list [ref=f2e161]:
+          - listitem [ref=f2e162]:
+            - link "hello@lilacfragment.co.za" [ref=f2e163] [cursor=pointer]:
+              - /url: mailto:hello@lilacfragment.co.za
+          - listitem [ref=f2e167]:
+            - link "WhatsApp 083 440 4541 (opens in a new tab)" [ref=f2e168] [cursor=pointer]:
+              - /url: https://wa.me/27834404541?text=Hi%20Lilac%20Fragment%2C%20I'd%20like%20to%20ask%20about%20
+              - text: WhatsApp 083 440 4541
+              - generic [ref=f2e171]: (opens in a new tab)
+  - contentinfo [ref=f2e172]:
+    - generic [ref=f2e173]:
+      - generic [ref=f2e174]:
+        - generic [ref=f2e175]:
+          - link "Lilac Fragment" [ref=f2e176] [cursor=pointer]:
+            - /url: /
+            - generic [ref=f2e177]:
+              - generic [ref=f2e178]: Lilac Fragment
+              - generic [aria-hidden] [ref=f2e179]: lilac/fragment.
+          - paragraph [ref=f2e180]: Websites, online shops and automation for businesses in South Africa and abroad.
+        - generic [ref=f2e181]:
+          - link "hello@lilacfragment.co.za" [ref=f2e182] [cursor=pointer]:
+            - /url: mailto:hello@lilacfragment.co.za
+          - link "WhatsApp 083 440 4541" [ref=f2e186] [cursor=pointer]:
+            - /url: https://wa.me/27834404541?text=Hi%20Lilac%20Fragment%2C%20I'd%20like%20to%20ask%20about%20
+          - link "LinkedIn (opens in a new tab)" [ref=f2e189] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/lilacfragment/
+            - text: LinkedIn
+            - generic [ref=f2e193]: (opens in a new tab)
+          - link "Facebook (opens in a new tab)" [ref=f2e194] [cursor=pointer]:
+            - /url: https://www.facebook.com/profile.php?id=61595316752968
+            - text: Facebook
+            - generic [ref=f2e197]: (opens in a new tab)
+      - generic [ref=f2e198]:
+        - navigation "E-commerce" [ref=f2e199]:
+          - paragraph [ref=f2e200]: E-commerce
+          - list [ref=f2e201]:
+            - listitem [ref=f2e202]:
+              - link "Shopify development" [ref=f2e203] [cursor=pointer]:
+                - /url: /services/shopify/
+            - listitem [ref=f2e204]:
+              - link "E-commerce migrations" [ref=f2e205] [cursor=pointer]:
+                - /url: /services/website-migrations/
+            - listitem [ref=f2e206]:
+              - link "Shopify apps and integrations" [ref=f2e207] [cursor=pointer]:
+                - /url: /services/custom-plugins/
+            - listitem [ref=f2e208]:
+              - link "Order and stock automation" [ref=f2e209] [cursor=pointer]:
+                - /url: /services/automation/
+            - listitem [ref=f2e210]:
+              - link "Customer and CRM setup" [ref=f2e211] [cursor=pointer]:
+                - /url: /services/crm-integration/
+            - listitem [ref=f2e212]:
+              - link "E-commerce marketing" [ref=f2e213] [cursor=pointer]:
+                - /url: /services/digital-marketing/
+            - listitem [ref=f2e214]:
+              - link "Store maintenance" [ref=f2e215] [cursor=pointer]:
+                - /url: /services/content-management/
+        - navigation "Websites & apps" [ref=f2e216]:
+          - paragraph [ref=f2e217]: Websites & apps
+          - list [ref=f2e218]:
+            - listitem [ref=f2e219]:
+              - link "Website and web app development" [ref=f2e220] [cursor=pointer]:
+                - /url: /services/websites-and-apps/
+            - listitem [ref=f2e221]:
+              - link "Website migrations" [ref=f2e222] [cursor=pointer]:
+                - /url: /services/website-migrations/
+            - listitem [ref=f2e223]:
+              - link "Website maintenance" [ref=f2e224] [cursor=pointer]:
+                - /url: /services/content-management/
+            - listitem [ref=f2e225]:
+              - link "Custom plugins" [ref=f2e226] [cursor=pointer]:
+                - /url: /services/custom-plugins/
+        - navigation "AI & automation" [ref=f2e227]:
+          - paragraph [ref=f2e228]: AI & automation
+          - list [ref=f2e229]:
+            - listitem [ref=f2e230]:
+              - link "AI integration" [ref=f2e231] [cursor=pointer]:
+                - /url: /services/ai-integration/
+            - listitem [ref=f2e232]:
+              - link "Business process automation" [ref=f2e233] [cursor=pointer]:
+                - /url: /services/automation/
+            - listitem [ref=f2e234]:
+              - link "Robotic process automation (RPA)" [ref=f2e235] [cursor=pointer]:
+                - /url: /services/rpa/
+            - listitem [ref=f2e236]:
+              - link "CRM integration" [ref=f2e237] [cursor=pointer]:
+                - /url: /services/crm-integration/
+            - listitem [ref=f2e238]:
+              - link "Back-office support (BPO)" [ref=f2e239] [cursor=pointer]:
+                - /url: /services/bpo/
+        - navigation "Design & marketing" [ref=f2e240]:
+          - paragraph [ref=f2e241]: Design & marketing
+          - list [ref=f2e242]:
+            - listitem [ref=f2e243]:
+              - link "UI/UX design" [ref=f2e244] [cursor=pointer]:
+                - /url: /services/ui-ux-design/
+            - listitem [ref=f2e245]:
+              - link "Digital marketing" [ref=f2e246] [cursor=pointer]:
+                - /url: /services/digital-marketing/
+            - listitem [ref=f2e247]:
+              - link "Brand and print design" [ref=f2e248] [cursor=pointer]:
+                - /url: /services/print-design/
+        - navigation "Resources" [ref=f2e249]:
+          - paragraph [ref=f2e250]: Resources
+          - list [ref=f2e251]:
+            - listitem [ref=f2e252]:
+              - link "Technical website audit" [ref=f2e253] [cursor=pointer]:
+                - /url: /website-check/
+            - listitem [ref=f2e254]:
+              - link "Email domain health check" [ref=f2e255] [cursor=pointer]:
+                - /url: /free/email-domain-check/
+            - listitem [ref=f2e256]:
+              - link "Project brief builder" [ref=f2e257] [cursor=pointer]:
+                - /url: /free/project-brief-builder/
+            - listitem [ref=f2e258]:
+              - link "Automation savings calculator" [ref=f2e259] [cursor=pointer]:
+                - /url: /free/automation-savings-calculator/
+            - listitem [ref=f2e260]:
+              - link "SEO starter checklist" [ref=f2e261] [cursor=pointer]:
+                - /url: /free/seo-checklist/
+            - listitem [ref=f2e262]:
+              - link "Shopify launch checklist" [ref=f2e263] [cursor=pointer]:
+                - /url: /free/shopify-launch-checklist/
+            - listitem [ref=f2e264]:
+              - link "Website privacy and trust checklist" [ref=f2e265] [cursor=pointer]:
+                - /url: /free/website-privacy-checklist/
+            - listitem [ref=f2e266]:
+              - link "Guides" [ref=f2e267] [cursor=pointer]:
+                - /url: /guides/
+        - navigation "Company" [ref=f2e268]:
+          - paragraph [ref=f2e269]: Company
+          - list [ref=f2e270]:
+            - listitem [ref=f2e271]:
+              - link "About us" [ref=f2e272] [cursor=pointer]:
+                - /url: /about-us/
+            - listitem [ref=f2e273]:
+              - link "How we work" [ref=f2e274] [cursor=pointer]:
+                - /url: /how-we-work/
+            - listitem [ref=f2e275]:
+              - link "Fixed-price projects" [ref=f2e276] [cursor=pointer]:
+                - /url: /how-we-work/#projects
+            - listitem [ref=f2e277]:
+              - link "Project management" [ref=f2e278] [cursor=pointer]:
+                - /url: /how-we-work/#project-management
+            - listitem [ref=f2e279]:
+              - link "Margin for Chrome" [ref=f2e280] [cursor=pointer]:
+                - /url: /margin/
+            - listitem [ref=f2e281]:
+              - link "Margin support" [ref=f2e282] [cursor=pointer]:
+                - /url: /margin/support/
+            - listitem [ref=f2e283]:
+              - link "Pricing" [ref=f2e284] [cursor=pointer]:
+                - /url: /pricing/
+            - listitem [ref=f2e285]:
+              - link "Contact" [ref=f2e286] [cursor=pointer]:
+                - /url: /contact-us/
+            - listitem [ref=f2e287]:
+              - link "Privacy" [ref=f2e288] [cursor=pointer]:
+                - /url: /privacy/
+    - generic [ref=f2e289]:
+      - separator [ref=f2e290]
+      - generic [ref=f2e291]:
+        - paragraph [ref=f2e292]: © 2026 Lilac Fragment. South Africa.
+        - paragraph [ref=f2e293]: Lilac Fragment is a registered Shopify Partner.

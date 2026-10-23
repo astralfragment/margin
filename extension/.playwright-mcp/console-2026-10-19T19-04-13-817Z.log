@@ -1,0 +1,325 @@
+[     121ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3232/_next/static/chunks/0389_next_dist_0~t9~86._.js:2477
+[     820ms] [LOG] [Fast Refresh] done in 803ms @ http://localhost:3232/_next/static/chunks/0389_next_dist_0~t9~86._.js:2477
+[     898ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3232/_next/static/chunks/0389_next_dist_0~t9~86._.js:2477
+[     915ms] [LOG] [HMR] connected @ http://localhost:3232/_next/static/chunks/0389_next_dist_0~t9~86._.js:2477
+[    1156ms] [ERROR] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <LoadingBoundary name="(pages)/" loading={null}>
+      <HTTPAccessFallbackBoundary notFound={<SegmentViewNode>} forbidden={undefined} unauthorized={undefined}>
+        <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<SegmentViewNode>} forbidden={undefined} ...>
+          <RedirectBoundary>
+            <RedirectErrorBoundary router={{...}}>
+              <InnerLayoutRouter url="/" tree={[...]} params={{}} cacheNode={{rsc:{...}, ...}} segmentPath={[...]} ...>
+                <SegmentViewNode type="page" pagePath="(pages)/pa...">
+                  <SegmentTrieNode>
+                  <Home>
+                    <div>
+                      <section>
+                      <QuizFab>
+                      <section>
+                      <CTASection>
+                        <section id="tell-us" className="dark bg-ba...">
+                          <ContentLayout>
+                            <div className="mx-auto w-...">
+                              <div>
+                              <LeadForm layout="compact" services={[...]} className="lg:col-sta...">
+                                <form ref={{current:null}} action="/lead.php" data-clarity-mask="true" method="post" ...>
+                                  <div className="grid gap-5...">
+                                    <div className="space-y-2">
+                                      <Label>
+                                      <Input id="_R_34inekn..." name="name" disabled={false} enterKeyHint="next" ...>
+                                        <Input type={undefined} data-slot="input" className="file:text-..." ...>
+                                          <FieldControl ref={null} type={undefined} data-slot="input" ...>
+                                            <input
+                                              id="_R_34ineknelb_-name"
+                                              disabled={false}
+                                              name="name"
+                                              ref={function}
+                                              aria-labelledby={undefined}
+                                              autoFocus={false}
+                                              defaultValue={undefined}
+                                              onChange={function}
+                                              onFocus={function}
+                                              onBlur={function}
+                                              onKeyDown={function}
+                                              type={undefined}
+                                              data-slot="input"
+                                              enterKeyHint="next"
+                                              autoComplete="name"
+                                              maxLength={120}
+                                              required={true}
+                                              aria-invalid={undefined}
+                                              aria-describedby={undefined}
+                                              className="file:text-foreground aria-invalid:border-destructive aria-inv..."
+-                                             style={{caret-color:"transparent"}}
+                                            >
+                                      ...
+                                    <div className="space-y-2">
+                                      <Label>
+                                      <Input id="_R_34inekn..." name="contact" disabled={false} enterKeyHint="next" ...>
+                                        <Input type={undefined} data-slot="input" className="file:text-..." ...>
+                                          <FieldControl ref={null} type={undefined} data-slot="input" ...>
+                                            <input
+                                              id="_R_34ineknelb_-contact"
+                                              disabled={false}
+                                              name="contact"
+                                              ref={function}
+                                              aria-labelledby={undefined}
+                                              autoFocus={false}
+                                              defaultValue={undefined}
+                                              onChange={function}
+                                              onFocus={function}
+                                              onBlur={function}
+                                              onKeyDown={function}
+                                              type={undefined}
+                                              data-slot="input"
+                                              enterKeyHint="next"
+                                              inputMode="email"
+                                              autoComplete="email"
+                                              autoCapitalize="none"
+                                              spellCheck={false}
+                                              maxLength={160}
+                                              required={true}
+                                              aria-invalid={undefined}
+                                              aria-describedby={undefined}
+                                              className="file:text-foreground aria-invalid:border-destructive aria-inv..."
+-                                             style={{caret-color:"transparent"}}
+                                            >
+                                      ...
+                                  <div>
+                                  <div className="space-y-2">
+                                    <Label>
+                                    <Textarea id="_R_34inekn..." name="message" disabled={false} rows={3} ...>
+                                      <textarea
+                                        data-slot="textarea"
+                                        className="aria-invalid:border-destructive aria-invalid:ring-destructive/20 da..."
+                                        id="_R_34ineknelb_-message"
+                                        name="message"
+                                        disabled={false}
+                                        rows={3}
+                                        maxLength={5000}
+                                        aria-describedby={undefined}
+-                                       style={{caret-color:"transparent"}}
+                                      >
+                                  <div className="space-y-2">
+                                    <label htmlFor="_R_34inekn..." className="flex min-h...">
+                                      <input
+                                        type="checkbox"
+                                        id="_R_34ineknelb_-consent"
+                                        name="consent"
+                                        value="yes"
+                                        disabled={false}
+                                        required={true}
+                                        aria-invalid={undefined}
+                                        aria-describedby={undefined}
+                                        className="accent-brand-deep focus-visible:outline-ring mt-0.5 size-5 shrink-0..."
+-                                       style={{caret-color:"transparent"}}
+                                      >
+                                      ...
+                                    ...
+                                  <label htmlFor="_R_34inekn..." className="flex min-h...">
+                                    <input
+                                      type="checkbox"
+                                      id="_R_34ineknelb_-marketing"
+                                      name="marketing"
+                                      value="yes"
+                                      disabled={false}
+                                      className="accent-brand-deep focus-visible:outline-ring mt-0.5 size-5 shrink-0 c..."
+-                                     style={{caret-color:"transparent"}}
+                                    >
+                                    ...
+                                  <div aria-hidden="true" className="absolute -...">
+                                    <label>
+                                    <input
+                                      type="text"
+                                      id="_R_34ineknelb_-website"
+                                      name="website"
+                                      tabIndex={-1}
+                                      autoComplete="off"
+-                                     style={{caret-color:"transparent"}}
+                                    >
+                                  <input
+                                    ref={{current:null}}
+                                    type="hidden"
+                                    name="ts"
+                                    defaultValue=""
+-                                   style={{caret-color:"transparent"}}
+                                  >
+                                  <input
+                                    ref={{current:null}}
+                                    type="hidden"
+                                    name="page"
+                                    defaultValue=""
+-                                   style={{caret-color:"transparent"}}
+                                  >
+                                  ...
+                              ...
+                      <section>
+                      <ToolsBand>
+                        <section className="dark bg-ba...">
+                          ...
+                            <div className="flex flex-...">
+                              <div>
+                              <AuditLeadForm title="Technical ...">
+                                <form ref={{current:null}} action="/lead.php" data-clarity-mask="true" method="post" ...>
+                                  <p>
+                                  <input
+                                    type="hidden"
+                                    name="services[]"
+                                    value="Technical website audit"
+-                                   style={{caret-color:"transparent"}}
+                                  >
+                                  <div className="grid gap-3...">
+                                    <div className="space-y-1">
+                                      <Label>
+                                      <Input id="_R_4minekn..." name="name" autoComplete="name" placeholder="Your name" ...>
+                                        <Input type={undefined} data-slot="input" className="file:text-..." ...>
+                                          <FieldControl ref={null} type={undefined} data-slot="input" ...>
+                                            <input
+                                              id="_R_4mineknelb_-name"
+                                              disabled={false}
+                                              name="name"
+                                              ref={function}
+                                              aria-labelledby={undefined}
+                                              autoFocus={false}
+                                              defaultValue={undefined}
+                                              onChange={function}
+                                              onFocus={function}
+                                              onBlur={function}
+                                              onKeyDown={function}
+                                              type={undefined}
+                                              data-slot="input"
+                                              autoComplete="name"
+                                              placeholder="Your name"
+                                              maxLength={120}
+                                              required={true}
+                                              aria-invalid={undefined}
+                                              aria-describedby={undefined}
+                                              className="file:text-foreground placeholder:text-muted-foreground aria-i..."
+-                                             style={{caret-color:"transparent"}}
+                                            >
+                                    <div className="space-y-1">
+                                      <Label>
+                                      <Input id="_R_4minekn..." name="contact" type="email" autoComplete="email" ...>
+                                        <Input type="email" data-slot="input" className="file:text-..." ...>
+                                          <FieldControl ref={null} type="email" data-slot="input" ...>
+                                            <input
+                                              id="_R_4mineknelb_-contact"
+                                              disabled={false}
+                                              name="contact"
+                                              ref={function}
+                                              aria-labelledby={undefined}
+                                              autoFocus={false}
+                                              defaultValue={undefined}
+                                              onChange={function}
+                                              onFocus={function}
+                                              onBlur={function}
+                                              onKeyDown={function}
+                                              type="email"
+                                              data-slot="input"
+                                              autoComplete="email"
+                                              placeholder="Your email address"
+                                              autoCapitalize="none"
+                                              spellCheck={false}
+                                              maxLength={160}
+                                              required={true}
+                                              aria-invalid={undefined}
+                                              aria-describedby={undefined}
+                                              className="file:text-foreground placeholder:text-muted-foreground aria-i..."
+-                                             style={{caret-color:"transparent"}}
+                                            >
+                                  ...
+                                    <Input id="_R_4minekn..." name="url" type="text" inputMode="url" autoComplete="url" ...>
+                                      <Input type="text" data-slot="input" className="file:text-..." id="_R_4minekn..." ...>
+                                        <FieldControl ref={null} type="text" data-slot="input" className="file:text-..." ...>
+                                          <input
+                                            id="_R_4mineknelb_-url"
+                                            disabled={false}
+                                            name="url"
+                                            ref={function}
+                                            aria-labelledby={undefined}
+                                            autoFocus={false}
+                                            defaultValue={undefined}
+                                            onChange={function}
+                                            onFocus={function}
+                                            onBlur={function}
+                                            onKeyDown={function}
+                                            type="text"
+                                            data-slot="input"
+                                            inputMode="url"
+                                            autoComplete="url"
+                                            autoCapitalize="none"
+                                            spellCheck={false}
+                                            placeholder="Your website address"
+                                            maxLength={2048}
+                                            required={true}
+                                            aria-invalid={undefined}
+                                            aria-describedby={undefined}
+                                            className="file:text-foreground placeholder:text-muted-foreground aria-inv..."
+-                                           style={{caret-color:"transparent"}}
+                                          >
+                                  <div className="space-y-1">
+                                    <div className="flex items...">
+                                      <input
+                                        type="checkbox"
+                                        id="_R_4mineknelb_-consent"
+                                        name="consent"
+                                        value="yes"
+                                        required={true}
+                                        aria-invalid={undefined}
+                                        aria-describedby={undefined}
+                                        className="accent-brand-deep focus-visible:outline-ring mt-0.5 size-5 shrink-0..."
+-                                       style={{caret-color:"transparent"}}
+                                      >
+                                      ...
+                                  <div aria-hidden="true" className="absolute -...">
+                                    <label>
+                                    <input
+                                      type="text"
+                                      id="_R_4mineknelb_-website"
+                                      name="website"
+                                      tabIndex={-1}
+                                      autoComplete="off"
+-                                     style={{caret-color:"transparent"}}
+                                    >
+                                  <input
+                                    type="hidden"
+                                    name="ts"
+                                    defaultValue=""
+-                                   style={{caret-color:"transparent"}}
+                                  >
+                                  <input
+                                    type="hidden"
+                                    name="page"
+                                    defaultValue=""
+-                                   style={{caret-color:"transparent"}}
+                                  >
+                      ...
+                ...
+              ...
+ @ http://localhost:3232/_next/static/chunks/0389_next_dist_0~t9~86._.js:3318
+[    1401ms] [WARNING] Data from this session is not being collected by Microsoft Clarity due to your configured project settings @ http://localhost:3232/_next/static/chunks/0389_next_dist_0~t9~86._.js:2477
+[    1402ms] [WARNING] Data from this session is not being collected by Microsoft Clarity due to your configured project settings @ http://localhost:3232/_next/static/chunks/0389_next_dist_0~t9~86._.js:2477
+[   74821ms] [ERROR] WebSocket connection to 'ws://localhost:3232/_next/webpack-hmr?id=O2w9XaQUVk9hkgT_DgJ0X' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3232/_next/static/chunks/0389_next_dist_client_0ikh-ct._.js:13330
+[   75826ms] [ERROR] WebSocket connection to 'ws://localhost:3232/_next/webpack-hmr?id=O2w9XaQUVk9hkgT_DgJ0X' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3232/_next/static/chunks/0389_next_dist_client_0ikh-ct._.js:13330
+[   76832ms] [ERROR] WebSocket connection to 'ws://localhost:3232/_next/webpack-hmr?id=O2w9XaQUVk9hkgT_DgJ0X' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3232/_next/static/chunks/0389_next_dist_client_0ikh-ct._.js:13330
+[   77838ms] [ERROR] WebSocket connection to 'ws://localhost:3232/_next/webpack-hmr?id=O2w9XaQUVk9hkgT_DgJ0X' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3232/_next/static/chunks/0389_next_dist_client_0ikh-ct._.js:13330
+[   78843ms] [ERROR] WebSocket connection to 'ws://localhost:3232/_next/webpack-hmr?id=O2w9XaQUVk9hkgT_DgJ0X' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3232/_next/static/chunks/0389_next_dist_client_0ikh-ct._.js:13330
+[   83854ms] [ERROR] WebSocket connection to 'ws://localhost:3232/_next/webpack-hmr?id=O2w9XaQUVk9hkgT_DgJ0X' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3232/_next/static/chunks/0389_next_dist_client_0ikh-ct._.js:13330
+[   88860ms] [ERROR] WebSocket connection to 'ws://localhost:3232/_next/webpack-hmr?id=O2w9XaQUVk9hkgT_DgJ0X' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3232/_next/static/chunks/0389_next_dist_client_0ikh-ct._.js:13330
+[   93867ms] [ERROR] WebSocket connection to 'ws://localhost:3232/_next/webpack-hmr?id=O2w9XaQUVk9hkgT_DgJ0X' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3232/_next/static/chunks/0389_next_dist_client_0ikh-ct._.js:13330
+[   98872ms] [ERROR] WebSocket connection to 'ws://localhost:3232/_next/webpack-hmr?id=O2w9XaQUVk9hkgT_DgJ0X' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3232/_next/static/chunks/0389_next_dist_client_0ikh-ct._.js:13330
+[  103878ms] [ERROR] WebSocket connection to 'ws://localhost:3232/_next/webpack-hmr?id=O2w9XaQUVk9hkgT_DgJ0X' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3232/_next/static/chunks/0389_next_dist_client_0ikh-ct._.js:13330
+[  108883ms] [ERROR] WebSocket connection to 'ws://localhost:3232/_next/webpack-hmr?id=O2w9XaQUVk9hkgT_DgJ0X' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3232/_next/static/chunks/0389_next_dist_client_0ikh-ct._.js:13330
+[  113888ms] [ERROR] WebSocket connection to 'ws://localhost:3232/_next/webpack-hmr?id=O2w9XaQUVk9hkgT_DgJ0X' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3232/_next/static/chunks/0389_next_dist_client_0ikh-ct._.js:13330
