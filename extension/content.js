@@ -856,9 +856,11 @@
       e.stopPropagation();
     });
     root.append(menu);
-    const below = target && target.height < innerHeight / 3 && target.bottom + 6 + menu.offsetHeight <= innerHeight - EDGE ? target.bottom + 6 : y + 8;
+    let top = y + 8;
+    const fitsBelow = target && target.height < innerHeight / 3 && target.bottom + 6 + menu.offsetHeight <= innerHeight - EDGE;
+    if (fitsBelow) top = target.bottom + 6;
     menu.style.left = `${Math.max(EDGE, Math.min(x + 6, window.innerWidth - menu.offsetWidth - EDGE))}px`;
-    menu.style.top = `${Math.max(EDGE, Math.min(below, window.innerHeight - menu.offsetHeight - EDGE))}px`;
+    menu.style.top = `${Math.max(EDGE, Math.min(top, window.innerHeight - menu.offsetHeight - EDGE))}px`;
     state.menu = menu;
     menu.querySelector('button').focus();
   }
