@@ -8,3 +8,4 @@ node_modules/
 Thumbs.db
 .DS_Store
 store/assets/
+.playwright-mcp/
