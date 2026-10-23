@@ -1,4 +1,7 @@
-import { issuesInGroup, readRaw } from './lib/store.js';
+import { issuesInGroup, readRaw, addGroup, patchGroup } from './lib/store.js';
+import { refreshLinks, statusTone } from './lib/review-links.js';
+import { mountReviewSheet } from './lib/review-sheet.js';
+import { icon } from './lib/icons.js';
 import {
   buildReport,
   renderBody,
@@ -11,7 +14,7 @@ import {
 } from './lib/report-template.js';
 import { buildDocsHtml, buildDocsText } from './lib/docs-template.js';
 import { buildMarkdown, commentHtml, commentMarkdown } from './lib/share-template.js';
-import { buildReviewFile } from './lib/review-file.js';
+import { buildReviewFile, cleanJiraLink, cleanFigmaLink } from './lib/review-file.js';
 import { SEVERITIES, severityOf } from './lib/severity.js';
 import { STATUSES, statusOf } from './lib/status.js';
 import { FACT_FIELDS, withDefaults } from './lib/fields.js';
@@ -130,25 +133,87 @@ groupEl.addEventListener('change', () => {
   location.search = `?group=${groupEl.value}`;
 });
 
-document.querySelector('[data-rename-group]').addEventListener('click', async () => {
-  if (!group) return;
-  const name = prompt('Rename this group', group.name);
-  if (name === null || !name.trim()) return;
-  await send('groupRename', { id: group.id, name: name.trim() });
-  location.reload();
+const reviewMenu = document.querySelector('.review-menu');
+const sessionDialog = document.querySelector('[data-session-dialog]');
+reviewMenu.querySelector('[data-review-menu-icon]').innerHTML = icon('more');
+for (const [selector, name] of [['[data-new-group]', 'plus'], ['[data-rename-group]', 'pencil'], ['[data-edit-links]', 'jira']]) {
+  reviewMenu.querySelector(selector).insertAdjacentHTML('afterbegin', icon(name));
+}
+reviewMenu.querySelector('[data-rename-group]').hidden = !group;
+reviewMenu.querySelector('[data-edit-links]').hidden = !group;
+
+/**
+ * Opens the review sheet in a dialog, to start a review or change this one's name and links.
+ * @param {'new' | 'edit'} mode Start or edit.
+ * @param {'name' | 'jira' | 'figma'} [focus] The field to focus.
+ */
+function openReviewSheet(mode, focus = 'name') {
+  reviewMenu.open = false;
+  sessionDialog.showModal();
+  mountReviewSheet(sessionDialog, {
+    mode,
+    focus,
+    group: mode === 'edit' ? group : null,
+    name: `Review ${new Date().toLocaleDateString()}`,
+    onClose: () => sessionDialog.close(),
+    onSubmit: async ({ name, jira, figma }) => {
+      const links = { jira: cleanJiraLink(jira), figma: cleanFigmaLink(figma) };
+      if (mode === 'edit') {
+        await patchGroup(group.id, { name, ...links });
+        location.reload();
+        return;
+      }
+      const created = await addGroup(name);
+      await patchGroup(created.id, links);
+      location.search = `?group=${created.id}`;
+    },
+  });
+}
+
+sessionDialog.addEventListener('cancel', (event) => {
+  event.preventDefault();
+  sessionDialog.close();
+});
+document.querySelector('[data-new-group]').addEventListener('click', () => openReviewSheet('new'));
+document.querySelector('[data-rename-group]').addEventListener('click', () => openReviewSheet('edit', 'name'));
+document.querySelector('[data-edit-links]').addEventListener('click', () => openReviewSheet('edit', 'jira'));
+
+const chipsEl = document.querySelector('[data-link-chips]');
+
+/** Shows the review's linked ticket and file as chips that open them in a new tab. */
+function renderChips() {
+  const chip = (kind, label, extra, url) =>
+    `<button class="link-chip" type="button" data-chip-url="${escapeText(url)}" title="${url ? `Open ${escapeText(label)}` : 'Connect in Help and settings to bring in details'}">${icon(kind)}<span class="label">${escapeText(label)}</span>${extra}</button>`;
+  chipsEl.innerHTML = [
+    group?.jira?.key &&
+      chip('jira', group.jira.key, group.jira.status ? `<span class="tone-${statusTone(group.jira.statusCategory)}">${escapeText(group.jira.status)}</span>` : '', group.jira.url),
+    group?.figma?.fileKey && chip('figma', group.figma.name || 'Figma file', '', group.figma.url),
+  ]
+    .filter(Boolean)
+    .join('');
+}
+
+chipsEl.addEventListener('click', (event) => {
+  const url = event.target.closest('[data-chip-url]')?.dataset.chipUrl;
+  if (url) chrome.tabs.create({ url });
+  else if (event.target.closest('[data-chip-url]')) chrome.runtime.openOptionsPage();
 });
 
-document.querySelector('[data-new-group]').addEventListener('click', async () => {
-  const name = prompt('Name the new review', `Review ${new Date().toLocaleDateString()}`);
-  if (name === null) return;
-  const res = await send('groupCreate', { name });
-  location.search = `?group=${res.group.id}`;
-});
+renderChips();
+if (group) {
+  refreshLinks(group).then(async ({ patch }) => {
+    if (!Object.keys(patch).length) return;
+    Object.assign(group, await patchGroup(group.id, patch));
+    renderChips();
+  });
+}
 
 /* Report ----------------------------------------------------------------- */
 
 const issues = await issuesInGroup(groupId);
 const ordered = sortIssues(issues);
+/** A comment's number, which is the order it was made in and stays the same in the report, popup and overlay. */
+const numberOf = (issue) => issues.indexOf(issue) + 1;
 const generatedAt = new Date();
 const hosts = hostsOf(issues);
 const title = group?.name ?? (hosts.length === 1 ? `UI issue report, ${hosts[0]}` : 'UI issue report');
@@ -234,7 +299,7 @@ indexEl.innerHTML = ordered.length
         const status = statusOf(issue.status);
         return `<button class="index-row${issue.jira?.key ? ' linked' : ''}" type="button" data-jump="${index + 1}" data-sev="${sev.key}" data-status="${status.key}"
             data-text="${escapeText(`${issue.title ?? ''} ${issue.note ?? ''} ${issue.element?.selector ?? ''} ${hostOf(issue.page?.url)}`.toLowerCase())}">
-          <span class="n">${pad(index + 1)}</span>
+          <span class="n">${pad(numberOf(issue))}</span>
           <span class="dot"></span>
           <span class="label">
             <b data-key="${escapeText(issue.jira?.key ?? '')}">${escapeText(issue.title || 'Untitled comment')}</b>
@@ -523,11 +588,11 @@ const REPORT_TOUR = [
   { target: firstPreviewShot, title: 'Number the details', body: 'Click any screenshot to open the image editor and add numbered markers, boxes and arrows.' },
   { target: '[data-edit]', title: 'Tidy the wording', body: 'Fix titles, notes and severity for every comment in one place.' },
   { target: '[data-copy]', title: 'Hand it over', body: 'Paste the whole review into Google Docs. Numbered notes stay numbered.' },
-  { target: '.menu > summary', title: 'More ways out', body: 'Word, HTML and Markdown, review files to share, which fields to show, printing, and this tour again.' },
+  { target: '.menu:not(.review-menu) > summary', title: 'More ways out', body: 'Word, HTML and Markdown, review files to share, which fields to show, printing, and this tour again.' },
 ];
 
 document.querySelector('[data-tour]').addEventListener('click', () => {
-  document.querySelector('.menu').open = false;
+  document.querySelector('.menu:not(.review-menu)').open = false;
   startTour('report', REPORT_TOUR);
 });
 document.querySelector('[data-help]').addEventListener('click', () => chrome.runtime.openOptionsPage());
@@ -659,7 +724,7 @@ let imagesChanged = false;
 function editImage(issue, index) {
   openEditor(issue, {
     send,
-    label: `Edit image, comment ${pad(index + 1)}`,
+    label: `Edit image, comment ${pad(numberOf(issue))}`,
     onChange: (saved) => {
       refreshPreview();
       if (!editDialog.open) return;
@@ -688,7 +753,7 @@ function editRow(issue, index) {
   const row = document.createElement('div');
   row.className = 'edit-row';
   row.innerHTML = `
-    <span class="n">${pad(index + 1)}</span>
+    <span class="n">${pad(numberOf(issue))}</span>
     <span class="stack">
       <select data-field="severity" aria-label="Severity">
         ${SEVERITIES.map((s) => `<option value="${s.key}">${s.label}</option>`).join('')}
@@ -917,7 +982,7 @@ function paintWalk() {
     return;
   }
   const issue = list[at];
-  const n = ordered.indexOf(issue) + 1;
+  const n = numberOf(issue);
   const sev = severityOf(issue.severity);
   paintVerify(
     `${at + 1} of ${list.length}`,

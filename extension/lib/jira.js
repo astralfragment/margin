@@ -187,6 +187,60 @@ async function attach(cloudId, key, files) {
 }
 
 /**
+ * Every comment of a review as a numbered section, with its severity, note, markers and links.
+ * @param {object[]} issues The comments, in report order.
+ */
+const reviewSections = (issues) =>
+  issues.flatMap((issue, i) => [
+    { type: 'heading', attrs: { level: 3 }, content: [text(`${pad(i + 1)} ${issue.title || 'Untitled comment'}`)] },
+    ...para(text(`Severity ${severityOf(issue.severity).label}`)),
+    ...commentBlocks(issue),
+  ]);
+
+/**
+ * Links a new issue to the review's ticket with Jira's Relates link.
+ * @param {string} cloudId The site's cloud id.
+ * @param {string} from The new issue's key.
+ * @param {string} to The review's ticket key.
+ */
+async function relate(cloudId, from, to) {
+  await authedJson('jira', api(cloudId, '/issueLink'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: { name: 'Relates' }, inwardIssue: { key: from }, outwardIssue: { key: to } }),
+  });
+}
+
+/**
+ * Adds the whole review as one comment on the review's linked ticket, and attaches the screenshots to that ticket.
+ * @param {object} options What to post.
+ * @param {{ id: string, url: string }} options.site The ticket's Jira site.
+ * @param {string} options.key The ticket key.
+ * @param {object[]} options.issues The comments, in report order.
+ * @param {'both' | 'detail' | 'viewport'} options.shots Which screenshots to attach.
+ * @param {string} options.reviewTitle The review's name.
+ * @returns {Promise<{ key: string, url: string, warning?: string }>} The ticket, with a warning when the screenshots did not upload.
+ */
+export async function commentOnTicket({ site, key, issues, shots, reviewTitle }) {
+  const body = doc([
+    ...para(text(`${reviewTitle || 'UI review'}. ${issues.length} ${issues.length === 1 ? 'comment' : 'comments'} from a Margin review. Screenshots are attached to this issue, numbered as below.`)),
+    ...reviewSections(issues),
+  ]);
+  await authedJson('jira', api(site.id, `/issue/${encodeURIComponent(key)}/comment`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ body }),
+  });
+  const result = { key, url: `${site.url}/browse/${key}` };
+  try {
+    await attach(site.id, key, (await Promise.all(issues.map((issue, i) => imagesFor(issue, shots, `${pad(i + 1)}-`)))).flat());
+  } catch (err) {
+    result.warning = err.message;
+  }
+  return result;
+}
+
+/**
  * Creates Jira issues from review comments, one per comment or one for the whole review, with the screenshots attached.
  * Reports progress after each issue and keeps going when one fails, so a single bad comment does not stop the rest.
  * @param {object} options What to create.
@@ -198,8 +252,9 @@ async function attach(cloudId, key, files) {
  * @param {'both' | 'detail' | 'viewport'} options.shots Which screenshots to attach.
  * @param {string} options.reviewTitle The summary for a whole-review issue.
  * @param {(done: number, total: number) => void} [options.onProgress] Called after each issue.
+ * @param {string} [options.linkTo] The review's ticket key, which each new issue is linked to.
  */
-export async function createIssues({ site, projectId, issueTypeId, issues, mode, shots, reviewTitle, onProgress }) {
+export async function createIssues({ site, projectId, issueTypeId, issues, mode, shots, reviewTitle, onProgress, linkTo }) {
   const priorities = await authedJson('jira', api(site.id, '/priority')).catch(() => []);
   const base = { project: { id: projectId }, issuetype: { id: issueTypeId } };
   const browse = (key) => `${site.url}/browse/${key}`;
@@ -213,11 +268,7 @@ export async function createIssues({ site, projectId, issueTypeId, issues, mode,
               summary: (reviewTitle || 'UI review').slice(0, 250),
               description: doc([
                 ...para(text(`${issues.length} ${issues.length === 1 ? 'comment' : 'comments'} from a Margin review. Screenshots are attached, numbered as below.`)),
-                ...issues.flatMap((issue, i) => [
-                  { type: 'heading', attrs: { level: 3 }, content: [text(`${pad(i + 1)} ${issue.title || 'Untitled comment'}`)] },
-                  ...para(text(`Severity ${severityOf(issue.severity).label}`)),
-                  ...commentBlocks(issue),
-                ]),
+                ...reviewSections(issues),
               ]),
               ...withPriority(priorities, worstSeverity(issues)),
             },
@@ -244,6 +295,11 @@ export async function createIssues({ site, projectId, issueTypeId, issues, mode,
         await attach(site.id, created.key, await job.files());
       } catch (err) {
         result.warning = err.message;
+      }
+      if (linkTo) {
+        await relate(site.id, created.key, linkTo).catch((err) => {
+          result.warning = [result.warning, `It was not linked to ${linkTo}. ${err.message}`].filter(Boolean).join(' ');
+        });
       }
       results.push(result);
     } catch (err) {
