@@ -2,6 +2,7 @@ import { SEVERITIES, SEVERITY_ORDER, severityOf } from './severity.js';
 import { STATUSES, statusOf } from './status.js';
 import { DEFAULT_FIELDS, withDefaults } from './fields.js';
 import { markList } from './marks.js';
+import { widthCaption, widthShots } from './widths.js';
 
 export const escapeHtml = (value) =>
   String(value ?? '')
@@ -80,10 +81,12 @@ figure img { display: block; max-width: 100%; border: 1px solid var(--line); bor
 figcaption { margin-top: var(--s1); font-size: 11px; font-weight: 600; color: var(--ink-2); }
 .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); margin: var(--s4) 0 0 var(--s5); }
 .pair figure { margin: 0; }
+.widths { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); align-items: start; margin: var(--s4) 0 0 var(--s5); }
+.widths figure { margin: 0; }
 .empty { border: 1px dashed var(--line); border-radius: var(--radius); padding: var(--s6); text-align: center; color: var(--ink-2); }
 @media (max-width: 560px) {
-  .note, ol.marks, dl.facts, figure, .pair { margin-left: 0; }
-  .pair { grid-template-columns: minmax(0, 1fr); }
+  .note, ol.marks, dl.facts, figure, .pair, .widths { margin-left: 0; }
+  .pair, .widths { grid-template-columns: minmax(0, 1fr); }
   dl.facts { grid-template-columns: 74px minmax(0, 1fr); }
   .issue > header { flex-wrap: wrap; }
 }
@@ -222,6 +225,24 @@ function regionFigures(issue, index) {
 }
 
 /**
+ * The region at mobile, tablet and desktop widths in one row, or nothing when the comment was not captured at widths.
+ * @param {object} issue The stored comment.
+ * @param {number} index Its position in the report.
+ */
+function widthFigures(issue, index) {
+  const shots = widthShots(issue);
+  if (!shots.length) return '';
+  return `<div class="widths">
+        ${shots
+          .map(
+            (shot) =>
+              `<figure><img class="at-width" alt="${esc(shot.label)} width for comment ${index + 1}" src="${shot.src}" /><figcaption>${esc(widthCaption(shot))}</figcaption></figure>`,
+          )
+          .join('\n        ')}
+      </div>`;
+}
+
+/**
  * Caption for the image taken when a comment was rechecked.
  * @param {{ checkedAt?: string }} issue The stored comment.
  */
@@ -229,7 +250,7 @@ export function recheckCaption(issue) {
   return issue.checkedAt ? `After, rechecked ${new Date(issue.checkedAt).toLocaleString()}` : 'After recheck';
 }
 
-function issueCard(issue, index, shots, fields) {
+function issueCard(issue, index, shots, fields, widths) {
   const sev = severityOf(issue.severity);
   const status = statusOf(issue.status);
   return `
@@ -255,6 +276,7 @@ function issueCard(issue, index, shots, fields) {
           : ''
       }
       ${issue.detail && shots !== 'viewport' ? regionFigures(issue, index) : ''}
+      ${widths ? widthFigures(issue, index) : ''}
       <dl class="facts">
         ${factRows(issue, fields)}
       </dl>
@@ -276,7 +298,7 @@ export function sortIssues(issues) {
 }
 
 /** Renders the report contents, without the surrounding document. */
-export function renderBody(issues, { title = 'UI issue report', generatedAt = new Date(), shots = 'both', fields = DEFAULT_FIELDS } = {}) {
+export function renderBody(issues, { title = 'UI issue report', generatedAt = new Date(), shots = 'both', fields = DEFAULT_FIELDS, widths = true } = {}) {
   const sorted = sortIssues(issues);
   const counts = Object.fromEntries(
     SEVERITIES.map((s) => [s.key, sorted.filter((i) => severityOf(i.severity).key === s.key).length]),
@@ -297,7 +319,7 @@ export function renderBody(issues, { title = 'UI issue report', generatedAt = ne
       : '';
 
   const body = sorted.length
-    ? sorted.map((issue, index) => issueCard(issue, index, shots, withDefaults(fields))).join('\n')
+    ? sorted.map((issue, index) => issueCard(issue, index, shots, withDefaults(fields), widths)).join('\n')
     : '<p class="empty">No issues captured.</p>';
 
   return `<div class="wrap">

@@ -8,6 +8,8 @@ import { statusOf } from './status.js';
 export const REVIEW_FORMAT = 'margin-review';
 export const REVIEW_VERSION = 1;
 
+import { PLACEMENTS, WIDTHS } from './widths.js';
+
 const MARK_KINDS = new Set(['dot', 'box', 'arrow']);
 const SEVERITY_KEYS = new Set(['blocker', 'major', 'minor', 'nit']);
 
@@ -53,6 +55,34 @@ function image(value) {
 }
 
 /**
+ * Rebuilds a comment's selection anchor, or returns null when it is missing or malformed.
+ * @param {any} anchor The anchor from the file.
+ */
+function cleanAnchor(anchor) {
+  if (!anchor || typeof anchor !== 'object' || typeof anchor.selector !== 'string' || !anchor.box) return null;
+  return {
+    selector: text(anchor.selector, 1000),
+    nth: Math.max(0, Math.floor(number(anchor.nth))),
+    tag: text(anchor.tag, 40),
+    text: text(anchor.text, 80),
+    box: { fx: number(anchor.box.fx), fy: number(anchor.box.fy), fw: number(anchor.box.fw) || 1, fh: number(anchor.box.fh) || 1 },
+  };
+}
+
+/**
+ * Rebuilds a comment's mobile, tablet and desktop shots, keeping only those with a valid image.
+ * @param {any} shots The shots from the file.
+ */
+function cleanShots(shots) {
+  if (!shots || typeof shots !== 'object') return undefined;
+  const kept = WIDTHS.filter((w) => image(shots[w.key]?.src)).map((w) => [
+    w.key,
+    { src: shots[w.key].src, width: number(shots[w.key].width) || w.width, placed: PLACEMENTS.includes(shots[w.key].placed) ? shots[w.key].placed : 'lost' },
+  ]);
+  return kept.length ? Object.fromEntries(kept) : undefined;
+}
+
+/**
  * Rebuilds one imported comment from known fields only.
  * @param {any} issue A comment from the file.
  */
@@ -81,6 +111,7 @@ function cleanIssue(issue) {
           styles: el.styles ? { font: text(el.styles.font, 200), color: text(el.styles.color, 80) } : undefined,
         }
       : null,
+    anchor: cleanAnchor(issue.anchor),
     rect: { x: number(issue.rect?.x), y: number(issue.rect?.y), w: number(issue.rect?.w) || 4, h: number(issue.rect?.h) || 4 },
     marks: (Array.isArray(issue.marks) ? issue.marks : [])
       .filter((mark) => MARK_KINDS.has(mark?.kind))
@@ -109,6 +140,8 @@ function cleanIssue(issue) {
     after: image(issue.after),
     checkedAt: issue.after && !Number.isNaN(Date.parse(issue.checkedAt)) ? issue.checkedAt : null,
     change: issue.after ? optionalNumber(issue.change) ?? null : null,
+    shots: cleanShots(issue.shots),
+    shotsAt: issue.shots && !Number.isNaN(Date.parse(issue.shotsAt)) ? issue.shotsAt : undefined,
     raw: image(issue.raw?.src) ? { src: issue.raw.src, hasBox: Boolean(issue.raw.hasBox) } : null,
   };
 }

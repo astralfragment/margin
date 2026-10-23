@@ -3,6 +3,7 @@ import { statusOf as reviewStatusOf } from './status.js';
 import { environmentText, escapeHtml as esc, recheckCaption, routeOf, sortIssues } from './report-template.js';
 import { DEFAULT_FIELDS, withDefaults } from './fields.js';
 import { markList } from './marks.js';
+import { widthCaption, widthShots, widthsLine } from './widths.js';
 
 /**
  * Document flavour, shaped like the AIE review comments template: a COMM
@@ -107,6 +108,23 @@ function image(src, alt, caption) {
   }`;
 }
 
+/**
+ * The region at mobile, tablet and desktop widths as a borderless one row table, which Docs and Word both keep side by side.
+ * @param {object} issue The stored comment.
+ * @param {number} index Its position in its page section.
+ */
+function widthRow(issue, index) {
+  const shots = widthShots(issue);
+  if (!shots.length) return '';
+  const cell = Math.floor(IMAGE_WIDTH / 3) - 8;
+  return `<table cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin: 8px 0 4px;"><tbody><tr>${shots
+    .map(
+      (shot) =>
+        `<td style="padding: 0 8px 0 0; vertical-align: top; width: ${cell}px;"><img src="${shot.src}" alt="${esc(shot.label)} width for C${index + 1}" width="${cell}" /><p style="${SMALL} margin: 2px 0 0;">${esc(widthCaption(shot))}</p></td>`,
+    )
+    .join('')}</tr></tbody></table>`;
+}
+
 /** The facts that sit under the note, one short line each. */
 function factLines(issue, fields) {
   const el = issue.element;
@@ -139,7 +157,7 @@ function factLines(issue, fields) {
   return rows;
 }
 
-function commentRow(issue, index, shots, fields) {
+function commentRow(issue, index, shots, fields, widths) {
   const sev = severityOf(issue.severity);
   return `<tr>
         <td style="${CELL} width: ${COLS.number}px; font-weight: 700;">C${index + 1}</td>
@@ -156,6 +174,7 @@ function commentRow(issue, index, shots, fields) {
           ${factLines(issue, fields)}
           ${shots === 'viewport' ? '' : image(issue.detail, `Marked region for C${index + 1}`)}
           ${shots === 'viewport' || !issue.after ? '' : image(issue.after, `Same region after recheck for C${index + 1}`, recheckCaption(issue))}
+          ${widths ? widthRow(issue, index) : ''}
           ${shots === 'detail' ? '' : image(issue.shot, `Full viewport for C${index + 1}`, 'Full viewport')}
         </td>
         <td style="${CELL} width: ${COLS.status}px; background: ${statusOf(issue).fill};">${esc(statusOf(issue).label)}</td>
@@ -165,7 +184,7 @@ function commentRow(issue, index, shots, fields) {
       </tr>`;
 }
 
-function commSection(group, number, shots, fields) {
+function commSection(group, number, shots, fields, widths) {
   return `
   <h2 style="${H2}">COMM${number}: ${esc(routeOf(group.page))}</h2>
   <p style="${P}"><a href="${esc(group.page.url)}">${esc(group.page.url)}</a></p>
@@ -183,7 +202,7 @@ function commSection(group, number, shots, fields) {
         <td style="${HEAD_CELL} width: ${COLS.status}px; border: 0;">Status</td>
         <td style="${HEAD_CELL} width: ${COLS.notes}px; border: 0;">Notes</td>
       </tr>
-      ${group.issues.map((issue, i) => commentRow(issue, i, shots, fields)).join('\n      ')}
+      ${group.issues.map((issue, i) => commentRow(issue, i, shots, fields, widths)).join('\n      ')}
     </tbody>
   </table>`;
 }
@@ -214,7 +233,7 @@ export function groupByPage(issues) {
 }
 
 /** Plain text version, used as the second clipboard flavour. */
-export function buildDocsText(issues, { title = 'UI review comments' } = {}) {
+export function buildDocsText(issues, { title = 'UI review comments', widths = true } = {}) {
   const lines = [title, ''];
   groupByPage(issues).forEach((group, index) => {
     lines.push(`COMM${index + 1}: ${routeOf(group.page)}`, group.page.url, '');
@@ -224,6 +243,7 @@ export function buildDocsText(issues, { title = 'UI review comments' } = {}) {
       if (issue.note) lines.push(`    ${issue.note.replace(/\n/g, '\n    ')}`);
       markList(issue).forEach((item) => lines.push(`    ${item.n}. ${item.note.replace(/\n/g, ' ')}`));
       if (issue.after) lines.push(`    ${recheckCaption(issue)}`);
+      if (widths && widthShots(issue).length) lines.push(`    ${widthsLine(issue)}`);
       lines.push(`    ${factLine(issue).replace(/&amp;/g, '&')}`, '');
     });
   });
@@ -236,14 +256,14 @@ export function buildDocsText(issues, { title = 'UI review comments' } = {}) {
  */
 export function buildDocsHtml(
   issues,
-  { title = 'UI review comments', generatedAt = new Date(), group = null, shots = 'both', fields = DEFAULT_FIELDS } = {},
+  { title = 'UI review comments', generatedAt = new Date(), group = null, shots = 'both', fields = DEFAULT_FIELDS, widths = true } = {},
 ) {
   const groups = groupByPage(issues);
   const total = issues.length;
   const counts = SEVERITIES.map((s) => `${issues.filter((i) => severityOf(i.severity).key === s.key).length} ${s.label}`).join(', ');
 
   const body = groups.length
-    ? groups.map((pageGroup, index) => commSection(pageGroup, index + 1, shots, withDefaults(fields))).join('\n')
+    ? groups.map((pageGroup, index) => commSection(pageGroup, index + 1, shots, withDefaults(fields), widths)).join('\n')
     : `<p style="${P}">No comments captured.</p>`;
 
   return `<!doctype html>

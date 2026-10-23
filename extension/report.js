@@ -41,8 +41,8 @@ function hostsOf(issues) {
 
 const PREVIEW_EDIT_CSS = `
 .issue figure { position: relative; }
-.issue figure img:not(.after) { cursor: crosshair; }
-.issue figure img:not(.after):hover { outline: 2px solid var(--accent); outline-offset: 2px; }
+.issue figure img:not(.after):not(.at-width) { cursor: crosshair; }
+.issue figure img:not(.after):not(.at-width):hover { outline: 2px solid var(--accent); outline-offset: 2px; }
 .quick-bar {
   position: absolute; top: 8px; right: 8px; display: flex; gap: 8px; align-items: center;
   padding: 4px 4px 4px 10px; font-size: 12px; color: var(--ink-2);
@@ -160,13 +160,22 @@ shotsEl.addEventListener('change', async () => {
   location.reload();
 });
 
+const widthsEl = document.querySelector('[data-widths]');
+widthsEl.value = (await chrome.storage.local.get('widthMode')).widthMode ?? 'show';
+widthsEl.addEventListener('change', async () => {
+  await chrome.storage.local.set({ widthMode: widthsEl.value });
+  location.reload();
+});
+const widths = widthsEl.value === 'show';
+
 const fields = withDefaults((await chrome.storage.local.get('fields')).fields);
 
-const options = { title, generatedAt, shots, fields };
+const options = { title, generatedAt, shots, fields, widths };
 const docsOptions = {
   generatedAt,
   shots,
   fields,
+  widths,
   title: group?.name ?? (hosts.length === 1 ? `${hosts[0]} comments` : 'UI review comments'),
   group,
 };
@@ -445,7 +454,7 @@ function wireNoteList(doc) {
 frame.addEventListener('load', () => {
   const doc = frame.contentDocument;
   if (previewScroll) frame.contentWindow.scrollTo(0, previewScroll);
-  doc.querySelectorAll('.issue figure img:not(.after)').forEach((img) => {
+  doc.querySelectorAll('.issue figure img:not(.after):not(.at-width)').forEach((img) => {
     if (!issueOfShot(img).issue?.shot) return;
     const bar = doc.createElement('div');
     bar.className = 'quick-bar';
@@ -464,7 +473,7 @@ frame.addEventListener('load', () => {
     const copy = event.target.closest?.('.card-copy');
     if (copy) {
       const issue = ordered[Number(copy.closest('.issue').id.slice(2)) - 1];
-      copyOut(copy, commentMarkdown(issue, { fields }), commentHtml(issue, fields));
+      copyOut(copy, commentMarkdown(issue, { fields, widths }), commentHtml(issue, fields, widths));
       return;
     }
     const open = event.target.closest?.('[data-open-editor]');
@@ -473,11 +482,11 @@ frame.addEventListener('load', () => {
       editImage(issue, index);
       return;
     }
-    const img = event.target.closest?.('.issue figure img:not(.after)');
+    const img = event.target.closest?.('.issue figure img:not(.after):not(.at-width)');
     if (img) quickMark(img, event, 'add');
   });
   doc.addEventListener('contextmenu', (event) => {
-    const img = event.target.closest?.('.issue figure img:not(.after)');
+    const img = event.target.closest?.('.issue figure img:not(.after):not(.at-width)');
     if (!img) return;
     event.preventDefault();
     quickMark(img, event, 'remove');
@@ -491,7 +500,7 @@ frame.addEventListener('load', () => tourOnce('report', REPORT_TOUR), { once: tr
 
 /** Measures the first editable screenshot inside the preview, in this page's coordinates. */
 function firstPreviewShot() {
-  const shot = frame.contentDocument?.querySelector('.issue figure img:not(.after)');
+  const shot = frame.contentDocument?.querySelector('.issue figure img:not(.after):not(.at-width)');
   if (!shot) return null;
   shot.scrollIntoView({ block: 'nearest' });
   const inner = shot.getBoundingClientRect();
@@ -564,7 +573,7 @@ async function copyOut(button, plain, html) {
 }
 
 document.querySelector('[data-markdown]').addEventListener('click', (event) => {
-  copyOut(event.currentTarget, buildMarkdown(issues, { title: docsOptions.title, fields }));
+  copyOut(event.currentTarget, buildMarkdown(issues, { title: docsOptions.title, fields, widths }));
 });
 
 document.querySelector('[data-save-review]').addEventListener('click', async () => {
