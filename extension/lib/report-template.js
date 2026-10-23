@@ -98,17 +98,15 @@ figcaption { margin-top: var(--s1); font-size: 11px; font-weight: 600; color: va
 `;
 
 /**
- * Dark palette for the in-extension preview only. Exported files stay light so
- * they survive printing and an import into another editor.
+ * Dark palette for the in-extension preview only, shown when the Theme setting is dark.
+ * Exported files stay light so they survive printing and an import into another editor.
  */
 export const PREVIEW_DARK_CSS = `
-@media screen and (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --bg: #0d1017; --surface: #141924; --line: #262c3b;
-    --ink: #e9ecf5; --ink-2: #99a1b8;
-    --sev-blocker: #f2585b; --sev-major: #f0a93a; --sev-minor: #62a0f5; --sev-nit: #9aa2b6;
-  }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d1017; --surface: #141924; --line: #262c3b;
+  --ink: #e9ecf5; --ink-2: #99a1b8;
+  --sev-blocker: #f2585b; --sev-major: #f0a93a; --sev-minor: #62a0f5; --sev-nit: #9aa2b6;
 }
 `;
 
