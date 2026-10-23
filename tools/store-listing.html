@@ -45,7 +45,10 @@
         <p>Margin lays a sheet over the page you are reviewing. Drag over anything that looks wrong and Margin takes a screenshot of it. Write what is wrong, pick a severity, and move on to the next one.</p>
         <p>In the report, open any screenshot to add numbered markers, boxes and arrows, each with its own note. Move or resize the marked region, zoom in, and right-click a number to remove it.</p>
         <p>When the round is done, copy the whole review into Google Docs or download it as a Word or HTML file. Numbered notes come out as a numbered list. Recheck a comment after the fix to show it before and after.</p>
-        <p>Everything stays on your computer. Margin has no account, no server and no tracking.</p>
+        <p>Capture the same selection at mobile, tablet and desktop widths in one go. Mark each comment Open, Fixed or Won't fix, and verify every fix on a page in one pass, with before and after side by side.</p>
+        <p>Copy the review as Markdown for GitHub, Slack or a coding agent, copy a single comment, or save the whole review as one file a teammate can open.</p>
+        <p>Send the review to Jira or Figma when it is ready. Connect once and Margin creates Jira issues with the screenshots attached, or posts each comment on the Figma frame it links to. Without signing in, Margin opens Jira's own create form with the text filled in.</p>
+        <p>Everything stays on your computer until you send it. Margin has no account and no tracking.</p>
       </dd>
     </dl>
   </section>
@@ -60,9 +63,11 @@
       <dt>unlimitedStorage</dt><dd>Screenshots outgrow the default local storage limit after a few reviews.</dd>
       <dt>clipboardWrite</dt><dd>Copy for Docs puts the finished review on the clipboard.</dd>
       <dt>contextMenus</dt><dd>Adds start annotating, comment on the whole visible area, and open the report to the right-click menu.</dd>
+      <dt>identity</dt><dd>Opens the Jira or Figma sign-in window when the user connects one of them in Help and settings or in the report.</dd>
+      <dt>Host permissions</dt><dd>None at install. api.atlassian.com and api.figma.com are optional and requested only when the user connects Jira or Figma, to create issues, attach screenshots and post comments. *.atlassian.net is optional and requested only when the user presses Find my site, to find their open Jira site and list its projects through their existing Jira sign-in.</dd>
       <dt>Remote code</dt><dd>No. All code ships inside the package.</dd>
-      <dt>Data usage</dt><dd>Tick none of the data types. Margin collects nothing and sends nothing off the device. Certify all three statements.</dd>
-      <dt>Privacy policy</dt><dd>Only needed if the form asks. Margin stores screenshots and notes in the browser on the user's computer. It sends no data to any server and shares nothing with anyone.</dd>
+      <dt>Data usage</dt><dd>Tick Authentication information and Website content. Leave every other type unticked. Authentication information covers the Jira and Figma sign-in tokens, which pass through the Margin sign-in helper on lilacfragment.co.za once at sign-in and at each renewal, and are not stored there. Website content covers the screenshots, page addresses and notes the user chooses to send to Jira or Figma. Certify all three statements, since nothing is sold, used for anything but sending the review, or used for lending.</dd>
+      <dt>Privacy policy</dt><dd>https://lilacfragment.co.za/margin/privacy/</dd>
     </dl>
   </section>
 

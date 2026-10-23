@@ -96,6 +96,7 @@ async function render() {
   await renderGroups();
   const issues = (await issuesInGroup(activeId)).slice().reverse();
   countEl.textContent = `${issues.length} ${issues.length === 1 ? 'comment' : 'comments'}`;
+  offerVerify(issues);
   listEl.innerHTML = '';
 
   if (!issues.length) {
@@ -111,6 +112,49 @@ async function render() {
   }
   issues.forEach((issue) => listEl.append(issueRow(issue)));
 }
+
+const verifyRow = document.querySelector('[data-verify-row]');
+const verifyBtn = document.querySelector('[data-verify]');
+const verifyCancel = document.querySelector('[data-verify-cancel]');
+
+/**
+ * Offers to recheck every comment on this page in one pass, when the page has any.
+ * @param {object[]} issues The comments in the active review.
+ */
+function offerVerify(issues) {
+  const onPage = issues.filter((issue) => samePage(currentUrl, issue.page?.url)).length;
+  verifyRow.hidden = !onPage;
+  if (!verifyBtn.disabled) verifyBtn.textContent = `Verify ${onPage} ${onPage === 1 ? 'comment' : 'comments'} on this page`;
+}
+
+/**
+ * Mirrors a verify run's progress on the button.
+ * @param {{state: string, done: number, total: number, checked: string[]}} run The run record from storage.
+ */
+function showRun(run) {
+  const running = run.state === 'running';
+  verifyBtn.disabled = running;
+  verifyCancel.hidden = !running;
+  if (running) verifyBtn.textContent = `Checking ${Math.min(run.done + 1, run.total)} of ${run.total}`;
+  else if (run.state === 'cancelled') verifyBtn.textContent = `Stopped, ${run.checked.length} checked`;
+  else verifyBtn.textContent = `Done, ${run.checked.length} checked`;
+}
+
+verifyBtn.addEventListener('click', async () => {
+  verifyBtn.disabled = true;
+  const res = await send('verifyStart', { groupId: activeId });
+  if (res?.error) {
+    verifyBtn.disabled = false;
+    verifyBtn.textContent = res.error === 'noTab' ? 'No comments on this page' : 'Failed';
+    verifyBtn.title = res.error === 'noTab' ? '' : res.error;
+  }
+});
+
+verifyCancel.addEventListener('click', () => send('verifyCancel'));
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.verifyRun?.newValue) showRun(changes.verifyRun.newValue);
+});
 
 groupEl.addEventListener('change', async () => {
   await send('groupSelect', { id: groupEl.value });

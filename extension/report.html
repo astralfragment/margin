@@ -17,6 +17,7 @@
     </button>
 
     <span class="spacer"></span>
+    <button class="btn" type="button" data-verify title="Recheck every comment on the page you last opened Margin on">Verify this page</button>
     <button class="btn" type="button" data-edit>Edit comments</button>
     <button class="btn action" type="button" data-copy>Copy for Docs</button>
 
@@ -32,10 +33,27 @@
             <option value="viewport">Full viewport only</option>
           </select>
         </label>
+        <label class="menu-field">
+          Mobile, tablet and desktop
+          <select data-widths aria-label="Mobile, tablet and desktop screenshots">
+            <option value="show">Include</option>
+            <option value="hide">Leave out</option>
+          </select>
+        </label>
         <button class="menu-item" type="button" data-fields>Fields shown</button>
         <button class="menu-item" type="button" data-doc>Word file</button>
         <button class="menu-item" type="button" data-download>HTML file</button>
         <button class="menu-item" type="button" data-print>Print</button>
+        <button class="menu-item" type="button" data-markdown>Copy as Markdown</button>
+        <div class="menu-sep"></div>
+        <span class="menu-label">Share</span>
+        <button class="menu-item" type="button" data-save-review>Save review file</button>
+        <button class="menu-item" type="button" data-open-review>Open review file</button>
+        <input type="file" accept=".json,application/json" data-review-input hidden />
+        <div class="menu-sep"></div>
+        <span class="menu-label">Send</span>
+        <button class="menu-item" type="button" data-send-jira>Jira issues</button>
+        <button class="menu-item" type="button" data-send-figma>Figma comments</button>
         <div class="menu-sep"></div>
         <span class="menu-label">Images</span>
         <button class="menu-item" type="button" data-recrop>Redo crops</button>
@@ -53,6 +71,7 @@
         <input type="search" data-find placeholder="Search comments" aria-label="Search comments" />
       </div>
       <div class="sidebar-filters" data-filters></div>
+      <div class="sidebar-filters" data-status-filters></div>
       <nav class="index" data-index aria-label="Comments"></nav>
       <div class="sidebar-foot" data-index-foot></div>
     </aside>
@@ -75,6 +94,15 @@
     </footer>
   </dialog>
 
+  <dialog class="sheet wide verify" data-verify-dialog aria-labelledby="verify-title">
+    <header>
+      <h1 id="verify-title">Verify fixes</h1>
+      <span class="state" data-verify-state></span>
+    </header>
+    <div class="sheet-body" data-verify-body></div>
+    <footer data-verify-foot></footer>
+  </dialog>
+
   <dialog class="sheet" data-fields-dialog>
     <header>
       <h1>Fields shown</h1>
@@ -84,6 +112,32 @@
     <footer>
       <button class="btn" type="button" data-fields-cancel>Cancel</button>
       <button class="btn primary" type="button" data-fields-save>Save</button>
+    </footer>
+  </dialog>
+
+  <dialog class="sheet" data-jira-dialog>
+    <header>
+      <h1>Send to Jira</h1>
+      <span class="state" data-jira-account></span>
+    </header>
+    <div class="sheet-body" data-jira-body></div>
+    <footer>
+      <span class="state" data-jira-state></span>
+      <button class="btn" type="button" data-jira-close>Close</button>
+      <button class="btn primary" type="button" data-jira-go>Create issues</button>
+    </footer>
+  </dialog>
+
+  <dialog class="sheet" data-figma-dialog>
+    <header>
+      <h1>Send to Figma</h1>
+      <span class="state" data-figma-account></span>
+    </header>
+    <div class="sheet-body" data-figma-body></div>
+    <footer>
+      <span class="state" data-figma-state></span>
+      <button class="btn" type="button" data-figma-close>Close</button>
+      <button class="btn primary" type="button" data-figma-go>Post comments</button>
     </footer>
   </dialog>
 

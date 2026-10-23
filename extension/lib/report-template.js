@@ -1,6 +1,8 @@
 import { SEVERITIES, SEVERITY_ORDER, severityOf } from './severity.js';
+import { STATUSES, statusOf } from './status.js';
 import { DEFAULT_FIELDS, withDefaults } from './fields.js';
 import { markList } from './marks.js';
+import { widthCaption, widthShots } from './widths.js';
 
 export const escapeHtml = (value) =>
   String(value ?? '')
@@ -60,6 +62,9 @@ header.top { display: flex; flex-wrap: wrap; gap: var(--s4); align-items: baseli
   color: var(--sev); border: 1px solid var(--sev); border-radius: 4px; padding: 2px 6px;
 }
 .chip i { width: 7px; height: 7px; border-radius: 2px; background: var(--sev); }
+.chip.status { color: var(--ink-2); border-color: var(--line); }
+.issue[data-status="fixed"] .chip.status { color: var(--ink); border-color: var(--ink-2); }
+.stats .sep { width: 1px; align-self: stretch; background: var(--line); }
 .note { margin: var(--s2) 0 0 var(--s5); white-space: pre-wrap; max-width: 68ch; }
 ol.marks { margin: var(--s2) 0 0 var(--s5); padding-left: var(--s5); max-width: 68ch; }
 ol.marks li { padding-left: var(--s1); white-space: pre-wrap; }
@@ -76,10 +81,12 @@ figure img { display: block; max-width: 100%; border: 1px solid var(--line); bor
 figcaption { margin-top: var(--s1); font-size: 11px; font-weight: 600; color: var(--ink-2); }
 .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); margin: var(--s4) 0 0 var(--s5); }
 .pair figure { margin: 0; }
+.widths { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); align-items: start; margin: var(--s4) 0 0 var(--s5); }
+.widths figure { margin: 0; }
 .empty { border: 1px dashed var(--line); border-radius: var(--radius); padding: var(--s6); text-align: center; color: var(--ink-2); }
 @media (max-width: 560px) {
-  .note, ol.marks, dl.facts, figure, .pair { margin-left: 0; }
-  .pair { grid-template-columns: minmax(0, 1fr); }
+  .note, ol.marks, dl.facts, figure, .pair, .widths { margin-left: 0; }
+  .pair, .widths { grid-template-columns: minmax(0, 1fr); }
   dl.facts { grid-template-columns: 74px minmax(0, 1fr); }
   .issue > header { flex-wrap: wrap; }
 }
@@ -106,17 +113,22 @@ export const PREVIEW_DARK_CSS = `
 `;
 
 /**
- * Wires the severity filter bar. Called directly by the in-extension preview and
+ * Wires the severity and status filter bar. Called directly by the in-extension preview and
  * serialised into the exported file, so both behave the same.
+ * @param {Document} root The report document.
  */
 export function wireFilters(root) {
-  const buttons = root.querySelectorAll('.stats [data-filter]');
+  const picked = { filter: 'all', statusFilter: 'all' };
+  const buttons = [...root.querySelectorAll('.stats [data-filter], .stats [data-status-filter]')];
   buttons.forEach((btn) => {
     btn.addEventListener('click', () => {
-      const key = btn.dataset.filter;
-      buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      const axis = 'filter' in btn.dataset ? 'filter' : 'statusFilter';
+      picked[axis] = btn.dataset[axis];
+      buttons.filter((b) => axis in b.dataset).forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
       root.querySelectorAll('.issue').forEach((issue) => {
-        issue.classList.toggle('hide', key !== 'all' && issue.dataset.sev !== key);
+        const bySeverity = picked.filter === 'all' || issue.dataset.sev === picked.filter;
+        const byStatus = picked.statusFilter === 'all' || issue.dataset.status === picked.statusFilter;
+        issue.classList.toggle('hide', !(bySeverity && byStatus));
       });
     });
   });
@@ -162,6 +174,16 @@ export function routeOf(page) {
   return [app, ...(screens.length ? screens : ['Home'])].join(' > ');
 }
 
+/**
+ * The browser line for a comment, such as "Google Chrome 141 on Windows, zoom 100%", or an empty string for comments captured before it was recorded.
+ * @param {{ env?: { browser: string, os: string, zoom: number } }} issue The stored comment.
+ */
+export function environmentText(issue) {
+  const env = issue.env;
+  if (!env) return '';
+  return `${env.browser}${env.os ? ` on ${env.os}` : ''}, zoom ${env.zoom}%`;
+}
+
 function factRows(issue, fields) {
   const el = issue.element;
   const rows = [
@@ -183,6 +205,7 @@ function factRows(issue, fields) {
         ]
       : null,
     fields.captured ? ['Captured', esc(new Date(issue.createdAt).toLocaleString())] : null,
+    fields.browser && issue.env ? ['Browser', esc(environmentText(issue))] : null,
   ].filter(Boolean);
   return rows.map(([term, value]) => `<dt>${term}</dt><dd>${value}</dd>`).join('\n        ');
 }
@@ -202,6 +225,24 @@ function regionFigures(issue, index) {
 }
 
 /**
+ * The region at mobile, tablet and desktop widths in one row, or nothing when the comment was not captured at widths.
+ * @param {object} issue The stored comment.
+ * @param {number} index Its position in the report.
+ */
+function widthFigures(issue, index) {
+  const shots = widthShots(issue);
+  if (!shots.length) return '';
+  return `<div class="widths">
+        ${shots
+          .map(
+            (shot) =>
+              `<figure><img class="at-width" alt="${esc(shot.label)} width for comment ${index + 1}" src="${shot.src}" /><figcaption>${esc(widthCaption(shot))}</figcaption></figure>`,
+          )
+          .join('\n        ')}
+      </div>`;
+}
+
+/**
  * Caption for the image taken when a comment was rechecked.
  * @param {{ checkedAt?: string }} issue The stored comment.
  */
@@ -209,10 +250,11 @@ export function recheckCaption(issue) {
   return issue.checkedAt ? `After, rechecked ${new Date(issue.checkedAt).toLocaleString()}` : 'After recheck';
 }
 
-function issueCard(issue, index, shots, fields) {
+function issueCard(issue, index, shots, fields, widths) {
   const sev = severityOf(issue.severity);
+  const status = statusOf(issue.status);
   return `
-    <article class="issue" id="c-${index + 1}" data-sev="${esc(sev.key)}">
+    <article class="issue" id="c-${index + 1}" data-sev="${esc(sev.key)}" data-status="${esc(status.key)}">
       <header>
         <span class="num">${String(index + 1).padStart(2, '0')}</span>
         <h2>${esc(issue.title || 'Untitled issue')}</h2>
@@ -221,6 +263,7 @@ function issueCard(issue, index, shots, fields) {
             ? `<a class="key" href="${esc(issue.jira.url)}">${esc(issue.jira.key)}, ${esc(issue.jira.status ?? 'New')}</a>`
             : ''
         }
+        <span class="chip status">${esc(status.label)}</span>
         <span class="chip"><i></i>${esc(sev.label)}</span>
       </header>
       ${fields.page ? `<p class="where"><a href="${esc(issue.page.url)}">${esc(routeOf(issue.page))}</a></p>` : ''}
@@ -233,6 +276,7 @@ function issueCard(issue, index, shots, fields) {
           : ''
       }
       ${issue.detail && shots !== 'viewport' ? regionFigures(issue, index) : ''}
+      ${widths ? widthFigures(issue, index) : ''}
       <dl class="facts">
         ${factRows(issue, fields)}
       </dl>
@@ -254,15 +298,28 @@ export function sortIssues(issues) {
 }
 
 /** Renders the report contents, without the surrounding document. */
-export function renderBody(issues, { title = 'UI issue report', generatedAt = new Date(), shots = 'both', fields = DEFAULT_FIELDS } = {}) {
+export function renderBody(issues, { title = 'UI issue report', generatedAt = new Date(), shots = 'both', fields = DEFAULT_FIELDS, widths = true } = {}) {
   const sorted = sortIssues(issues);
   const counts = Object.fromEntries(
     SEVERITIES.map((s) => [s.key, sorted.filter((i) => severityOf(i.severity).key === s.key).length]),
   );
   const pages = [...new Set(sorted.map((i) => i.page?.url).filter(Boolean))];
+  const statusesUsed = STATUSES.map((s) => ({ ...s, n: sorted.filter((i) => statusOf(i.status).key === s.key).length })).filter(
+    (s) => s.n > 0,
+  );
+  const statusButtons =
+    statusesUsed.length > 1
+      ? [
+          '<span class="sep"></span>',
+          '<button class="stat" type="button" data-status-filter="all" aria-pressed="true">Any status</button>',
+          ...statusesUsed.map(
+            (s) => `<button class="stat" type="button" data-status-filter="${s.key}" aria-pressed="false"><b>${s.n}</b> ${esc(s.label)}</button>`,
+          ),
+        ].join('\n    ')
+      : '';
 
   const body = sorted.length
-    ? sorted.map((issue, index) => issueCard(issue, index, shots, withDefaults(fields))).join('\n')
+    ? sorted.map((issue, index) => issueCard(issue, index, shots, withDefaults(fields), widths)).join('\n')
     : '<p class="empty">No issues captured.</p>';
 
   return `<div class="wrap">
@@ -278,6 +335,7 @@ export function renderBody(issues, { title = 'UI issue report', generatedAt = ne
           `<button class="stat" type="button" data-filter="${s.key}" style="--sev: var(${s.token})" aria-pressed="false"><b>${counts[s.key]}</b> ${s.label}</button>`,
       )
       .join('\n    ')}
+    ${statusButtons}
   </div>
   ${body}
 </div>`;

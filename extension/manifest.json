@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Margin",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Mark up UI issues on any page, number the details, and export a clean review.",
   "permissions": [
     "activeTab",
@@ -9,7 +9,13 @@
     "storage",
     "unlimitedStorage",
     "clipboardWrite",
-    "contextMenus"
+    "contextMenus",
+    "identity"
+  ],
+  "optional_host_permissions": [
+    "https://api.atlassian.com/*",
+    "https://api.figma.com/*",
+    "https://*.atlassian.net/*"
   ],
   "options_page": "options.html",
   "background": {
