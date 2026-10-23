@@ -12,7 +12,9 @@ import {
   issuesInGroup,
   readRaw,
   writeRaw,
+  writeIssues,
 } from './lib/store.js';
+import { parseReviewFile } from './lib/review-file.js';
 
 const HIGHLIGHT = '#e5484d';
 const MAX_SHOT_WIDTH = 1400;
@@ -320,6 +322,21 @@ async function refreshBadge() {
   await chrome.action.setBadgeText({ text: count ? String(count) : '' });
 }
 
+/**
+ * The browser, system and zoom a comment was captured with, the details a developer asks for first.
+ * @param {chrome.tabs.Tab} tab The tab being captured.
+ */
+async function environmentOf(tab) {
+  const ua = navigator.userAgentData;
+  const brand = ua?.brands?.find((b) => !/not.?a.?brand|chromium/i.test(b.brand)) ?? ua?.brands?.find((b) => /chromium/i.test(b.brand));
+  const zoom = await chrome.tabs.getZoom(tab.id).catch(() => 1);
+  return {
+    browser: brand ? `${brand.brand} ${brand.version}` : 'Chrome',
+    os: ua?.platform || '',
+    zoom: Math.round(zoom * 100),
+  };
+}
+
 const handlers = {
   async toggle(_msg, sender) {
     const tab = sender.tab ?? (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
@@ -337,6 +354,7 @@ const handlers = {
       note: '',
       page: { url: sender.tab.url, title: sender.tab.title ?? '' },
       viewport: msg.viewport,
+      env: await environmentOf(sender.tab),
       element: msg.element,
       rect: msg.rect,
       shot,
@@ -392,6 +410,20 @@ const handlers = {
     await removeGroup(msg.id);
     await refreshBadge();
     return { ok: true };
+  },
+
+  /** Adds a review from a saved review file as a new group, leaving the group new captures go to unchanged. */
+  async importReview(msg) {
+    const parsed = parseReviewFile(msg.contents);
+    if (parsed.error) return { error: parsed.error };
+    const previous = await activeGroup();
+    const group = await addGroup(`${parsed.name} (imported)`);
+    await setActiveGroup(previous.id);
+    const added = parsed.issues.map(({ raw, ...issue }) => ({ ...issue, id: crypto.randomUUID(), groupId: group.id, raw }));
+    for (const { id, raw } of added) if (raw) await writeRaw(id, raw);
+    await writeIssues([...(await readIssues()), ...added.map(({ raw, ...issue }) => issue)]);
+    await refreshBadge();
+    return { group, count: added.length };
   },
 
   /** The base screenshot the image editor draws on, and whether its region can still move. */

@@ -1,4 +1,4 @@
-import { issuesInGroup } from './lib/store.js';
+import { issuesInGroup, readRaw } from './lib/store.js';
 import {
   buildReport,
   renderBody,
@@ -8,6 +8,8 @@ import {
   PREVIEW_DARK_CSS,
 } from './lib/report-template.js';
 import { buildDocsHtml, buildDocsText } from './lib/docs-template.js';
+import { buildMarkdown, commentHtml, commentMarkdown } from './lib/share-template.js';
+import { buildReviewFile } from './lib/review-file.js';
 import { SEVERITIES, severityOf } from './lib/severity.js';
 import { FACT_FIELDS, withDefaults } from './lib/fields.js';
 import { openEditor } from './editor.js';
@@ -55,8 +57,15 @@ ol.marks .li-actions button {
   background: transparent; border: 1px solid var(--line); border-radius: 6px;
 }
 ol.marks .li-actions button:hover { color: var(--ink); background: var(--surface); }
-@media (prefers-reduced-motion: reduce) { .quick-bar, ol.marks .li-actions { transition: none; } }
-@media print { .quick-bar, ol.marks .li-actions { display: none; } }
+.issue header .card-copy {
+  padding: 1px 8px; font: inherit; font-size: 11px; font-weight: 600; color: var(--ink-2); cursor: pointer;
+  background: transparent; border: 1px solid var(--line); border-radius: 6px;
+  opacity: 0; transition: opacity 120ms ease-out;
+}
+.issue:hover header .card-copy, .issue header .card-copy:focus-visible { opacity: 1; }
+.issue header .card-copy:hover { color: var(--ink); background: var(--surface); }
+@media (prefers-reduced-motion: reduce) { .quick-bar, ol.marks .li-actions, .issue header .card-copy { transition: none; } }
+@media print { .quick-bar, ol.marks .li-actions, .issue header .card-copy { display: none; } }
 `;
 
 /**
@@ -413,7 +422,21 @@ frame.addEventListener('load', () => {
     bar.innerHTML = '<span>Click to add a marker. Right-click one to remove it.</span><button type="button" data-open-editor>Open editor</button>';
     img.closest('figure').append(bar);
   });
+  doc.querySelectorAll('.issue header').forEach((header) => {
+    const copy = doc.createElement('button');
+    copy.type = 'button';
+    copy.className = 'card-copy';
+    copy.textContent = 'Copy';
+    copy.title = 'Copy this comment for Slack, Jira, GitHub or a doc';
+    header.querySelector('.chip')?.before(copy);
+  });
   doc.addEventListener('click', (event) => {
+    const copy = event.target.closest?.('.card-copy');
+    if (copy) {
+      const issue = ordered[Number(copy.closest('.issue').id.slice(2)) - 1];
+      copyOut(copy, commentMarkdown(issue, { fields }), commentHtml(issue, fields));
+      return;
+    }
     const open = event.target.closest?.('[data-open-editor]');
     if (open) {
       const { issue, index } = issueOfShot(open.closest('figure').querySelector('img'));
@@ -454,7 +477,7 @@ const REPORT_TOUR = [
   { target: firstPreviewShot, title: 'Number the details', body: 'Click any screenshot to open the image editor and add numbered markers, boxes and arrows.' },
   { target: '[data-edit]', title: 'Tidy the wording', body: 'Fix titles, notes and severity for every comment in one place.' },
   { target: '[data-copy]', title: 'Hand it over', body: 'Paste the whole review into Google Docs. Numbered notes stay numbered.' },
-  { target: '.menu > summary', title: 'More ways out', body: 'Word and HTML files, which fields to show, printing, and this tour again.' },
+  { target: '.menu > summary', title: 'More ways out', body: 'Word, HTML and Markdown, review files to share, which fields to show, printing, and this tour again.' },
 ];
 
 document.querySelector('[data-tour]').addEventListener('click', () => {
@@ -491,6 +514,46 @@ document.querySelector('[data-copy]').addEventListener('click', async (event) =>
 document.querySelector('[data-print]').addEventListener('click', () => {
   frame.contentWindow.focus();
   frame.contentWindow.print();
+});
+
+/**
+ * Puts text, and optionally rich text, on the clipboard and confirms on the button pressed.
+ * @param {HTMLElement} button The button to confirm on.
+ * @param {string} plain The plain text flavour.
+ * @param {string} [html] The rich text flavour.
+ */
+async function copyOut(button, plain, html) {
+  try {
+    const flavours = { 'text/plain': new Blob([plain], { type: 'text/plain' }) };
+    if (html) flavours['text/html'] = new Blob([html], { type: 'text/html' });
+    await navigator.clipboard.write([new ClipboardItem(flavours)]);
+    flash(button, 'Copied');
+  } catch {
+    flash(button, 'Copy failed');
+  }
+}
+
+document.querySelector('[data-markdown]').addEventListener('click', (event) => {
+  copyOut(event.currentTarget, buildMarkdown(issues, { title: docsOptions.title, fields }));
+});
+
+document.querySelector('[data-save-review]').addEventListener('click', async () => {
+  const raws = Object.fromEntries(await Promise.all(issues.map(async (issue) => [issue.id, await readRaw(issue.id)])));
+  saveBlob(new Blob([buildReviewFile(group ?? { name: title }, issues, raws)], { type: 'application/json' }), `${basename}.margin.json`);
+});
+
+const reviewInput = document.querySelector('[data-review-input]');
+document.querySelector('[data-open-review]').addEventListener('click', () => reviewInput.click());
+reviewInput.addEventListener('change', async () => {
+  const file = reviewInput.files?.[0];
+  reviewInput.value = '';
+  if (!file) return;
+  const res = await send('importReview', { contents: await file.text() });
+  if (res?.error) {
+    alert(res.error);
+    return;
+  }
+  location.search = `?group=${res.group.id}`;
 });
 
 document.querySelector('[data-recrop]').addEventListener('click', async (event) => {

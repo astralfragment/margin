@@ -162,6 +162,16 @@ export function routeOf(page) {
   return [app, ...(screens.length ? screens : ['Home'])].join(' > ');
 }
 
+/**
+ * The browser line for a comment, such as "Google Chrome 141 on Windows, zoom 100%", or an empty string for comments captured before it was recorded.
+ * @param {{ env?: { browser: string, os: string, zoom: number } }} issue The stored comment.
+ */
+export function environmentText(issue) {
+  const env = issue.env;
+  if (!env) return '';
+  return `${env.browser}${env.os ? ` on ${env.os}` : ''}, zoom ${env.zoom}%`;
+}
+
 function factRows(issue, fields) {
   const el = issue.element;
   const rows = [
@@ -183,6 +193,7 @@ function factRows(issue, fields) {
         ]
       : null,
     fields.captured ? ['Captured', esc(new Date(issue.createdAt).toLocaleString())] : null,
+    fields.browser && issue.env ? ['Browser', esc(environmentText(issue))] : null,
   ].filter(Boolean);
   return rows.map(([term, value]) => `<dt>${term}</dt><dd>${value}</dd>`).join('\n        ');
 }
