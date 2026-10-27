@@ -44,7 +44,7 @@ async function toggleTab(tab) {
  * @param {chrome.tabs.Tab} tab The tab to prepare.
  */
 async function ensureContent(tab) {
-  if (/^(chrome|edge|about|devtools):|^https:\/\/chrome\.google\.com\/webstore/.test(tab.url ?? '')) {
+  if (/^(chrome|edge|about|devtools):|^https:\/\/chrome\.google\.com\/webstore|^https:\/\/chromewebstore\.google\.com/.test(tab.url ?? '')) {
     throw new Error('This page does not allow extensions to run.');
   }
   let ready = false;
@@ -877,11 +877,12 @@ const handlers = {
    * Starts rechecking every comment in a group whose page is open. From the popup that is the active tab.
    * From the report it is the most recent tab in the window that Margin may capture, since Chrome only
    * shows the address of tabs Margin was opened on. Replies at once, and the run reports through storage.
+   * With `width`, only comments captured at that width are rechecked, since others would be cut from the wrong layout.
    */
   async verifyStart(msg, sender) {
     if (verifyRun) return { error: 'A check is already running' };
     if (widthsBusy) return { error: 'Wait for the capture at three widths to finish' };
-    const issues = await issuesInGroup(msg.groupId);
+    const issues = (await issuesInGroup(msg.groupId)).filter((issue) => !msg.width || !issue.viewport?.width || issue.viewport.width === msg.width);
     const report = sender.tab?.url?.startsWith(chrome.runtime.getURL('')) ? sender.tab : null;
     const candidates = report
       ? (await chrome.tabs.query({ windowId: report.windowId })).filter((t) => t.id !== report.id)

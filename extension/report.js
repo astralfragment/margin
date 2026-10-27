@@ -356,6 +356,8 @@ indexEl.addEventListener('click', (event) => {
 });
 
 frame.addEventListener('load', applyFilter);
+const jumpTo = rows[ordered.findIndex((issue) => issue.id === new URL(location.href).searchParams.get('comment'))];
+if (jumpTo) frame.addEventListener('load', () => jumpTo.click(), { once: true });
 let previewScroll = 0;
 
 /** Redraws the preview from the comments in memory, keeping its scroll position. */

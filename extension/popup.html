@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="ui.css" />
 </head>
 <body class="popup">
-  <main data-home hidden>
+  <main class="pop-main" data-home hidden>
     <header class="pop-head">
       <span class="brand-mark" data-mark></span>
       <details class="menu pop-picker" data-group>
@@ -17,7 +17,7 @@
       <details class="menu" data-more>
         <summary class="icon-btn" title="Review menu" aria-label="Review menu" data-more-icon></summary>
         <div class="menu-body" role="menu">
-          <button class="menu-item" type="button" role="menuitem" data-settings>Settings</button>
+          <button class="menu-item" type="button" role="menuitem" data-settings>Help and settings</button>
           <button class="menu-item" type="button" role="menuitem" data-all>All reviews</button>
           <button class="menu-item" type="button" role="menuitem" data-new-group>New review</button>
           <button class="menu-item" type="button" role="menuitem" data-rename-group hidden>Rename review</button>
@@ -28,6 +28,14 @@
       </details>
     </header>
 
+    <div class="pop-confirm" role="alertdialog" aria-labelledby="confirm-text" data-confirm hidden>
+      <p id="confirm-text" data-confirm-text></p>
+      <div class="row">
+        <button class="btn ghost sm" type="button" data-confirm-cancel>Cancel</button>
+        <button class="btn danger sm" type="button" data-confirm-delete>Delete review</button>
+      </div>
+    </div>
+
     <section class="pop-links" data-links hidden></section>
 
     <div class="pop-empty" data-no-review hidden>
@@ -37,15 +45,16 @@
         <i class="scene-img"></i><i class="scene-ink"></i><b class="scene-pin">1</b>
       </div>
       <p>No review on this site yet. Start one, then drag over anything that looks wrong.</p>
+      <p class="muted" data-active-elsewhere hidden></p>
     </div>
 
-    <div class="pop-start">
+    <div class="pop-start" data-start>
       <button class="btn primary start" type="button" data-toggle><span data-toggle-label>Start annotating</span><span class="key-hint" data-shortcut></span></button>
     </div>
 
     <div class="link-error pop-alert" role="alert" data-restricted hidden>
       <span data-alert-icon></span>
-      <span><b>Chrome pages do not allow extensions</b>Open the page you want to review in a normal tab, then click Margin again.</span>
+      <span><b data-alert-title></b><span data-alert-text></span></span>
     </div>
 
     <section class="pop-page" data-page hidden>
@@ -55,11 +64,10 @@
         <button class="btn ghost sm" type="button" data-verify-cancel hidden>Cancel</button>
         <button class="btn sm" type="button" data-verify hidden></button>
       </div>
+      <p class="pop-hint" data-width-hint hidden></p>
       <ul class="pop-rows" data-list></ul>
       <div data-folds></div>
     </section>
-
-    <p class="pop-note" data-note hidden></p>
 
     <footer class="pop-foot">
       <button class="btn grow" type="button" data-report>Open report</button>
