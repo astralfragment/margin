@@ -170,6 +170,9 @@
     .stop { gap: 4px; }
     .pass { display: flex; align-items: center; gap: 6px; flex: none; font-size: 13px; line-height: 18px; color: var(--muted-fg); }
     .root.passing .pass { color: var(--ink); }
+    @media (max-width: 1023px) {
+      .hint .pass, .hint .pass-divider { display: none; }
+    }
     @media (max-width: 640px) {
       .hint { gap: 8px; }
       .review b, .review .count, .hint kbd, .hint .gap, .hint .divider, .hint [data-report], .hint .pass { display: none; }
@@ -306,7 +309,7 @@
         <span class="divider"></span>
         <button type="button" class="toggle" data-selectors aria-pressed="false"><span class="switch"></span><span>Selectors</span><kbd>S</kbd></button>
         <button type="button" class="toggle" data-markers aria-pressed="true"><span class="switch"></span><span>Markers</span><kbd>M</kbd></button>
-        <span class="divider"></span>
+        <span class="divider pass-divider"></span>
         <span class="pass">Hold <kbd>Alt</kbd> to use the page</span>
         <span class="gap"></span>
         <button type="button" class="btn" data-report>Open report</button>
@@ -342,7 +345,7 @@
   };
 
   const SHIELDED = ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'dblclick', 'auxclick', 'contextmenu', 'touchstart', 'touchend'];
-  const LAYERED = ['toggle', 'close', 'fullscreenchange'];
+  const LAYERED = ['toggle', 'close', 'fullscreenchange', 'focusin'];
   const COPIED = ['clientX', 'clientY', 'screenX', 'screenY', 'button', 'buttons', 'detail', 'ctrlKey', 'shiftKey', 'altKey', 'metaKey', 'pointerId', 'pointerType', 'isPrimary'];
 
   /**
@@ -398,15 +401,40 @@
    */
   function raise() {
     const focused = shadow.activeElement;
-    const modal = [...document.querySelectorAll('dialog:modal')].at(-1);
+    const modal = deepAll('dialog:modal').at(-1) ?? null;
     const parent = modal ?? document.documentElement;
     if (host.parentNode !== parent) parent.append(host);
+    if (holder !== modal) {
+      holder?.removeEventListener('close', raiseAgain);
+      modal?.addEventListener('close', raiseAgain);
+      holder = modal;
+    }
     if (host.matches(':popover-open')) host.hidePopover();
     host.showPopover?.();
     hostWatch.disconnect();
-    for (let node = host.parentNode; node; node = node.parentNode) hostWatch.observe(node, { childList: true });
+    for (let node = host.parentNode; node; node = node.parentNode ?? node.host) hostWatch.observe(node, { childList: true });
     if (focused && shadow.activeElement !== focused) focused.focus({ preventScroll: true });
     fitZoom();
+  }
+
+  let holder = null;
+
+  /** Raises the overlay again once the dialog holding it closes, since a closed dialog hides everything inside it. */
+  const raiseAgain = () => state.active && raise();
+
+  /**
+   * Finds elements matching a selector in the document and in every open shadow root, where components such as the MDN
+   * search keep their dialogs.
+   * @param {string} selector A CSS selector.
+   */
+  function deepAll(selector) {
+    const found = [];
+    const search = (scope) => {
+      found.push(...scope.querySelectorAll(selector));
+      for (const el of scope.querySelectorAll('*')) if (el.shadowRoot && el !== host) search(el.shadowRoot);
+    };
+    search(document);
+    return found;
   }
 
   let tabZoom = 1;
@@ -459,18 +487,24 @@
 
   /**
    * Raises the overlay again when the page opens a popover or dialog of its own, changes fullscreen, closes the dialog
-   * the overlay sits in, or hides the overlay. A re-raise of another overlay shows as open to open and is ignored,
-   * so two overlays never take turns forever.
-   * @param {Event} e A toggle, close or fullscreenchange event caught at the window.
+   * the overlay sits in, or hides the overlay. Focus moving into a modal dialog inside a component's shadow root, whose
+   * own toggle events never leave it, raises it too. A re-raise of another overlay shows as open to open and is
+   * ignored, so two overlays never take turns forever.
+   * @param {Event} e A toggle, close, fullscreenchange or focusin event caught at the window.
    */
   function onLayer(e) {
     if (e.target === host) {
       if (e.newState === 'closed' && state.active) raise();
       return;
     }
+    if (e.type === 'focusin') {
+      const modal = deepAll('dialog:modal').at(-1);
+      if (modal && host.parentNode !== modal) raise();
+      return;
+    }
     const opened = e.type === 'toggle' && e.oldState === 'closed' && e.newState === 'open';
-    const holder = e.target instanceof Element && e.target.contains(host);
-    if (opened || holder || e.type === 'fullscreenchange') raise();
+    const holding = e.target instanceof Element && e.target.contains(host);
+    if (opened || holding || e.type === 'fullscreenchange') raise();
   }
 
   /**
@@ -836,8 +870,8 @@
   /**
    * Finds the page element a person points at. Hit testing skips layers with pointer-events: none, so on many sites the
    * hit is a canvas, video, gradient or full-bleed background in front of or behind the text. When the hit fills most of
-   * the view, or is a large empty surface, the elements under the hit stack are searched by their boxes and text instead,
-   * so the smallest one holding the point wins. `full` is true when even that pick fills the view.
+   * the view, or is a large empty surface, the page is searched by element boxes and text instead, so the smallest
+   * visible element holding the point wins. `full` is true when even that pick fills the view.
    * @param {number} x Viewport x of the point.
    * @param {number} y Viewport y of the point.
    */
@@ -849,16 +883,12 @@
     let el = hits[0];
     let r = el.getBoundingClientRect();
     const surface = area(r) >= view * 0.2 && !el.childElementCount && !el.textContent.trim();
-    if (area(r) >= view * 0.6 || surface) {
-      for (const hit of hits) {
-        const found = smallestAt(hit, x, y);
-        const box = found?.getBoundingClientRect();
-        if (box && area(box) < Math.min(area(r) * 0.8, view * 0.6)) {
-          el = found;
-          r = box;
-          break;
-        }
-        if (hit === document.body) break;
+    if ((area(r) >= view * 0.6 || surface) && document.body) {
+      const found = smallestAt(document.body, x, y);
+      const box = found?.getBoundingClientRect();
+      if (box && area(box) < area(r) * 0.8) {
+        el = found;
+        r = box;
       }
     }
     const full = r.width >= innerWidth * 0.95 && r.height >= innerHeight * 0.95;
@@ -896,7 +926,9 @@
         }
         if (node.nodeType !== Node.ELEMENT_NODE || node === host) continue;
         const r = node.getBoundingClientRect();
-        if (!r.width && !r.height) visit(node);
+        if (!r.width && !r.height) {
+          if (node.checkVisibility?.() !== false) visit(node);
+        }
         else if (holds(r)) {
           consider(node, r.width * r.height);
           visit(node);
@@ -2099,8 +2131,7 @@
 
   /** True when the page has its own modal dialog, popover or fullscreen element open, which Esc should close first. */
   function pageLayerOpen() {
-    if (document.fullscreenElement || document.querySelector('dialog:modal')) return true;
-    return [...document.querySelectorAll(':popover-open')].some((el) => el !== host);
+    return Boolean(document.fullscreenElement) || deepAll('dialog:modal, :popover-open').some((el) => el !== host);
   }
 
   /**
@@ -2150,6 +2181,8 @@
       root.removeEventListener('wheel', onWheel);
       openWatch.disconnect();
       passThrough(false);
+      holder?.removeEventListener('close', raiseAgain);
+      holder = null;
       hostWatch.disconnect();
       root.removeEventListener('mousemove', onMove);
       root.removeEventListener('mousedown', onDown);
