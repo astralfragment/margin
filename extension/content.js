@@ -327,26 +327,93 @@
   };
 
   const SHIELDED = ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'dblclick', 'auxclick', 'contextmenu', 'touchstart', 'touchend'];
+  const LAYERED = ['toggle', 'close', 'fullscreenchange'];
   const COPIED = ['clientX', 'clientY', 'screenX', 'screenY', 'button', 'buttons', 'detail', 'ctrlKey', 'shiftKey', 'altKey', 'metaKey', 'pointerId', 'pointerType', 'isPrimary'];
 
   /**
    * Keeps presses on the overlay away from the page, so its click-outside and blur handlers never fire.
    * The press is stopped at the window, then a copy that cannot leave the shadow root is replayed on the element under the pointer,
-   * or on the focused element when the click came from the keyboard.
+   * or on the focused element when the click came from the keyboard. A real press that reached the page instead went
+   * through the overlay, so it is cancelled, the overlay is raised again, and the copy goes to the overlay root.
    * @param {Event} e A press event caught at the window during the capture phase.
    */
   function shield(e) {
-    if (e.target !== host) return;
+    if (e.target !== host) {
+      if (!e.isTrusted || (e instanceof MouseEvent && (e.clientX >= root.clientWidth || e.clientY >= root.clientHeight))) return;
+      e.stopImmediatePropagation();
+      if (e.cancelable && !/^(pointer|touch)/.test(e.type)) e.preventDefault();
+      raise();
+      if (e instanceof MouseEvent) replay(e, root);
+      return;
+    }
     e.stopImmediatePropagation();
     if (!(e instanceof MouseEvent)) return;
     const fromKeyboard = e.type === 'click' && e.detail === 0 && shadow.activeElement;
     const inner = fromKeyboard ? shadow.activeElement : shadow.elementFromPoint(e.clientX, e.clientY);
-    if (!inner) return;
+    if (inner) replay(e, inner);
+  }
+
+  /**
+   * Dispatches a copy of a mouse event inside the shadow root, where it cannot reach the page.
+   * @param {MouseEvent} e The original event.
+   * @param {Element} inner The overlay element that receives the copy.
+   */
+  function replay(e, inner) {
     const init = { bubbles: e.bubbles, cancelable: e.cancelable, composed: false };
     for (const key of COPIED) if (key in e) init[key] = e[key];
     const copy = new e.constructor(e.type, init);
     inner.dispatchEvent(copy);
     if (copy.defaultPrevented) e.preventDefault();
+  }
+
+  let rescues = 0;
+  const hostWatch = new MutationObserver(() => {
+    if (!state.active || host.isConnected || rescues > 2) return;
+    if (!rescues) requestAnimationFrame(() => (rescues = 0));
+    rescues++;
+    raise();
+  });
+
+  /**
+   * Puts the overlay back above everything on the page. It goes back into the document if the page removed it, and into
+   * the open modal dialog when there is one, because a modal dialog makes everything outside it inert and presses would
+   * pass through. Hiding and showing the popover again makes it the newest top layer entry, above later popovers,
+   * dialogs and fullscreen elements. Focus inside the overlay is kept.
+   */
+  function raise() {
+    const focused = shadow.activeElement;
+    const modal = [...document.querySelectorAll('dialog:modal')].at(-1);
+    const parent = modal ?? document.documentElement;
+    if (host.parentNode !== parent) parent.append(host);
+    if (host.matches(':popover-open')) host.hidePopover();
+    host.showPopover?.();
+    hostWatch.disconnect();
+    for (let node = host.parentNode; node; node = node.parentNode) hostWatch.observe(node, { childList: true });
+    if (focused && shadow.activeElement !== focused) focused.focus({ preventScroll: true });
+  }
+
+  /**
+   * Raises the overlay again when the page opens a popover or dialog of its own, changes fullscreen, closes the dialog
+   * the overlay sits in, or hides the overlay. A re-raise of another overlay shows as open to open and is ignored,
+   * so two overlays never take turns forever.
+   * @param {Event} e A toggle, close or fullscreenchange event caught at the window.
+   */
+  function onLayer(e) {
+    if (e.target === host) {
+      if (e.newState === 'closed' && state.active) raise();
+      return;
+    }
+    const opened = e.type === 'toggle' && e.oldState === 'closed' && e.newState === 'open';
+    const holder = e.target instanceof Element && e.target.contains(host);
+    if (opened || holder || e.type === 'fullscreenchange') raise();
+  }
+
+  /**
+   * Feeds pointer moves that land on the page, over or around the overlay, to the hover outline and the drag band.
+   * @param {MouseEvent} e A mousemove caught at the window.
+   */
+  function onStrayMove(e) {
+    if (e.target !== host && e.isTrusted) onMove(e);
   }
 
   /**
@@ -1785,10 +1852,11 @@
     state.active = next;
     root.hidden = !next;
     if (next) {
-      if (!host.isConnected) document.documentElement.append(host);
-      if (!host.matches(':popover-open')) host.showPopover?.();
+      raise();
       loadFont();
       SHIELDED.forEach((type) => window.addEventListener(type, shield, true));
+      LAYERED.forEach((type) => window.addEventListener(type, onLayer, true));
+      window.addEventListener('mousemove', onStrayMove, true);
       root.addEventListener('mousemove', onMove);
       root.addEventListener('mousedown', onDown);
       root.addEventListener('mouseup', onUp);
@@ -1810,6 +1878,9 @@
       hoverBox.hidden = true;
       layer.replaceChildren();
       SHIELDED.forEach((type) => window.removeEventListener(type, shield, true));
+      LAYERED.forEach((type) => window.removeEventListener(type, onLayer, true));
+      window.removeEventListener('mousemove', onStrayMove, true);
+      hostWatch.disconnect();
       root.removeEventListener('mousemove', onMove);
       root.removeEventListener('mousedown', onDown);
       root.removeEventListener('mouseup', onUp);
