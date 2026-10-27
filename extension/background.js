@@ -13,6 +13,8 @@ import {
   readRaw,
   writeRaw,
   writeIssues,
+  hydrate,
+  migrateImages,
 } from './lib/store.js';
 import { parseReviewFile } from './lib/review-file.js';
 import { WIDTHS, widthShots } from './lib/widths.js';
@@ -266,8 +268,10 @@ function cropAround(bitmap, rect, scale) {
  */
 async function baseFor(issue) {
   const stored = await readRaw(issue.id);
-  if (stored || !issue.shot) return stored;
-  const raw = { src: issue.shot, hasBox: true };
+  if (stored) return stored;
+  const [{ shot }] = await hydrate([issue]);
+  if (!shot) return null;
+  const raw = { src: shot, hasBox: true };
   await writeRaw(issue.id, raw);
   return raw;
 }
@@ -1129,7 +1133,25 @@ async function migrateOrphans() {
 /** Storage keys left by the Fragment integration, which has been removed. */
 const RETIRED_KEYS = ['fragment', 'fragmentOutbox', 'fragmentStatus'];
 
+let migration = null;
+
+/**
+ * Moves images out of the comment list, once per worker start. It runs when the worker starts for any reason,
+ * so a migration cut short by a stopped worker carries on at the next start, and returns at once when there is nothing to move.
+ */
+function migrateOnce() {
+  migration ??= migrateImages().catch((err) => {
+    console.error('Margin: image migration stopped, it will run again on the next start', err);
+    migration = null;
+    return false;
+  });
+  return migration;
+}
+
+migrateOnce();
+
 async function boot() {
+  await migrateOnce();
   await createMenus();
   await chrome.storage.local.remove(RETIRED_KEYS);
   await migrateOrphans();

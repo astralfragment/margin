@@ -1,4 +1,4 @@
-import { issuesInGroup, readRaw, addGroup, patchGroup } from './lib/store.js';
+import { issuesInGroup, readRaw, addGroup, patchGroup, hydrate } from './lib/store.js';
 import { refreshLinks, statusTone } from './lib/review-links.js';
 import { mountReviewSheet } from './lib/review-sheet.js';
 import { icon } from './lib/icons.js';
@@ -210,7 +210,7 @@ if (group) {
 
 /* Report ----------------------------------------------------------------- */
 
-const issues = await issuesInGroup(groupId);
+const issues = await hydrate(await issuesInGroup(groupId));
 const ordered = sortIssues(issues);
 /** A comment's number, which is the order it was made in and stays the same in the report, popup and overlay. */
 const numberOf = (issue) => issues.indexOf(issue) + 1;
@@ -1016,10 +1016,13 @@ function paintWalk() {
  * @param {{checked: string[], failed: string[], page: string}} run The finished run record.
  */
 async function showWalk(run) {
-  const fresh = new Map((await issuesInGroup(groupId)).map((issue) => [issue.id, issue]));
+  const stored = await issuesInGroup(groupId);
+  const checked = new Map((await hydrate(stored.filter((issue) => run.checked.includes(issue.id)))).map((issue) => [issue.id, issue]));
+  const statuses = new Map(stored.map((issue) => [issue.id, issue.status]));
   for (const issue of issues) {
-    const saved = fresh.get(issue.id);
-    if (saved) Object.assign(issue, { after: saved.after, checkedAt: saved.checkedAt, change: saved.change, status: saved.status });
+    const saved = checked.get(issue.id);
+    if (saved) Object.assign(issue, { after: saved.after, checkedAt: saved.checkedAt, change: saved.change });
+    if (statuses.has(issue.id)) issue.status = statuses.get(issue.id);
   }
   refreshPreview();
   walk = { list: ordered.filter((issue) => run.checked.includes(issue.id)), at: 0, run };

@@ -16,7 +16,7 @@ const SEVERITY_KEYS = new Set(['blocker', 'major', 'minor', 'nit']);
 /**
  * Builds the file contents for a review.
  * @param {{ name: string, jira?: object, figma?: object }} group The review being saved, with its linked ticket and file.
- * @param {object[]} issues Its comments.
+ * @param {object[]} issues Its comments with their images added back, as hydrate in store.js returns them.
  * @param {Record<string, { src: string, hasBox: boolean } | null>} raws Each comment's clean screenshot, by comment id.
  */
 export function buildReviewFile(group, issues, raws) {
