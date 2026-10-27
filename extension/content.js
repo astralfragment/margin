@@ -1398,7 +1398,8 @@
       .filter((m) => m.x >= rect.x && m.x <= rect.x + rect.w && m.y >= rect.y && m.y <= rect.y + rect.h);
     openPanel({ id: res.id ?? null, rect, element, msg, error: res.error, draft: pending?.draft && { ...pending.draft, marks } });
     const dropped = carried.length - marks.length;
-    if (dropped) toast(`${dropped} ${dropped === 1 ? 'marker was' : 'markers were'} outside the new area and ${dropped === 1 ? 'was' : 'were'} removed`, 3600);
+    if (dropped === 1) toast('1 marker was outside the new area and was removed', 3600);
+    else if (dropped > 1) toast(`${dropped} markers were outside the new area and were removed`, 3600);
   }
 
   /**
@@ -2628,14 +2629,18 @@
    * @param {number} step 1 for Tab, -1 for Shift+Tab.
    */
   function stepFocus(step) {
-    const scope = state.menu ? [state.menu] : state.panel?.more ? [state.panel.more] : state.panel ? [state.panel.node] : [hint, state.toast?.node, layer];
+    let scope = [hint, state.toast?.node, layer];
+    if (state.menu) scope = [state.menu];
+    else if (state.panel?.more) scope = [state.panel.more];
+    else if (state.panel) scope = [state.panel.node];
     const items = scope
       .filter(Boolean)
       .flatMap((el) => [...el.querySelectorAll('button, input, textarea, [tabindex]')])
       .filter((el) => !el.disabled && el.tabIndex >= 0 && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
     if (!items.length) return;
     const at = items.indexOf(shadow.activeElement);
-    const next = at < 0 ? (step > 0 ? 0 : items.length - 1) : (at + step + items.length) % items.length;
+    let next = (at + step + items.length) % items.length;
+    if (at < 0) next = step > 0 ? 0 : items.length - 1;
     items[next].focus({ preventScroll: true });
   }
 
