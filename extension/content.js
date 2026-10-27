@@ -2536,7 +2536,7 @@
       stepMenu(menu, e.key === 'ArrowDown' ? 1 : -1);
       return;
     }
-    if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey && !pageField) {
       stop();
       stepFocus(e.shiftKey ? -1 : 1);
       return;
@@ -2713,7 +2713,7 @@
   }
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-    if (msg?.type === 'ping') sendResponse({ ok: true });
+    if (msg?.type === 'ping') sendResponse({ ok: true, active: state.active });
     else if (msg?.type === 'toggle') {
       if (msg.groupName) groupLabel.textContent = msg.groupName;
       if (msg.zoom) tabZoom = msg.zoom;
