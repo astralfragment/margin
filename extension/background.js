@@ -133,17 +133,31 @@ function editDrafts(change) {
 }
 
 /**
- * Removes drafts older than `age`, with their images. Every draft goes when `age` is 0, as after a browser restart,
- * when no card can still be open.
+ * Clears out drafts older than `age`. Every draft counts as old when `age` is 0, as after a browser restart, when no
+ * card can still be open. A draft that already has a title, a note or markers is kept as a comment, so typed work is
+ * never lost. Only an empty draft is removed, with its images.
  * @param {number} age The oldest a draft may be, in milliseconds.
  */
 async function sweepDrafts(age) {
-  const stale = await editDrafts((drafts) => {
-    const ids = Object.keys(drafts).filter((id) => !age || Date.now() - Date.parse(drafts[id].createdAt) > age);
-    for (const id of ids) delete drafts[id];
-    return ids;
+  const stale = await editDrafts(async (drafts) => {
+    const removed = [];
+    for (const id of Object.keys(drafts).filter((key) => !age || Date.now() - Date.parse(drafts[key].createdAt) > age)) {
+      const draft = drafts[id];
+      if (draft.title?.trim() || draft.note?.trim() || draft.marks?.length) await addIssue({ ...draft, groupId: await liveGroupId(draft.groupId) });
+      else removed.push(id);
+      delete drafts[id];
+    }
+    return removed;
   });
   if (stale.length) await chrome.storage.local.remove(stale.flatMap((id) => [`img:${id}`, `raw:${id}`]));
+}
+
+/**
+ * The review a draft should be saved into: its own, or the active review when its own was deleted while the card was open.
+ * @param {string} groupId The draft's review id.
+ */
+async function liveGroupId(groupId) {
+  return (await readGroups()).some((group) => group.id === groupId) ? groupId : (await activeGroup()).id;
 }
 
 /**
@@ -155,7 +169,7 @@ async function sweepDrafts(age) {
 async function promoteDraft(id, patch) {
   return editDrafts(async (drafts) => {
     if (!drafts[id]) return false;
-    await addIssue({ ...drafts[id], ...patch });
+    await addIssue({ ...drafts[id], ...patch, groupId: await liveGroupId(drafts[id].groupId) });
     delete drafts[id];
     return true;
   });
@@ -176,17 +190,6 @@ async function patchAny(id, patch) {
     Object.assign(drafts[id], fields);
     return { ...drafts[id], shots };
   });
-}
-
-/**
- * Removes comments that were left untitled by cards closed before drafts were kept apart: no title, no note, no
- * markers, never sent anywhere.
- */
-async function dropUntitled() {
-  const left = (await readIssues()).filter(
-    (issue) => !issue.title?.trim() && !issue.note?.trim() && !issue.marks?.length && !issue.jira && !issue.figmaPosts?.length && !issue.links?.length,
-  );
-  for (const issue of left) await removeIssue(issue.id);
 }
 
 /**
@@ -1347,7 +1350,6 @@ async function boot() {
   await chrome.storage.local.remove(RETIRED_KEYS);
   await migrateOrphans();
   await sweepDrafts(0);
-  await dropUntitled();
   await refreshBadge();
 }
 
