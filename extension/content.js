@@ -1547,7 +1547,7 @@
     });
     for (const type of ['click', 'input']) {
       node.addEventListener(type, (e) => {
-        if (p.asking && state.panel === p && !q('[data-foot]').contains(e.target)) stopAsking();
+        if (p.asking && state.panel === p && !e.composedPath().includes(q('[data-foot]'))) stopAsking();
       });
     }
     node.addEventListener('mousedown', (e) => {
