@@ -54,6 +54,12 @@ function splitImages(record) {
 }
 
 /**
+ * True when a stored comment still carries image fields inside the list, as comments saved before the split do.
+ * @param {object} issue A comment from the list.
+ */
+const holdsImages = (issue) => IMAGE_FIELDS.some((field) => field in issue);
+
+/**
  * True when an image set holds at least one image.
  * @param {object} images Image fields by name.
  */
@@ -247,23 +253,25 @@ export async function migrateImages(log = (line) => console.log(line)) {
       const issues = await readIssues();
       const batch = [];
       let bytes = 0;
-      for (const issue of issues) {
+      for (const issue of issues.filter(holdsImages)) {
         const { images } = splitImages(issue);
-        if (!Object.keys(images).length) continue;
-        if (batch.length && bytes + imageBytes(images) > MIGRATION_BATCH_BYTES) break;
+        const size = imageBytes(images);
+        if (batch.length && bytes + size > MIGRATION_BATCH_BYTES) break;
         batch.push({ id: issue.id, images });
-        bytes += imageBytes(images);
+        bytes += size;
       }
       if (!batch.length) return { done: true, total: issues.length };
       if (!resumed && !moved) {
         log(`Margin: moving images out of the comment list, ${issues.length} comments`);
         await chrome.storage.local.set({ [MIGRATION_KEY]: { startedAt: new Date().toISOString() } });
       }
-      await putImages(batch.filter((entry) => hasImages(entry.images)), true);
+      const filled = batch.filter((entry) => hasImages(entry.images));
+      await putImages(filled, true);
       const ids = new Set(batch.map((entry) => entry.id));
       await saveList(issues.map((issue) => (ids.has(issue.id) ? splitImages(issue).fields : issue)));
-      batch.filter((entry) => hasImages(entry.images)).forEach((entry) => withImages.add(entry.id));
-      return { done: false, total: issues.length, count: batch.length, bytes, left: issues.filter((i) => !ids.has(i.id) && IMAGE_FIELDS.some((f) => f in i)).length };
+      filled.forEach((entry) => withImages.add(entry.id));
+      const left = issues.filter((issue) => !ids.has(issue.id) && holdsImages(issue)).length;
+      return { done: false, total: issues.length, count: batch.length, bytes, left };
     });
     startCount ??= step.total;
     if (step.done) break;
@@ -277,7 +285,7 @@ export async function migrateImages(log = (line) => console.log(line)) {
     return true;
   }
   const issues = await readIssues();
-  const inline = issues.filter((issue) => IMAGE_FIELDS.some((field) => field in issue)).length;
+  const inline = issues.filter(holdsImages).length;
   const sizes = await Promise.all([...withImages].map((id) => chrome.storage.local.getBytesInUse(imgKey(id))));
   const missing = sizes.filter((bytes) => !bytes).length;
   if (inline || missing) {
