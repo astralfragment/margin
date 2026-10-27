@@ -393,10 +393,13 @@ const hits = () => evaluate(tab, 'JSON.stringify(window.hits)').then((s) => JSON
 const total = (bag) => Object.values(bag).reduce((a, b) => a + b, 0);
 
 /**
- * Navigates the tab and waits for the load event.
+ * Stops annotating in the tab first, since annotation now stays on across page loads, then navigates and waits for
+ * the load event, so every run starts from a page without the overlay.
  * @param {string} url The address.
  */
 async function go(url) {
+  await evaluate(sw, `(async () => { for (const t of await chrome.tabs.query({})) await chrome.tabs.sendMessage(t.id, { type: 'stop' }).catch(() => {}); return 1; })()`);
+  await sleep(200);
   const loaded = new Promise((resolve) => handlers.set('Page.loadEventFired', resolve));
   await send('Page.navigate', { url }, tab);
   await Promise.race([loaded, sleep(20000)]);
@@ -555,10 +558,7 @@ try {
   await mouse('mousePressed', h1Box.x + h1Box.w * 0.3, h1Box.y + h1Box.h / 2, { button: 'left', buttons: 1, clickCount: 1 });
   await mouse('mouseReleased', h1Box.x + h1Box.w * 0.3, h1Box.y + h1Box.h / 2, { button: 'left', buttons: 0, clickCount: 1 });
   check(await waitCard(), 'a click on the headline opens the card');
-  const pickedRect = await evaluate(sw, `chrome.storage.local.get(null).then((b) => {
-    const list = b.issues ?? Object.entries(b).filter(([k]) => k.startsWith('issue:')).map(([, v]) => v);
-    return list.at(-1)?.rect ?? null;
-  })`);
+  const pickedRect = await evaluate(sw, `chrome.storage.local.get('drafts').then((b) => Object.values(b.drafts ?? {}).at(-1)?.rect ?? null)`);
   console.log(`  captured rect ${JSON.stringify(pickedRect)}`);
   check(pickedRect && Math.abs(pickedRect.w - h1Box.w) <= 2 && Math.abs(pickedRect.h - h1Box.h) <= 2, 'the click captures the headline, not the whole view');
   const draftFlag = await boxOf(await inShadow('function () { return this.querySelector(".root > .flag.draft:not([data-saving])"); }', false));
@@ -686,7 +686,9 @@ try {
   await discardCard();
   check(total(await hits()) === 0, `no page handler fired across the whole test page run ${JSON.stringify(await hits())}`);
   await press('Escape', 27);
-  check(!(await annotating()), 'with nothing open on the page or the overlay, Esc stops annotating');
+  check(await annotating(), 'with nothing open on the page or the overlay, one Esc only asks for a second one');
+  await press('Escape', 27);
+  check(!(await annotating()), 'with nothing open on the page or the overlay, Esc twice stops annotating');
 
   console.log('Fifty percent tab zoom');
   await go(SITE);
