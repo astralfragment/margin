@@ -59,6 +59,7 @@
     .root[hidden] { display: none; }
     .root.capturing { background: transparent; box-shadow: none; }
     .root.capturing > * { visibility: hidden; }
+    .root.capturing, .root.busy { cursor: progress; }
     [data-sev="blocker"] { --sev: var(--sev-blocker); --tint: var(--tint-blocker); --glyph: ${asset('icons/ui/glyph-blocker.svg')}; }
     [data-sev="major"] { --sev: var(--sev-major); --tint: var(--tint-major); --glyph: ${asset('icons/ui/glyph-major.svg')}; }
     [data-sev="minor"] { --sev: var(--sev-minor); --tint: var(--tint-minor); --glyph: ${asset('icons/ui/glyph-minor.svg')}; }
@@ -290,6 +291,7 @@
       <div class="layer" data-layer></div>
       <div class="hover" hidden></div>
       <div class="band" hidden></div>
+      <b class="flag draft" data-saving hidden>Saving</b>
       <div class="hint">
         <span class="review"><i class="mark"></i><b data-group>Margin</b><span class="count" data-count></span></span>
         <span class="divider"></span>
@@ -305,6 +307,7 @@
   const layer = shadow.querySelector('[data-layer]');
   const hoverBox = shadow.querySelector('.hover');
   const band = shadow.querySelector('.band');
+  const savingFlag = shadow.querySelector('[data-saving]');
   const hint = shadow.querySelector('.hint');
   const selectorsBtn = shadow.querySelector('[data-selectors]');
   const markersBtn = shadow.querySelector('[data-markers]');
@@ -1006,11 +1009,26 @@
       },
     };
     const res = await takeShot(msg);
+    showSaving(rect);
     const pending = state.pending;
     state.pending = null;
     if (pending?.old.id && res.id) chrome.runtime.sendMessage({ type: 'discard', id: pending.old.id }).catch(() => {});
     if (res.id) await refreshReview();
+    showSaving(null);
     openPanel({ id: res.id ?? null, rect, element, msg, error: res.error, draft: pending?.draft });
+  }
+
+  /**
+   * Marks a region as saving, with its band, a Saving flag and a busy cursor, until the card opens.
+   * It is only shown after the screenshot is back, so it never appears in the shot.
+   * @param {{x:number,y:number,w:number,h:number} | null} rect The region, or null to clear the state.
+   */
+  function showSaving(rect) {
+    root.classList.toggle('busy', Boolean(rect));
+    savingFlag.hidden = !rect;
+    if (!rect) return;
+    place(band, rect);
+    placeFlag(savingFlag, rect);
   }
 
   /**
@@ -1887,6 +1905,7 @@
       clearToast();
       hideTip();
       state.drag = null;
+      showSaving(null);
       band.hidden = true;
       hoverBox.hidden = true;
       layer.replaceChildren();
