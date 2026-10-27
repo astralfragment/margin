@@ -526,6 +526,8 @@ document.querySelectorAll('[data-sort]').forEach((button) => {
     rerender();
   });
 });
+const jumpId = new URL(location.href).searchParams.get('comment');
+if (jumpId) frame.addEventListener('load', () => rows[ordered.findIndex((issue) => issue.id === jumpId)]?.click(), { once: true });
 
 let spyHold = 0;
 

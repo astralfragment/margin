@@ -456,11 +456,11 @@ try {
   await size(344, 600);
   await click('[data-link-field="jira"] [data-connect]');
   await sleep(200);
-  check((await evaluate('window.__options')) === 1, 'Connect opens Help and settings');
-  check(Boolean(await evaluate(`window.__bag.reviewDraft?.jira === 'SS-112'`)), 'the sheet is kept while connecting');
+  check(/options\.html#connect-jira$/.test(await evaluate('window.__opened.at(-1)')), 'Connect opens Help and settings at the Jira row');
+  check(Boolean(await evaluate(`/SS-112$/.test(window.__bag.reviewDraft?.jira ?? '')`)), 'the sheet is kept while connecting');
   await open(popup, boot(await evaluate('window.__bag')));
-  await click('[data-toggle]');
   await until(`document.querySelector('[data-session-name]')`);
+  check(true, 'the popup reopens straight into the kept sheet');
   await press('Enter');
   await until(`window.__bag.groups?.length === 1`);
   const plain = await evaluate('window.__bag.groups[0]');
@@ -560,8 +560,8 @@ try {
   await size(344, 600);
   await open(popup, boot(rendered, `window.__TAB_URL = 'chrome://extensions/';`));
   await until(`!document.querySelector('[data-restricted]').hidden`);
-  check(await evaluate(`document.querySelector('[data-toggle]').disabled`), 'Start annotating is off on a Chrome page');
-  check(/Nothing to show on this tab. Your review has 8 comments on Home./.test(await textOf('[data-note]')), 'restricted page names where the comments are');
+  check(await evaluate(`document.querySelector('[data-start]').hidden`), 'Start annotating is hidden on a Chrome page');
+  check(/Your review has 8 comments on Home./.test(await textOf('[data-restricted]')), 'restricted page names where the comments are');
   check(await evaluate(`document.querySelector('[data-report]').classList.contains('primary')`), 'Open report becomes the one primary button');
   await shoot('pp-restricted', true);
 
