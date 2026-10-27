@@ -628,12 +628,13 @@
     }
   }
 
-  /** Returns the page element under a viewport point, ignoring our own overlay. */
+  /**
+   * Returns the page element under a viewport point, skipping our own overlay without hiding it.
+   * @param {number} x Viewport x of the point.
+   * @param {number} y Viewport y of the point.
+   */
   function elementAt(x, y) {
-    host.style.display = 'none';
-    const el = document.elementFromPoint(x, y);
-    host.style.display = '';
-    return el;
+    return document.elementsFromPoint(x, y).find((el) => el !== host) ?? null;
   }
 
   /** Builds a short, readable CSS path for an element. */
