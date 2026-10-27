@@ -12,6 +12,7 @@
   const GAP = 12;
   const EDGE = 8;
   const HINT_SPACE = 64;
+  const SHOT_TIMEOUT = 10000;
   const FONT = 'Margin Manrope';
   const THEME_KEY = 'theme';
   const SELECTORS_KEY = 'selectorMode';
@@ -20,6 +21,7 @@
   const pad = (n) => String(n).padStart(2, '0');
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
   const isField = (el) => el?.localName === 'input' || el?.localName === 'textarea';
+  const isEditable = (el) => Boolean(el && (el.isContentEditable || ['input', 'textarea', 'select'].includes(el.localName)));
 
   const STYLE = `
     :host { all: initial; }
@@ -59,7 +61,8 @@
     .root[hidden] { display: none; }
     .root.capturing { background: transparent; box-shadow: none; }
     .root.capturing > * { visibility: hidden; }
-    .root.capturing, .root.busy { cursor: progress; }
+    .root.capturing { pointer-events: none; }
+    .root.busy { cursor: progress; }
     [data-sev="blocker"] { --sev: var(--sev-blocker); --tint: var(--tint-blocker); --glyph: ${asset('icons/ui/glyph-blocker.svg')}; }
     [data-sev="major"] { --sev: var(--sev-major); --tint: var(--tint-major); --glyph: ${asset('icons/ui/glyph-major.svg')}; }
     [data-sev="minor"] { --sev: var(--sev-minor); --tint: var(--tint-minor); --glyph: ${asset('icons/ui/glyph-minor.svg')}; }
@@ -95,6 +98,10 @@
     .hover {
       position: fixed; pointer-events: none;
       border: 1.5px solid var(--ink); border-radius: 6px;
+    }
+    .hover.full::after {
+      content: "Fills the whole view"; position: absolute; left: 8px; top: 8px; padding: 1px 8px; border-radius: 4px;
+      font-size: 13px; line-height: 18px; font-weight: 600; color: var(--on-ink); background: var(--ink);
     }
     .band {
       position: fixed; pointer-events: none;
@@ -136,7 +143,7 @@
 
     .hint {
       position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
-      display: flex; align-items: center; gap: 12px; height: 40px; max-width: calc(100vw - 32px);
+      display: flex; align-items: center; gap: 12px; height: 40px; max-width: calc(var(--vw, 100vw) - 32px);
       padding: 4px 4px 4px 12px; overflow: hidden; white-space: nowrap; cursor: default;
       background: var(--float); border: 1px solid var(--float-border); border-radius: 10px; box-shadow: var(--shadow);
     }
@@ -161,13 +168,15 @@
     .toggle[aria-pressed="true"] .switch { background: var(--ink); box-shadow: none; }
     .toggle[aria-pressed="true"] .switch::after { left: 14px; background: var(--on-ink); }
     .stop { gap: 4px; }
+    .pass { display: flex; align-items: center; gap: 6px; flex: none; font-size: 13px; line-height: 18px; color: var(--muted-fg); }
+    .root.passing .pass { color: var(--ink); }
     @media (max-width: 640px) {
       .hint { gap: 8px; }
-      .review b, .review .count, .hint kbd, .hint .gap, .hint .divider, .hint [data-report] { display: none; }
+      .review b, .review .count, .hint kbd, .hint .gap, .hint .divider, .hint [data-report], .hint .pass { display: none; }
     }
 
     .panel {
-      position: fixed; width: 360px; max-width: calc(100vw - 16px); display: flex; flex-direction: column;
+      position: fixed; width: 360px; max-width: calc(var(--vw, 100vw) - 16px); display: flex; flex-direction: column;
       background: var(--float); border: 1px solid var(--float-border); border-radius: 10px; box-shadow: var(--shadow);
       overflow: hidden; cursor: default;
     }
@@ -255,7 +264,7 @@
     }
 
     .ctx {
-      position: fixed; width: 340px; max-width: calc(100vw - 16px); padding: 4px; display: grid;
+      position: fixed; width: 340px; max-width: calc(var(--vw, 100vw) - 16px); padding: 4px; display: grid;
       background: var(--float); border: 1px solid var(--float-border); border-radius: 10px;
       box-shadow: var(--shadow); cursor: default;
     }
@@ -274,7 +283,7 @@
       font-size: 14px; line-height: 20px; font-weight: 600; white-space: nowrap; cursor: default;
       color: var(--primary-fg); background: var(--primary); border-radius: 10px; box-shadow: var(--shadow);
     }
-    .toast.plain { left: 50%; bottom: ${HINT_SPACE}px; transform: translateX(-50%); max-width: calc(100vw - 32px); white-space: normal; }
+    .toast.plain { left: 50%; bottom: ${HINT_SPACE}px; transform: translateX(-50%); max-width: calc(var(--vw, 100vw) - 32px); white-space: normal; }
     .toast.saved-toast { padding-right: 4px; }
     .toast .actions { display: flex; }
     .toast .btn { color: var(--primary-fg); }
@@ -297,6 +306,8 @@
         <span class="divider"></span>
         <button type="button" class="toggle" data-selectors aria-pressed="false"><span class="switch"></span><span>Selectors</span><kbd>S</kbd></button>
         <button type="button" class="toggle" data-markers aria-pressed="true"><span class="switch"></span><span>Markers</span><kbd>M</kbd></button>
+        <span class="divider"></span>
+        <span class="pass">Hold <kbd>Alt</kbd> to use the page</span>
         <span class="gap"></span>
         <button type="button" class="btn" data-report>Open report</button>
         <button type="button" class="btn stop" data-stop><span>Stop</span><kbd>Esc</kbd></button>
@@ -342,8 +353,9 @@
    * @param {Event} e A press event caught at the window during the capture phase.
    */
   function shield(e) {
+    if (passing) return;
     if (e.target !== host) {
-      if (!e.isTrusted || (e instanceof MouseEvent && (e.clientX >= root.clientWidth || e.clientY >= root.clientHeight))) return;
+      if (!e.isTrusted || (e instanceof MouseEvent && (e.clientX >= root.clientWidth * scale || e.clientY >= root.clientHeight * scale))) return;
       e.stopImmediatePropagation();
       if (e.cancelable && !/^(pointer|touch)/.test(e.type)) e.preventDefault();
       raise();
@@ -354,7 +366,7 @@
     if (!(e instanceof MouseEvent)) return;
     const fromKeyboard = e.type === 'click' && e.detail === 0 && shadow.activeElement;
     const inner = fromKeyboard ? shadow.activeElement : shadow.elementFromPoint(e.clientX, e.clientY);
-    if (inner) replay(e, inner);
+    if (inner && shadow.contains(inner)) replay(e, inner);
   }
 
   /**
@@ -397,12 +409,53 @@
     fitZoom();
   }
 
-  /** Cancels any CSS zoom the overlay inherits from the page, so it draws at full size and lines up with the pointer. */
+  let tabZoom = 1;
+  let scale = 1;
+
+  /**
+   * Cancels the CSS zoom the overlay inherits from the page and the tab's browser zoom, so the overlay keeps the same
+   * physical size on every page. While browser zoom is countered, one overlay pixel is `scale` page pixels.
+   */
   function fitZoom() {
     const parent = host.parentElement ?? document.documentElement;
     const zoom = parent.currentCSSZoom ?? (Number(getComputedStyle(parent).zoom) || 1);
-    host.style.zoom = zoom > 0 && zoom !== 1 ? String(1 / zoom) : '';
+    scale = tabZoom > 0 ? 1 / tabZoom : 1;
+    const own = scale / (zoom > 0 ? zoom : 1);
+    host.style.zoom = own !== 1 ? String(own) : '';
+    root.style.setProperty('--vw', `${innerWidth / scale}px`);
   }
+
+  /** Applies a new browser zoom, then moves the saved regions, the open card and its band, flag and pins to match. */
+  function refit() {
+    fitZoom();
+    closeMenu();
+    hideTip();
+    placeSaved();
+    const p = state.panel;
+    if (!p) return;
+    p.node.style.top = '';
+    p.node.style.bottom = '';
+    place(band, p.rect);
+    placeFlag(p.flag, p.rect);
+    paintMarks();
+    placePanel();
+  }
+
+  /**
+   * Turns a length in page pixels into a CSS length in the overlay's own pixels.
+   * @param {number} value Page pixels, as event coordinates and page element boxes are measured.
+   */
+  const px = (value) => `${value / scale}px`;
+
+  /**
+   * The size of an overlay element in page pixels.
+   * @param {HTMLElement} el The overlay element.
+   */
+  const sizeOf = (el) => ({ w: el.offsetWidth * scale, h: el.offsetHeight * scale });
+
+  const openWatch = new MutationObserver((records) => {
+    if (records.some((r) => r.target !== host && r.target.hasAttribute('open'))) raise();
+  });
 
   /**
    * Raises the overlay again when the page opens a popover or dialog of its own, changes fullscreen, closes the dialog
@@ -425,7 +478,63 @@
    * @param {MouseEvent} e A mousemove caught at the window.
    */
   function onStrayMove(e) {
-    if (e.target !== host && e.isTrusted) onMove(e);
+    if (e.target !== host && e.isTrusted && !passing) onMove(e);
+  }
+
+  let passing = false;
+
+  /**
+   * Hands the pointer to the page while Alt is held, so hover states, menus and inner scrolling work, and takes it back
+   * when Alt is let go or the window loses focus.
+   * @param {boolean} next Whether the page gets the pointer.
+   */
+  function passThrough(next) {
+    if (passing === next) return;
+    passing = next;
+    host.style.pointerEvents = next ? 'none' : '';
+    root.classList.toggle('passing', next);
+    if (!next) return;
+    state.drag = null;
+    band.hidden = !state.panel;
+    hoverBox.hidden = true;
+  }
+
+  /**
+   * Ends the Alt hold on release. The release is cancelled so Chrome does not move focus to its menu.
+   * @param {KeyboardEvent} e A keyup caught at the window.
+   */
+  function onKeyUp(e) {
+    if (e.key !== 'Alt') return;
+    e.preventDefault();
+    passThrough(false);
+  }
+
+  /** Ends the Alt hold when the window loses focus, since the release then never arrives. */
+  const endPass = () => passThrough(false);
+
+  /**
+   * Scrolls the scrollable page element under the pointer. The overlay covers the page, so without this every wheel
+   * scrolls the document and inner panels never move.
+   * @param {WheelEvent} e A wheel event on the overlay.
+   */
+  function onWheel(e) {
+    if (e.ctrlKey) return;
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1;
+    const dx = e.deltaX * unit;
+    const dy = e.deltaY * unit;
+    const top = document.scrollingElement;
+    for (let el = elementAt(e.clientX, e.clientY); el && el !== top && el !== document.body; el = el.parentElement) {
+      const style = getComputedStyle(el);
+      const room = (overflow, pos, size, full, delta) =>
+        delta !== 0 && /auto|scroll|overlay/.test(overflow) && (delta > 0 ? pos + size < full - 1 : pos > 0);
+      const canY = room(style.overflowY, el.scrollTop, el.clientHeight, el.scrollHeight, dy);
+      const canX = room(style.overflowX, el.scrollLeft, el.clientWidth, el.scrollWidth, dx);
+      if (canY || canX) {
+        e.preventDefault();
+        el.scrollBy({ left: canX ? dx : 0, top: canY ? dy : 0 });
+        return;
+      }
+    }
   }
 
   /**
@@ -573,16 +682,18 @@
   }
 
   /**
-   * Puts a flag above a region, or below it when there is no room above.
+   * Puts a flag above a region, below it when there is no room above, or inside its top edge when the region fills the view.
    * @param {HTMLElement} flag The flag.
    * @param {{x:number,y:number,w:number,h:number}} rect The region in viewport pixels.
    * @param {boolean} [inside] True when the flag is placed relative to the region box rather than the viewport.
    */
   function placeFlag(flag, rect, inside = false) {
-    const above = rect.y >= 24;
-    const top = above ? -22 : rect.h + 2;
-    flag.style.left = inside ? '0px' : `${Math.max(2, rect.x)}px`;
-    flag.style.top = inside ? `${top}px` : `${rect.y + top}px`;
+    const lift = 22 * scale;
+    let top = Math.max(0, -rect.y) + 2 * scale;
+    if (rect.y >= lift + 2 * scale) top = -lift;
+    else if (rect.y + rect.h + lift <= innerHeight) top = rect.h + 2 * scale;
+    flag.style.left = inside ? '0px' : px(Math.max(2 * scale, rect.x));
+    flag.style.top = px(inside ? top : rect.y + top);
   }
 
   /** Draws the dashed regions and numbered flags of the comments saved on this page. */
@@ -613,7 +724,7 @@
       const box = regionOf(node.comment);
       node.hidden = !box;
       if (!box) continue;
-      Object.assign(node.style, { left: `${box.x}px`, top: `${box.y}px`, width: `${box.w}px`, height: `${box.h}px` });
+      place(node, box);
       placeFlag(node.querySelector('.flag'), box, true);
     }
   }
@@ -650,9 +761,11 @@
     `;
     root.append(tip);
     const f = flag.getBoundingClientRect();
-    const right = f.right + 8;
-    tip.style.left = `${right + tip.offsetWidth > innerWidth - EDGE ? Math.max(EDGE, f.left - 8 - tip.offsetWidth) : right}px`;
-    tip.style.top = `${Math.min(Math.max(EDGE, f.top), innerHeight - tip.offsetHeight - EDGE)}px`;
+    const size = sizeOf(tip);
+    const edge = EDGE * scale;
+    const right = f.right + 8 * scale;
+    tip.style.left = px(right + size.w > innerWidth - edge ? Math.max(edge, f.left - 8 * scale - size.w) : right);
+    tip.style.top = px(Math.min(Math.max(edge, f.top), innerHeight - size.h - edge));
     state.tip = { tip, node };
   }
 
@@ -717,7 +830,81 @@
    * @param {number} y Viewport y of the point.
    */
   function elementAt(x, y) {
-    return document.elementsFromPoint(x, y).find((el) => el !== host) ?? null;
+    return pickAt(x, y)?.el ?? null;
+  }
+
+  /**
+   * Finds the page element a person points at. Hit testing skips layers with pointer-events: none, so on many sites the
+   * hit is a canvas, video, gradient or full-bleed background in front of or behind the text. When the hit fills most of
+   * the view, or is a large empty surface, the elements under the hit stack are searched by their boxes and text instead,
+   * so the smallest one holding the point wins. `full` is true when even that pick fills the view.
+   * @param {number} x Viewport x of the point.
+   * @param {number} y Viewport y of the point.
+   */
+  function pickAt(x, y) {
+    const hits = document.elementsFromPoint(x, y).filter((el) => el !== host);
+    if (!hits.length) return null;
+    const view = innerWidth * innerHeight;
+    const area = (box) => box.width * box.height;
+    let el = hits[0];
+    let r = el.getBoundingClientRect();
+    const surface = area(r) >= view * 0.2 && !el.childElementCount && !el.textContent.trim();
+    if (area(r) >= view * 0.6 || surface) {
+      for (const hit of hits) {
+        const found = smallestAt(hit, x, y);
+        const box = found?.getBoundingClientRect();
+        if (box && area(box) < Math.min(area(r) * 0.8, view * 0.6)) {
+          el = found;
+          r = box;
+          break;
+        }
+        if (hit === document.body) break;
+      }
+    }
+    const full = r.width >= innerWidth * 0.95 && r.height >= innerHeight * 0.95;
+    return { el, full, rect: { x: r.left, y: r.top, w: r.width, h: r.height } };
+  }
+
+  /**
+   * Searches below an element for the smallest visible element whose box, or whose own text, holds a point, whatever its
+   * pointer-events. Only branches whose box holds the point are walked, within a fixed budget.
+   * @param {Element} start Where the search begins.
+   * @param {number} x Viewport x of the point.
+   * @param {number} y Viewport y of the point.
+   */
+  function smallestAt(start, x, y) {
+    const holds = (r) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    let best = null;
+    let bestArea = Infinity;
+    let budget = 1500;
+    const consider = (el, area) => {
+      if (area > bestArea || el.checkVisibility?.({ opacityProperty: true, visibilityProperty: true }) === false) return;
+      best = el;
+      bestArea = area;
+    };
+    const visit = (el) => {
+      for (const node of el.childNodes) {
+        if (--budget < 0) return;
+        if (node.nodeType === Node.TEXT_NODE) {
+          if (!node.data.trim()) continue;
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          const line = [...range.getClientRects()].find(holds);
+          const own = el.getBoundingClientRect();
+          if (line) consider(el, Math.min(line.width * line.height, own.width * own.height));
+          continue;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE || node === host) continue;
+        const r = node.getBoundingClientRect();
+        if (!r.width && !r.height) visit(node);
+        else if (holds(r)) {
+          consider(node, r.width * r.height);
+          visit(node);
+        }
+      }
+    };
+    visit(start);
+    return best;
   }
 
   /** Builds a short, readable CSS path for an element. */
@@ -769,10 +956,10 @@
    * @param {{x:number,y:number,w:number,h:number}} rect The region in viewport pixels.
    */
   function place(el, rect) {
-    el.style.left = `${rect.x}px`;
-    el.style.top = `${rect.y}px`;
-    el.style.width = `${rect.w}px`;
-    el.style.height = `${rect.h}px`;
+    el.style.left = px(rect.x);
+    el.style.top = px(rect.y);
+    el.style.width = px(rect.w);
+    el.style.height = px(rect.h);
     el.hidden = false;
   }
 
@@ -818,13 +1005,15 @@
       chrome.runtime.sendMessage({ type: 'openReport' }).catch(() => {});
     });
     root.append(node);
-    const left = Math.min(Math.max(EDGE, saved.box.left + 12), innerWidth - node.offsetWidth - EDGE);
-    node.style.left = `${left}px`;
-    node.style.top = `${Math.min(saved.box.bottom, innerHeight - HINT_SPACE) - node.offsetHeight}px`;
+    const size = sizeOf(node);
+    const left = Math.min(Math.max(EDGE * scale, saved.box.left + 12 * scale), innerWidth - size.w - EDGE * scale);
+    node.style.left = px(left);
+    node.style.top = px(Math.min(saved.box.bottom, innerHeight - HINT_SPACE * scale) - size.h);
     state.toast = { node, timer: setTimeout(clearToast, 5000) };
   }
 
   const nextFrame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
   /** Splits pasted reference links on whitespace or commas, keeping real URLs. */
   function parseLinks(value) {
@@ -906,8 +1095,9 @@
    */
   function openMenu(x, y) {
     closeMenu();
-    const target = elementAt(x, y)?.getBoundingClientRect();
-    if (target) place(hoverBox, { x: target.left, y: target.top, w: target.width, h: target.height });
+    const pick = pickAt(x, y);
+    const target = pick?.el.getBoundingClientRect();
+    if (pick) outline(pick);
     const items = [
       ['Comment on this element', () => captureElementAt(x, y)],
       ['Comment on the whole visible area', captureViewport],
@@ -941,11 +1131,13 @@
       e.stopPropagation();
     });
     root.append(menu);
-    let top = y + 8;
-    const fitsBelow = target && target.height < innerHeight / 3 && target.bottom + 6 + menu.offsetHeight <= innerHeight - EDGE;
-    if (fitsBelow) top = target.bottom + 6;
-    menu.style.left = `${Math.max(EDGE, Math.min(x + 6, window.innerWidth - menu.offsetWidth - EDGE))}px`;
-    menu.style.top = `${Math.max(EDGE, Math.min(top, window.innerHeight - menu.offsetHeight - EDGE))}px`;
+    const size = sizeOf(menu);
+    const edge = EDGE * scale;
+    let top = y + 8 * scale;
+    const fitsBelow = target && target.height < innerHeight / 3 && target.bottom + 6 * scale + size.h <= innerHeight - edge;
+    if (fitsBelow) top = target.bottom + 6 * scale;
+    menu.style.left = px(Math.max(edge, Math.min(x + 6 * scale, window.innerWidth - size.w - edge)));
+    menu.style.top = px(Math.max(edge, Math.min(top, window.innerHeight - size.h - edge)));
     state.menu = menu;
     menu.querySelector('button').focus();
   }
@@ -977,15 +1169,22 @@
     hoverBox.hidden = true;
     hideTip();
     root.classList.add('capturing');
-    await nextFrame();
-    await new Promise((r) => setTimeout(r, 60));
+    host.style.cursor = 'progress';
+    await Promise.race([nextFrame(), wait(1000)]);
+    await wait(60);
     let res;
-    try {
-      res = await chrome.runtime.sendMessage(msg);
-    } catch (err) {
-      res = { error: String(err.message ?? err) };
+    if (document.visibilityState !== 'visible') {
+      res = { error: 'The tab was in the background, so Margin did not take the screenshot' };
+    } else {
+      const sent = chrome.runtime.sendMessage(msg).then((answer) => answer ?? {}, (err) => ({ error: String(err.message ?? err) }));
+      res = await Promise.race([sent, wait(SHOT_TIMEOUT)]);
+      if (!res) {
+        res = { error: 'Margin waited too long for the screenshot' };
+        sent.then((late) => late?.id && chrome.runtime.sendMessage({ type: 'discard', id: late.id }).catch(() => {}));
+      }
     }
     root.classList.remove('capturing');
+    host.style.cursor = '';
     return res?.id ? res : { error: res?.error ?? 'Screenshot failed' };
   }
 
@@ -1358,41 +1557,42 @@
     const { node, rect: r } = p;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const floor = vh - HINT_SPACE;
-    const w = node.offsetWidth;
-    const h = node.offsetHeight;
-    const clampX = (x) => Math.min(Math.max(EDGE, x), vw - w - EDGE);
-    const right = r.x + r.w + GAP;
-    const left = r.x - GAP - w;
+    const edge = EDGE * scale;
+    const gap = GAP * scale;
+    const floor = vh - HINT_SPACE * scale;
+    const { w, h } = sizeOf(node);
+    const clampX = (x) => Math.min(Math.max(edge, x), vw - w - edge);
+    const right = r.x + r.w + gap;
+    const left = r.x - gap - w;
     let side;
-    if (right + w <= vw - EDGE) side = 'right';
-    else if (left >= EDGE) side = 'left';
-    else if (r.y + r.h + GAP + h <= floor) side = 'below';
-    else if (r.y - GAP - h >= EDGE) side = 'above';
+    if (right + w <= vw - edge) side = 'right';
+    else if (left >= edge) side = 'left';
+    else if (r.y + r.h + gap + h <= floor) side = 'below';
+    else if (r.y - gap - h >= edge) side = 'above';
     else side = 'inside';
     p.side = side;
     const anchorTop = (top) => {
-      const at = Math.min(Math.max(EDGE, top), Math.max(EDGE, floor - h));
-      node.style.top = `${at}px`;
-      node.style.maxHeight = `${floor - at}px`;
+      const at = Math.min(Math.max(edge, top), Math.max(edge, floor - h));
+      node.style.top = px(at);
+      node.style.maxHeight = px(floor - at);
     };
     const anchorBottom = (bottom) => {
-      const at = Math.min(floor, Math.max(bottom, h + EDGE));
-      node.style.bottom = `${vh - at}px`;
-      node.style.maxHeight = `${at - EDGE}px`;
+      const at = Math.min(floor, Math.max(bottom, h + edge));
+      node.style.bottom = px(vh - at);
+      node.style.maxHeight = px(at - edge);
     };
     if (side === 'right' || side === 'left') {
-      node.style.left = `${side === 'right' ? right : left}px`;
+      node.style.left = px(side === 'right' ? right : left);
       if (r.y + r.h / 2 < vh / 2) anchorTop(r.y);
       else anchorBottom(Math.min(r.y + r.h, floor));
     } else if (side === 'below') {
-      node.style.left = `${clampX(r.x)}px`;
-      anchorTop(r.y + r.h + GAP);
+      node.style.left = px(clampX(r.x));
+      anchorTop(r.y + r.h + gap);
     } else if (side === 'above') {
-      node.style.left = `${clampX(r.x)}px`;
-      anchorBottom(r.y - GAP);
+      node.style.left = px(clampX(r.x));
+      anchorBottom(r.y - gap);
     } else {
-      node.style.left = `${vw - w - 16}px`;
+      node.style.left = px(vw - w - 16 * scale);
       anchorBottom(floor);
     }
     placeTail();
@@ -1407,17 +1607,18 @@
     const { tail } = p;
     tail.hidden = p.side === 'inside';
     if (tail.hidden) return;
-    const cy = Math.min(Math.max(r.y + r.h / 2, box.top + 16), box.bottom - 16);
-    const cx = Math.min(Math.max(r.x + r.w / 2, box.left + 16), box.right - 16);
+    const k = scale;
+    const cy = Math.min(Math.max(r.y + r.h / 2, box.top + 16 * k), box.bottom - 16 * k);
+    const cx = Math.min(Math.max(r.x + r.w / 2, box.left + 16 * k), box.right - 16 * k);
     const spots = {
-      left: { left: box.right, top: cy - 7, turn: 'none' },
-      right: { left: box.left - 8, top: cy - 7, turn: 'scaleX(-1)' },
-      below: { left: cx - 4, top: box.top - 11, turn: 'rotate(-90deg)' },
-      above: { left: cx - 4, top: box.bottom - 3, turn: 'rotate(90deg)' },
+      left: { left: box.right, top: cy - 7 * k, turn: 'none' },
+      right: { left: box.left - 8 * k, top: cy - 7 * k, turn: 'scaleX(-1)' },
+      below: { left: cx - 4 * k, top: box.top - 11 * k, turn: 'rotate(-90deg)' },
+      above: { left: cx - 4 * k, top: box.bottom - 3 * k, turn: 'rotate(90deg)' },
     };
     const spot = spots[p.side];
-    tail.style.left = `${spot.left}px`;
-    tail.style.top = `${spot.top}px`;
+    tail.style.left = px(spot.left);
+    tail.style.top = px(spot.top);
     tail.style.transform = spot.turn;
   }
 
@@ -1427,8 +1628,8 @@
     root.querySelectorAll(':scope > .pin').forEach((pin) => pin.remove());
     p.marks.forEach((m, i) => {
       const pin = Object.assign(document.createElement('b'), { className: 'pin', textContent: String(i + 1) });
-      pin.style.left = `${m.x}px`;
-      pin.style.top = `${m.y}px`;
+      pin.style.left = px(m.x);
+      pin.style.top = px(m.y);
       pin.title = 'Right-click to remove';
       pin.addEventListener('mousedown', (e) => e.stopPropagation());
       pin.addEventListener('contextmenu', (e) => {
@@ -1607,8 +1808,8 @@
     });
     root.append(menu);
     const at = p.node.querySelector('[data-more]').getBoundingClientRect();
-    menu.style.left = `${Math.max(EDGE, at.right - menu.offsetWidth)}px`;
-    menu.style.top = `${at.bottom + 4}px`;
+    menu.style.left = px(Math.max(EDGE * scale, at.right - sizeOf(menu).w));
+    menu.style.top = px(at.bottom + 4 * scale);
     p.more = menu;
     widths.focus();
   }
@@ -1769,13 +1970,20 @@
       return;
     }
     if (state.panel || state.menu || !state.selectors) return;
-    const el = elementAt(e.clientX, e.clientY);
-    if (!el) {
+    outline(pickAt(e.clientX, e.clientY));
+  }
+
+  /**
+   * Outlines a picked element, saying so when it fills the whole view, or hides the outline when nothing was picked.
+   * @param {{rect: object, full: boolean} | null} pick The pick from pickAt.
+   */
+  function outline(pick) {
+    if (!pick) {
       hoverBox.hidden = true;
       return;
     }
-    const r = el.getBoundingClientRect();
-    place(hoverBox, { x: r.left, y: r.top, w: r.width, h: r.height });
+    hoverBox.classList.toggle('full', pick.full);
+    place(hoverBox, pick.rect);
   }
 
   /** Starts a drag, or drops a marker when a card is open and the press lands inside its area. */
@@ -1828,9 +2036,20 @@
     capture(rect);
   }
 
-  /** Keyboard shortcuts while annotating: S and M toggle modes, 1 to 4 and R act on the open card, arrows walk menus, Esc steps back. */
+  /**
+   * Keyboard shortcuts while annotating: S and M toggle modes, 1 to 4 and R act on the open card, arrows walk menus,
+   * Esc steps back and holding Alt hands the pointer to the page. Letters and digits typed into a page field stay there,
+   * and an Esc meant for the page, with a page dialog or field open or handled by the page, never stops annotating.
+   * @param {KeyboardEvent} e A keydown caught at the window.
+   */
   function onKey(e) {
-    const plain = !e.ctrlKey && !e.metaKey && !e.altKey;
+    if (e.key === 'Alt') {
+      e.preventDefault();
+      passThrough(true);
+      return;
+    }
+    const pageField = isEditable(document.activeElement) || isEditable(e.composedPath()[0]);
+    const plain = !e.ctrlKey && !e.metaKey && !e.altKey && !pageField;
     const key = e.key?.toLowerCase();
     const menu = state.menu ?? state.panel?.more;
     if (menu && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
@@ -1866,12 +2085,22 @@
       return;
     }
     if (e.key !== 'Escape') return;
+    if (!state.menu && !state.panel && !state.pending) {
+      if (pageField || pageLayerOpen()) return;
+      window.addEventListener('keydown', (after) => after === e && !e.defaultPrevented && setActive(false), { once: true });
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     if (state.menu) closeMenu();
     else if (state.panel) escapePanel();
-    else if (state.pending) cancelRedraw();
-    else setActive(false);
+    else cancelRedraw();
+  }
+
+  /** True when the page has its own modal dialog, popover or fullscreen element open, which Esc should close first. */
+  function pageLayerOpen() {
+    if (document.fullscreenElement || document.querySelector('dialog:modal')) return true;
+    return [...document.querySelectorAll(':popover-open')].some((el) => el !== host);
   }
 
   /**
@@ -1887,6 +2116,10 @@
       SHIELDED.forEach((type) => window.addEventListener(type, shield, true));
       LAYERED.forEach((type) => window.addEventListener(type, onLayer, true));
       window.addEventListener('mousemove', onStrayMove, true);
+      window.addEventListener('keyup', onKeyUp, true);
+      window.addEventListener('blur', endPass);
+      root.addEventListener('wheel', onWheel, { passive: false });
+      openWatch.observe(document, { subtree: true, attributes: true, attributeFilter: ['open'] });
       root.addEventListener('mousemove', onMove);
       root.addEventListener('mousedown', onDown);
       root.addEventListener('mouseup', onUp);
@@ -1912,6 +2145,11 @@
       SHIELDED.forEach((type) => window.removeEventListener(type, shield, true));
       LAYERED.forEach((type) => window.removeEventListener(type, onLayer, true));
       window.removeEventListener('mousemove', onStrayMove, true);
+      window.removeEventListener('keyup', onKeyUp, true);
+      window.removeEventListener('blur', endPass);
+      root.removeEventListener('wheel', onWheel);
+      openWatch.disconnect();
+      passThrough(false);
       hostWatch.disconnect();
       root.removeEventListener('mousemove', onMove);
       root.removeEventListener('mousedown', onDown);
@@ -1930,7 +2168,13 @@
     if (msg?.type === 'ping') sendResponse({ ok: true });
     else if (msg?.type === 'toggle') {
       if (msg.groupName) groupLabel.textContent = msg.groupName;
+      if (msg.zoom) tabZoom = msg.zoom;
       sendResponse({ active: setActive(!state.active) });
+    }
+    else if (msg?.type === 'zoom') {
+      tabZoom = msg.zoom || 1;
+      if (state.active) refit();
+      sendResponse({ ok: true });
     }
     else if (msg?.type === 'stop') sendResponse({ active: setActive(false) });
     else if (msg?.type === 'toast') {
@@ -1939,7 +2183,9 @@
     }
     else if (msg?.type === 'captureViewport') {
       if (msg.groupName) groupLabel.textContent = msg.groupName;
+      if (msg.zoom) tabZoom = msg.zoom;
       setActive(true);
+      fitZoom();
       captureViewport();
       sendResponse({ active: true });
     }
