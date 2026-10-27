@@ -132,7 +132,6 @@ export function wireSend({ ordered, numberOf, group, options, reviewTitle, send,
     jiraBusy = busy;
     jiraClose.disabled = busy;
     jiraGo.disabled = busy;
-    jiraGo.classList.toggle('busy', busy);
   }
 
   const jiraMode = () => jiraBody.querySelector('[name="jira-mode"]:checked')?.value ?? 'each';

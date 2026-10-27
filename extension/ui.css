@@ -113,7 +113,8 @@ h1 { font-size: 14px; }
   cursor: pointer; transition: background-color 120ms ease-out, border-color 120ms ease-out;
 }
 .btn:hover { background: var(--secondary); }
-.btn.btn:disabled, .btn.btn:disabled:hover { opacity: 0.45; cursor: not-allowed; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.app .btn:disabled, .app .btn:disabled:hover { opacity: 0.45; }
 .btn.primary { color: var(--primary-foreground); background: var(--primary); border-color: var(--primary); }
 .btn.primary:hover { opacity: 0.9; }
 .btn.action { color: var(--action-foreground); background: var(--action); border-color: var(--action); font-weight: 800; }

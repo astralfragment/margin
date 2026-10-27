@@ -968,8 +968,15 @@ document.querySelector('[data-copy]').addEventListener('click', async (event) =>
 });
 
 document.querySelector('[data-print]').addEventListener('click', () => {
+  const folded = [...frame.contentDocument.querySelectorAll('details.full:not([open])')];
+  folded.forEach((details) => {
+    details.open = true;
+  });
   frame.contentWindow.focus();
   frame.contentWindow.print();
+  folded.forEach((details) => {
+    details.open = false;
+  });
 });
 
 /**
