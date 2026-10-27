@@ -491,18 +491,22 @@
 
   let fontsAdded = false;
 
-  /** Registers Margin's bundled Manrope with the page under its own family name, so the shadow root can use it. */
+  /**
+   * Registers Margin's bundled Manrope with the page under its own family name, so the shadow root can use it.
+   * Text shows at once in the fallback font and swaps to Manrope when it arrives, so the overlay never waits on it.
+   */
   function loadFont() {
     if (fontsAdded || !document.fonts || typeof FontFace !== 'function') return;
     fontsAdded = true;
     for (const weight of [500, 600, 800]) {
       try {
-        const face = new FontFace(FONT, asset(`fonts/manrope-latin-${weight}-normal.woff2`), { weight: String(weight) });
+        const face = new FontFace(FONT, asset(`fonts/manrope-latin-${weight}-normal.woff2`), { weight: String(weight), display: 'swap' });
         document.fonts.add(face);
         face.load().catch(() => {});
       } catch {}
     }
   }
+  loadFont();
 
   /** Reads the active review and the comments saved on this page, then redraws the hint bar and the flags. */
   async function refreshReview() {
@@ -1853,7 +1857,6 @@
     root.hidden = !next;
     if (next) {
       raise();
-      loadFont();
       SHIELDED.forEach((type) => window.addEventListener(type, shield, true));
       LAYERED.forEach((type) => window.addEventListener(type, onLayer, true));
       window.addEventListener('mousemove', onStrayMove, true);
