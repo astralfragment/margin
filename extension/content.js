@@ -41,7 +41,7 @@
       position: fixed; inset: 0; z-index: 2147483647;
       cursor: crosshair; color: var(--fg);
       background: rgba(13, 10, 23, 0.12); box-shadow: inset 0 0 0 2px var(--ink);
-      font-size: 13px; line-height: 20px; font-weight: 500; font-variant-numeric: tabular-nums;
+      font-size: 14px; line-height: 20px; font-weight: 500; font-variant-numeric: tabular-nums;
       -webkit-font-smoothing: antialiased;
     }
     .root[data-theme="dark"] {
@@ -75,13 +75,13 @@
 
     kbd {
       display: inline-flex; align-items: center; justify-content: center; height: 18px; min-width: 18px; padding: 0 4px;
-      font-size: 12px; line-height: 16px; font-weight: 600; color: var(--muted-fg);
+      font-size: 13px; line-height: 16px; font-weight: 600; color: var(--muted-fg);
       background: var(--surface-3); border: 1px solid var(--divider); border-radius: 4px;
     }
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: none;
       height: 32px; padding: 0 8px; border-radius: 6px; white-space: nowrap;
-      font-size: 13px; line-height: 18px; font-weight: 600; color: var(--fg);
+      font-size: 14px; line-height: 20px; font-weight: 600; color: var(--fg);
     }
     .btn:hover { background: var(--surface-3); }
     .btn.primary { padding: 0 12px; color: var(--primary-fg); background: var(--primary); }
@@ -101,7 +101,7 @@
     }
     .flag {
       position: fixed; display: inline-flex; align-items: center; height: 20px; padding: 0 6px;
-      font-size: 12px; line-height: 16px; font-weight: 800; white-space: nowrap;
+      font-size: 13px; line-height: 16px; font-weight: 800; white-space: nowrap;
       color: var(--on-ink); background: var(--ink); border: 2px solid var(--on-ink);
       border-radius: 4px 4px 4px 0; cursor: default;
     }
@@ -117,7 +117,7 @@
     .saved .flag { position: absolute; left: 0; pointer-events: auto; }
     .pin {
       display: grid; place-items: center; flex: none; width: 22px; height: 22px;
-      font-size: 12px; line-height: 16px; font-weight: 800; color: var(--on-ink);
+      font-size: 13px; line-height: 16px; font-weight: 800; color: var(--on-ink);
       background: var(--ink); border: 2px solid var(--on-ink); border-radius: 11px 11px 11px 3px;
     }
     .root > .pin { position: fixed; transform: translateY(-100%); cursor: context-menu; }
@@ -127,11 +127,11 @@
       position: fixed; display: grid; gap: 4px; max-width: 320px; padding: 8px 12px; pointer-events: none;
       background: var(--float); border: 1px solid var(--float-border); border-radius: 6px; box-shadow: var(--shadow);
     }
-    .tip b { font-size: 13px; line-height: 18px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .tip .meta { display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; }
+    .tip b { font-size: 14px; line-height: 20px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tip .meta { display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 18px; }
     .tip .meta .status { margin-left: 2px; color: var(--muted-fg); }
     .tip .meta .status[data-status="fixed"] { color: var(--fixed); }
-    .tip .where { font-size: 12px; line-height: 16px; color: var(--muted-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tip .where { font-size: 13px; line-height: 18px; color: var(--muted-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .hint {
       position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
@@ -141,13 +141,13 @@
     }
     .review { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .review .mark { flex: none; width: 16.7px; height: 14.4px; background: var(--ink); mask: ${asset('icons/ui/mark.svg')} center / contain no-repeat; }
-    .review b { font-size: 13px; line-height: 18px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
-    .review .count { font-size: 12px; line-height: 16px; color: var(--muted-fg); }
+    .review b { font-size: 14px; line-height: 20px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+    .review .count { font-size: 13px; line-height: 18px; color: var(--muted-fg); }
     .hint .divider { flex: none; width: 1px; height: 20px; background: var(--divider); }
     .hint .gap { flex: none; width: 4px; }
     .toggle {
       display: flex; align-items: center; gap: 8px; flex: none; height: 32px; padding: 0 4px; border-radius: 6px;
-      font-size: 12px; line-height: 16px; font-weight: 500;
+      font-size: 13px; line-height: 18px; font-weight: 500;
     }
     .toggle:hover { background: var(--surface-3); }
     .switch {
@@ -166,7 +166,7 @@
     }
 
     .panel {
-      position: fixed; width: 340px; max-width: calc(100vw - 16px); display: flex; flex-direction: column;
+      position: fixed; width: 360px; max-width: calc(100vw - 16px); display: flex; flex-direction: column;
       background: var(--float); border: 1px solid var(--float-border); border-radius: 10px; box-shadow: var(--shadow);
       overflow: hidden; cursor: default;
     }
@@ -174,11 +174,11 @@
       display: flex; align-items: center; gap: 8px; flex: none; min-height: 45px; padding: 8px 12px;
       border-bottom: 1px solid var(--divider);
     }
-    .panel-head h2 { font-size: 15px; line-height: 20px; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; }
+    .panel-head h2 { font-size: 16px; line-height: 22px; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; }
     .panel-head .spacer { flex: 1; }
     .chip {
       display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px; border-radius: 6px;
-      font-size: 12px; line-height: 16px; font-weight: 600; white-space: nowrap;
+      font-size: 13px; line-height: 18px; font-weight: 600; white-space: nowrap;
     }
     .chip:hover { background: var(--surface-3); }
     .square { width: 28px; padding: 0; justify-content: center; }
@@ -186,24 +186,25 @@
       display: grid; gap: 8px; flex: none; padding: 12px 12px 12px 13px;
       background: var(--destructive-tint); border-left: 3px solid var(--destructive);
     }
-    .error p { font-size: 12px; line-height: 16px; color: var(--muted-fg); }
-    .error .head { display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--fg); }
+    .error p { font-size: 13px; line-height: 18px; color: var(--muted-fg); }
+    .error .head { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; font-weight: 600; color: var(--fg); }
     .error .btn { justify-self: start; }
     .panel-body { display: flex; flex-direction: column; gap: 12px; min-height: 0; padding: 16px 12px; overflow: auto; }
     .field { display: grid; gap: 6px; }
-    .field-hint { font-size: 12px; line-height: 16px; color: var(--muted-fg); }
+    .field-hint { font-size: 13px; line-height: 18px; color: var(--muted-fg); }
     input[type="text"], textarea {
       display: block; width: 100%; min-width: 0; height: 32px; padding: 0 12px;
-      font-size: 13px; line-height: 20px; font-weight: 500; color: var(--fg);
+      font-size: 14px; line-height: 20px; font-weight: 500; color: var(--fg);
       background: var(--surface-1); border: 1px solid var(--input-border); border-radius: 6px; outline: none;
     }
+    input[data-title] { font-size: 15px; }
     textarea { height: 76px; min-height: 76px; max-height: 200px; padding: 7px 11px; resize: none; }
     input[type="text"]:focus, textarea:focus { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
     ::placeholder { color: var(--muted-fg); opacity: 1; }
     .seg { display: flex; gap: 2px; padding: 2px; background: var(--surface-3); border-radius: 6px; }
     .seg button {
       display: flex; align-items: center; justify-content: center; gap: 4px; flex: 1; min-width: 0; height: 28px; border-radius: 4px;
-      font-size: 12px; line-height: 16px; font-weight: 600;
+      font-size: 13px; line-height: 18px; font-weight: 600;
     }
     .seg button:hover { background: var(--float); }
     .seg button .icon { display: none; width: 12px; height: 12px; }
@@ -214,27 +215,27 @@
     .mrow, .place-hint, .frame-row, .link-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .remove { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 6px; }
     .remove:hover { background: var(--surface-3); }
-    .place-hint { font-size: 12px; line-height: 16px; color: var(--muted-fg); }
+    .place-hint { font-size: 13px; line-height: 18px; color: var(--muted-fg); }
     .frame-row .text { display: grid; flex: 1; min-width: 0; }
     .frame-row .text span, .frame-row .text b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .frame-row .label { font-size: 12px; line-height: 16px; font-weight: 600; color: var(--muted-fg); }
-    .frame-row b { font-size: 13px; line-height: 18px; font-weight: 600; }
-    .frame-row .meta { font-size: 12px; line-height: 16px; color: var(--muted-fg); }
+    .frame-row .label { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--muted-fg); }
+    .frame-row b { font-size: 14px; line-height: 20px; font-weight: 600; }
+    .frame-row .meta { font-size: 13px; line-height: 18px; color: var(--muted-fg); }
     .picker { display: grid; gap: 4px; padding: 8px; background: var(--surface-2); border-radius: 6px; }
     .picker-list { display: grid; gap: 4px; max-height: 232px; overflow: auto; }
-    .picker-page { padding-top: 2px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--muted-fg); }
+    .picker-page { padding-top: 2px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--muted-fg); }
     .picker-row {
       display: flex; align-items: center; gap: 8px; width: 100%; padding: 4px 8px; border-radius: 6px; text-align: left;
-      font-size: 13px; line-height: 20px; font-weight: 500;
+      font-size: 14px; line-height: 20px; font-weight: 500;
     }
     .picker-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .picker-row:hover, .picker-row.active { background: var(--surface-3); }
     .picker-row[aria-selected="true"] { background: var(--ink-tint); }
     .picker-row .icon { display: none; color: var(--ink); }
     .picker-row[aria-selected="true"] .icon { display: block; }
-    .picker-more { justify-self: start; font-size: 12px; line-height: 16px; color: var(--muted-fg); }
+    .picker-more { justify-self: start; font-size: 13px; line-height: 18px; color: var(--muted-fg); }
     .picker-more:hover { color: var(--fg); text-decoration: underline; }
-    .picker-empty { padding: 4px; font-size: 12px; line-height: 16px; color: var(--muted-fg); }
+    .picker-empty { padding: 4px; font-size: 13px; line-height: 18px; color: var(--muted-fg); }
     .quiet { display: flex; align-items: center; gap: 2px; margin-left: -4px; }
     .quiet .chip { padding: 0 4px; }
     .quiet .chip[aria-expanded="true"] { color: var(--ink); background: var(--ink-tint); }
@@ -242,9 +243,9 @@
       display: flex; align-items: center; gap: 8px; flex: none; padding: 12px; border-top: 1px solid var(--divider);
     }
     .panel-foot .spacer { flex: 1; }
-    .save-hint { font-size: 12px; line-height: 16px; color: var(--muted-fg); white-space: nowrap; }
+    .save-hint { font-size: 13px; line-height: 18px; color: var(--muted-fg); white-space: nowrap; }
     .panel-foot.ask { flex-direction: column; align-items: stretch; }
-    .ask-q { font-size: 13px; line-height: 18px; font-weight: 600; }
+    .ask-q { font-size: 14px; line-height: 20px; font-weight: 600; }
     .ask-row { display: flex; align-items: center; gap: 8px; }
     .tail { position: fixed; width: 8px; height: 14px; pointer-events: none; background: var(--tail) center / contain no-repeat; }
     .more-menu {
@@ -259,7 +260,7 @@
     }
     .ctx button, .more-menu button {
       height: 32px; padding: 0 10px; text-align: left; white-space: nowrap;
-      font-size: 13px; line-height: 20px; font-weight: 500; color: var(--fg);
+      font-size: 14px; line-height: 20px; font-weight: 500; color: var(--fg);
       border: 2px solid transparent; border-radius: 6px;
     }
     .ctx button:hover, .more-menu button:hover { background: var(--surface-3); }
@@ -269,7 +270,7 @@
 
     .toast {
       position: fixed; display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 4px 12px;
-      font-size: 13px; line-height: 18px; font-weight: 600; white-space: nowrap; cursor: default;
+      font-size: 14px; line-height: 20px; font-weight: 600; white-space: nowrap; cursor: default;
       color: var(--primary-fg); background: var(--primary); border-radius: 10px; box-shadow: var(--shadow);
     }
     .toast.plain { left: 50%; bottom: ${HINT_SPACE}px; transform: translateX(-50%); max-width: calc(100vw - 32px); white-space: normal; }
@@ -390,6 +391,14 @@
     hostWatch.disconnect();
     for (let node = host.parentNode; node; node = node.parentNode) hostWatch.observe(node, { childList: true });
     if (focused && shadow.activeElement !== focused) focused.focus({ preventScroll: true });
+    fitZoom();
+  }
+
+  /** Cancels any CSS zoom the overlay inherits from the page, so it draws at full size and lines up with the pointer. */
+  function fitZoom() {
+    const parent = host.parentElement ?? document.documentElement;
+    const zoom = parent.currentCSSZoom ?? (Number(getComputedStyle(parent).zoom) || 1);
+    host.style.zoom = zoom > 0 && zoom !== 1 ? String(1 / zoom) : '';
   }
 
   /**
@@ -1867,6 +1876,7 @@
       window.addEventListener('keydown', onKey, true);
       window.addEventListener('scroll', onScroll, { passive: true, capture: true });
       window.addEventListener('resize', onScroll);
+      window.addEventListener('resize', fitZoom);
       refreshReview();
     } else {
       closeMenu();
@@ -1891,6 +1901,7 @@
       window.removeEventListener('keydown', onKey, true);
       window.removeEventListener('scroll', onScroll, { capture: true });
       window.removeEventListener('resize', onScroll);
+      window.removeEventListener('resize', fitZoom);
       host.remove();
     }
     return state.active;
