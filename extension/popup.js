@@ -1,4 +1,4 @@
-import { readGroups, readIssues, removeIssue, readRaw, writeRaw, writeIssues, addGroup, patchGroup, setActiveGroup } from './lib/store.js';
+import { readGroups, readIssues, removeIssue, readRaw, writeRaw, readImages, writeImages, writeIssues, addGroup, patchGroup, setActiveGroup } from './lib/store.js';
 import { severityOf } from './lib/severity.js';
 import { statusOf } from './lib/status.js';
 import { routeOf } from './lib/report-template.js';
@@ -268,14 +268,14 @@ function issueRow(issue, n) {
 
 /**
  * Deletes a comment at once and turns its row into an Undo offer for five seconds. Undo puts the comment
- * and its clean screenshot back where they were, so closing the popup never loses or resurrects anything.
+ * with its images and clean screenshot back where they were, so closing the popup never loses or resurrects anything.
  * @param {object} issue The comment.
  * @param {number} n Its number in the review.
  * @param {HTMLElement} li Its row.
  */
 async function deleteWithUndo(issue, n, li) {
   const index = (await readIssues()).findIndex((i) => i.id === issue.id);
-  const raw = await readRaw(issue.id);
+  const [raw, images] = await Promise.all([readRaw(issue.id), readImages(issue.id)]);
   await removeIssue(issue.id);
   li.className = 'pop-row undo';
   li.innerHTML = `<span class="grow">Comment ${pad(n)} deleted</span><button class="btn ghost sm" type="button">Undo</button>`;
@@ -285,10 +285,11 @@ async function deleteWithUndo(issue, n, li) {
   }, UNDO_MS);
   li.querySelector('button').addEventListener('click', async () => {
     clearTimeout(timer);
+    if (raw) await writeRaw(issue.id, raw);
+    if (Object.keys(images).length) await writeImages(issue.id, images);
     const issues = await readIssues();
     issues.splice(index < 0 ? issues.length : Math.min(index, issues.length), 0, issue);
     await writeIssues(issues);
-    if (raw) await writeRaw(issue.id, raw);
     await load();
     render();
   });
