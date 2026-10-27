@@ -768,8 +768,9 @@ const handlers = {
 
   /**
    * Saves the image editor's annotations and region, then redraws both images.
-   * The region stays put on comments whose base screenshot already shows it.
-   * Moving the region drops the recheck image and the width shots, which were cut at the old region, and moves the anchor with it.
+   * The region stays put on comments whose base screenshot already shows it, and the anchor moves with the region.
+   * The recheck image and the width shots were cut at the old region. They are kept while the editor is open, so Undo
+   * can still put the region back, and are dropped only when the editor closes with the region moved and sends `drop`.
    */
   async annotate(msg) {
     const issue = (await readIssues()).find((i) => i.id === msg.id);
@@ -781,11 +782,9 @@ const handlers = {
     const bitmap = await decode(raw.src);
     const images = await renderImages(bitmap, { ...issue, rect, marks });
     bitmap.close();
-    const regionMoved = JSON.stringify(rect) !== JSON.stringify(issue.rect);
-    const moved = regionMoved
-      ? { after: null, checkedAt: null, change: null, shots: null, shotsAt: null, anchor: rebaseAnchor(issue.anchor, issue.rect, rect) }
-      : {};
-    await patchIssue(issue.id, { rect, marks, ...images, ...moved });
+    const moved = JSON.stringify(rect) !== JSON.stringify(issue.rect) ? { anchor: rebaseAnchor(issue.anchor, issue.rect, rect) } : {};
+    const dropped = msg.drop && !raw.hasBox ? { after: null, checkedAt: null, change: null, shots: null, shotsAt: null } : {};
+    await patchIssue(issue.id, { rect, marks, ...images, ...moved, ...dropped });
     return images;
   },
 
@@ -880,7 +879,8 @@ const handlers = {
   /**
    * Starts rechecking every comment in a group whose page is open. From the popup that is the active tab.
    * From the report it is the most recent tab in the window that Margin may capture, since Chrome only
-   * shows the address of tabs Margin was opened on. Replies at once, and the run reports through storage.
+   * shows the address of tabs Margin was opened on. `ids` limits the run to some comments, as when checking the
+   * ones a stopped run did not reach. Replies at once, and the run reports through storage.
    */
   async verifyStart(msg, sender) {
     if (verifyRun) return { error: 'A check is already running' };
@@ -894,7 +894,8 @@ const handlers = {
       .filter((t) => t.id && issues.some((issue) => samePage(t.url, issue.page?.url)))
       .sort((a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0))[0];
     if (!tab) return { error: 'noTab' };
-    const targets = issues.filter((issue) => samePage(tab.url, issue.page?.url));
+    const targets = issues.filter((issue) => samePage(tab.url, issue.page?.url) && (!msg.ids?.length || msg.ids.includes(issue.id)));
+    if (!targets.length) return { error: 'Nothing left to check on this page' };
     verifyRun = { cancelled: false };
     runVerify(verifyRun, tab, targets, msg.groupId, report);
     return { started: true, total: targets.length };

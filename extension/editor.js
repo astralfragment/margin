@@ -17,6 +17,8 @@ const menu = dialog.querySelector('[data-editor-menu]');
 const zoomEl = dialog.querySelector('[data-editor-zoom]');
 const stateEl = dialog.querySelector('[data-editor-state]');
 const titleEl = dialog.querySelector('[data-editor-title]');
+const undoBtn = dialog.querySelector('[data-history="undo"]');
+const redoBtn = dialog.querySelector('[data-history="redo"]');
 
 let ed = null;
 
@@ -52,10 +54,18 @@ const discRadius = () => Math.max(13, 10 / ed.zoom);
 /** Side of a resize handle, in page pixels, a constant size on screen. */
 const handleSize = () => 9 / ed.zoom;
 
+/** Turns the Undo and Redo buttons on when there is a step to take. */
+function paintHistory() {
+  undoBtn.disabled = !ed?.history.length;
+  redoBtn.disabled = !ed?.future.length;
+}
+
+/** Records the state before a change, so Undo can put it back. */
 function pushHistory() {
   ed.history.push(clone({ marks: ed.marks, rect: ed.rect }));
   if (ed.history.length > 100) ed.history.shift();
   ed.future = [];
+  paintHistory();
   scheduleSave();
 }
 
@@ -70,6 +80,7 @@ function travel(forward) {
   to.push(clone({ marks: ed.marks, rect: ed.rect }));
   ({ marks: ed.marks, rect: ed.rect } = from.pop());
   ed.sel = null;
+  paintHistory();
   scheduleSave();
   render();
   renderList();
@@ -166,7 +177,7 @@ function renderList() {
       <span class="stack">
         <b class="kind">${MARK_LABELS[m.kind] ?? 'Marker'}</b>
         <textarea rows="2" placeholder="What this number points out"></textarea>
-        <span class="hint blank-hint">Left out until it has a note</span>
+        <span class="hint blank-hint">Shows on the image. Write a note to list it.</span>
       </span>
       <button class="icon-btn danger" type="button" title="Remove ${i + 1}" aria-label="Remove ${i + 1}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M10 7V5h4v2M8 7l1 12h6l1-12" /></svg>
@@ -304,6 +315,7 @@ function onPointerDown(e) {
   const drawing = ed.tool !== 'select' && hit.part !== 'badge' && !hit.handle;
   if (drawing && ed.tool === 'dot') {
     addMark({ kind: 'dot', x: p.x, y: p.y });
+    setTool('select');
     return;
   }
   if (drawing) {
@@ -417,12 +429,6 @@ function onContextMenu(e) {
   const hit = hitOf(e);
   const p = toPage(e);
 
-  if (hit.i !== null && hit.part === 'badge') {
-    removeMark(hit.i);
-    note(`Removed ${hit.i + 1}. Undo with Ctrl+Z.`);
-    closeMenu();
-    return;
-  }
   const addHere = [
     ['Add a marker here', () => addMark({ kind: 'dot', x: p.x, y: p.y })],
     ['Add a box here', () => addMark({ kind: 'box', ...resized({ x: p.x - 80, y: p.y - 50, w: 160, h: 100 }, 'se', 0, 0) })],
@@ -433,12 +439,15 @@ function onContextMenu(e) {
     const i = hit.i;
     select(i);
     openMenu(e, [
+      [`Remove ${i + 1}`, () => {
+        removeMark(i);
+        note(`Removed ${i + 1}. Undo brings it back.`);
+      }],
+      null,
       ['Write a note', () => focusNote(i)],
       ['Duplicate', () => addMark(moved(clone(ed.marks[i]), 16, 16))],
       ['Move earlier in the list', () => renumber(i, -1), i === 0],
       ['Move later in the list', () => renumber(i, 1), i === ed.marks.length - 1],
-      null,
-      [`Remove ${i + 1}`, () => removeMark(i)],
     ]);
   } else if (hit.region) {
     select('region');
@@ -497,7 +506,8 @@ function onKey(e) {
   if (e.key === 'Escape') {
     e.preventDefault();
     if (!menu.hidden) closeMenu();
-    else if (ed.sel !== null && !typing) select(null);
+    else if (typing) canvas.focus({ preventScroll: true });
+    else if (ed.sel !== null) select(null);
     else requestClose();
     return;
   }
@@ -545,38 +555,93 @@ function scheduleSave() {
 }
 
 /**
- * Stores the annotations that have a note and the region, then redraws the comment's images.
- * Items still without a note stay on the canvas but are left out until they get one.
+ * The images cut at the region when the editor opened, which no longer match once the region moves.
+ * @param {object} issue The comment being edited.
  */
-async function save() {
+function cutAtRegion(issue) {
+  const widths = Object.values(issue.shots ?? {}).filter((shot) => shot?.src).length;
+  return [widths ? `the ${widths} width ${widths === 1 ? 'shot' : 'shots'}` : '', issue.after ? 'the recheck image' : ''].filter(Boolean);
+}
+
+/** True when the region has moved since the editor opened. */
+const regionMoved = () => !ed.base.hasBox && JSON.stringify(ed.rect) !== JSON.stringify(ed.startRect);
+
+/**
+ * Stores every annotation and the region, then redraws the comment's images. Width shots and the recheck image
+ * are kept while the editor is open, so Undo can still put the region back. They are dropped only when the editor
+ * closes with the region moved.
+ * @param {boolean} [closing] True for the last save, as the editor closes.
+ */
+async function save(closing = false) {
   const current = ed;
   if (!current?.dirty) return;
   clearTimeout(current.saveTimer);
   current.dirty = false;
+  const drop = closing && current.dropCut;
   current.saving = (current.saving ?? Promise.resolve()).then(async () => {
     note('Saving');
-    const marks = current.marks.filter((m) => m.note?.trim());
-    const res = await current.send('annotate', { id: current.issue.id, marks, rect: current.rect });
+    const marks = clone(current.marks);
+    const res = await current.send('annotate', { id: current.issue.id, marks, rect: current.rect, drop });
     if (res?.error) {
       note(res.error);
       return;
     }
-    const left = current.marks.length - marks.length;
-    Object.assign(current.issue, { marks: clone(marks), shot: res.shot, detail: res.detail });
+    const blank = marks.filter((m) => !m.note?.trim()).length;
+    Object.assign(current.issue, { marks, shot: res.shot, detail: res.detail });
+    if (drop) Object.assign(current.issue, { after: null, checkedAt: null, change: null, shots: null, shotsAt: null });
     if (!current.base.hasBox) current.issue.rect = clone(current.rect);
     current.onChange(current.issue);
-    if (ed === current) note(left ? `Saved. ${left} without a note left out.` : 'Saved');
+    if (ed !== current) return;
+    const cut = regionMoved() ? cutAtRegion(current.issue) : [];
+    if (cut.length) note(`Saved. Closing with the region moved drops ${cut.join(' and ')}.`);
+    else note(blank ? `Saved. Write a note for ${blank} so ${blank === 1 ? 'it shows' : 'they show'} in the list.` : 'Saved');
   });
   await current.saving;
 }
 
+/**
+ * Closes the editor after the last save. When the region moved and the comment has images cut at the old region,
+ * asks first whether to keep the move, which drops those images, or put the region back.
+ * @returns {Promise<boolean>} False when the reviewer chose to keep editing.
+ */
 async function requestClose() {
-  if (!ed) return;
-  await save();
+  if (!ed) return true;
+  const current = ed;
+  const cut = regionMoved() ? cutAtRegion(current.issue) : [];
+  if (cut.length) {
+    const choice = await current.confirm({
+      title: 'Keep the moved region?',
+      body: `Moving the region drops ${cut.join(' and ')}, which were cut at the old region. Capture them again from the page afterwards.`,
+      buttons: [
+        { label: 'Keep editing', value: null },
+        { label: 'Put the region back', value: 'back' },
+        { label: 'Keep the move', value: 'keep', kind: 'primary' },
+      ],
+    });
+    if (ed !== current) return true;
+    if (!choice) return false;
+    if (choice === 'back') current.rect = clone(current.startRect);
+    current.dropCut = choice === 'keep';
+    current.dirty = true;
+  } else if (regionMoved()) {
+    current.dropCut = true;
+    current.dirty = true;
+  }
+  await save(true);
   ed = null;
   closeMenu();
   dialog.close();
+  return true;
 }
+
+/** True while the image editor is open. */
+export const editorOpen = () => Boolean(ed);
+
+/**
+ * Closes the image editor the way Done does.
+ * @returns {Promise<boolean>} False when the reviewer chose to keep editing.
+ */
+export const closeEditor = () => requestClose();
 svg.addEventListener('pointerdown', onPointerDown);
 svg.addEventListener('pointermove', onPointerMove);
 svg.addEventListener('pointerup', onPointerUp);
@@ -611,6 +676,8 @@ dialog.querySelectorAll('[data-zoom]').forEach((b) =>
   }),
 );
 dialog.querySelector('[data-editor-close]').addEventListener('click', requestClose);
+undoBtn.addEventListener('click', () => travel(false));
+redoBtn.addEventListener('click', () => travel(true));
 new ResizeObserver(() => {
   if (ed?.fit) setZoom('fit');
 }).observe(canvas);
@@ -618,13 +685,13 @@ new ResizeObserver(() => {
 /**
  * Opens the image editor on one comment.
  * @param {object} issue The stored comment.
- * @param {{ send: (type: string, payload?: object) => Promise<any>, onChange: (issue: object) => void, label?: string }} options
- *   How to reach the background, what to do after each save, and a heading for the editor.
+ * @param {{ send: (type: string, payload?: object) => Promise<any>, onChange: (issue: object) => void, label?: string, confirm: (ask: object) => Promise<string | null>, onError: (message: string) => void }} options
+ *   How to reach the background, what to do after each save, a heading for the editor, how to ask a question, and where errors go.
  */
-export async function openEditor(issue, { send, onChange, label }) {
+export async function openEditor(issue, { send, onChange, label, confirm, onError }) {
   const base = await send('editorBase', { id: issue.id });
   if (!base || base.error) {
-    alert(base?.error ?? 'This comment has no screenshot');
+    onError(base?.error ?? 'This comment has no screenshot');
     return;
   }
   img.src = base.src;
@@ -634,11 +701,14 @@ export async function openEditor(issue, { send, onChange, label }) {
     issue,
     send,
     onChange,
+    confirm,
     base,
     vw,
     vh: (vw * img.naturalHeight) / img.naturalWidth,
     marks: clone(issue.marks ?? []),
     rect: clone(issue.rect),
+    startRect: clone(issue.rect),
+    dropCut: false,
     sel: null,
     tool: 'select',
     zoom: 1,
@@ -655,5 +725,6 @@ export async function openEditor(issue, { send, onChange, label }) {
   if (document.querySelector('dialog:modal')) dialog.showModal();
   else dialog.show();
   setZoom('fit');
+  paintHistory();
   renderList();
 }
