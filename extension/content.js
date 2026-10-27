@@ -256,6 +256,7 @@
     }
     .picker-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .picker-row:hover, .picker-row.active { background: var(--surface-3); }
+    .picker-row:focus-visible { outline-offset: -2px; }
     .picker-row[aria-selected="true"] { background: var(--ink-tint); }
     .picker-row .icon { display: none; color: var(--ink); }
     .picker-row[aria-selected="true"] .icon { display: block; }
