@@ -38,6 +38,7 @@
       --sev-minor: #0d74ce; --tint-minor: #e6f4fe;
       --sev-nit: #60646c; --tint-nit: #f0f0f3;
       --fixed: #18794e;
+      --seg-track: var(--surface-3); --seg-edge: transparent; --saved-line: 1.5px;
       --shadow: 0 2px 8px 0 rgba(13, 10, 23, 0.14);
       --tail: ${asset('icons/ui/tail.svg')};
       position: fixed; inset: 0; z-index: 2147483647;
@@ -56,6 +57,7 @@
       --sev-minor: #70b8ff; --tint-minor: #0d2847;
       --sev-nit: #b0b4ba; --tint-nit: #212225;
       --fixed: #3dd68c;
+      --seg-track: var(--surface-1); --seg-edge: var(--float-border); --saved-line: 2px;
       --tail: ${asset('icons/ui/tail-dark.svg')};
     }
     .root[hidden] { display: none; }
@@ -92,17 +94,20 @@
     .btn.primary:hover { opacity: 0.88; }
     .btn.primary:disabled { color: var(--muted-fg); background: var(--surface-3); opacity: 1; cursor: not-allowed; }
     .btn.secondary { padding: 0 12px; background: var(--surface-1); border: 1px solid var(--input-border); }
+    .btn.secondary:disabled { color: var(--muted-fg); border-color: var(--divider); cursor: not-allowed; }
     .btn.danger { color: var(--destructive); }
-    .btn:focus-visible, .chip:focus-visible, .remove:focus-visible, .toggle:focus-visible, .ctx button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+    .btn:focus-visible, .chip:focus-visible, .remove:focus-visible, .toggle:focus-visible, .ctx button:focus-visible,
+    .picker-row:focus-visible, .picker-more:focus-visible, .saved .flag:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 
     .hover {
       position: fixed; pointer-events: none;
       border: 1.5px solid var(--ink); border-radius: 6px;
     }
-    .hover.full::after {
+    .hover.full::after, .hover.frame::after {
       content: "Fills the whole view"; position: absolute; left: 8px; top: 8px; padding: 1px 8px; border-radius: 4px;
       font-size: 13px; line-height: 18px; font-weight: 600; color: var(--on-ink); background: var(--ink);
     }
+    .hover.frame::after { content: "Frame, drag to mark inside it"; }
     .band {
       position: fixed; pointer-events: none;
       border: 2px solid var(--ink); border-radius: 6px; box-shadow: inset 0 0 0 3px var(--on-ink);
@@ -118,13 +123,13 @@
     .saved { position: fixed; pointer-events: none; }
     .saved .halo, .saved .outline { position: absolute; inset: 0; border-radius: 6px; }
     .saved .halo { border: 4px solid var(--on-ink); }
-    .saved .outline { border: 1.5px dashed var(--ink); }
+    .saved .outline { border: var(--saved-line) dashed var(--ink); }
     .saved[data-status="fixed"] .outline { border-color: var(--fixed); }
     .saved[data-status="wontfix"] .outline { border-color: var(--muted-fg); }
     .saved.hot .outline { border-style: solid; }
-    .saved .flag { position: absolute; left: 0; pointer-events: auto; }
+    .saved .flag { position: absolute; left: 0; pointer-events: auto; cursor: pointer; }
     .pin {
-      display: grid; place-items: center; flex: none; width: 22px; height: 22px;
+      display: grid; place-items: center; flex: none; min-width: 22px; height: 22px; padding: 0 4px;
       font-size: 13px; line-height: 16px; font-weight: 800; color: var(--on-ink);
       background: var(--ink); border: 2px solid var(--on-ink); border-radius: 11px 11px 11px 3px;
     }
@@ -135,7 +140,9 @@
       position: fixed; display: grid; gap: 4px; max-width: 320px; padding: 8px 12px; pointer-events: none;
       background: var(--float); border: 1px solid var(--float-border); border-radius: 6px; box-shadow: var(--shadow);
     }
-    .tip b { font-size: 14px; line-height: 20px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tip b, .tip .note { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+    .tip b { font-size: 14px; line-height: 20px; font-weight: 600; }
+    .tip .note { font-size: 13px; line-height: 18px; color: var(--muted-fg); }
     .tip .meta { display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 18px; }
     .tip .meta .status { margin-left: 2px; color: var(--muted-fg); }
     .tip .meta .status[data-status="fixed"] { color: var(--fixed); }
@@ -147,6 +154,8 @@
       padding: 4px 4px 4px 12px; overflow: hidden; white-space: nowrap; cursor: default;
       background: var(--float); border: 1px solid var(--float-border); border-radius: 10px; box-shadow: var(--shadow);
     }
+    .hint.top { top: 16px; bottom: auto; }
+    .hint.top ~ .toast.plain { top: ${HINT_SPACE}px; bottom: auto; }
     .review { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .review .mark { flex: none; width: 16.7px; height: 14.4px; background: var(--ink); mask: ${asset('icons/ui/mark.svg')} center / contain no-repeat; }
     .review b { font-size: 14px; line-height: 20px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
@@ -171,7 +180,7 @@
     .pass { display: flex; align-items: center; gap: 6px; flex: none; font-size: 13px; line-height: 18px; color: var(--muted-fg); }
     .root.passing .pass { color: var(--ink); }
     @media (max-width: 1023px) {
-      .hint .pass, .hint .pass-divider { display: none; }
+      .hint .pass, .hint .pass-divider, .hint [data-view] { display: none; }
     }
     @media (max-width: 640px) {
       .hint { gap: 8px; }
@@ -187,6 +196,9 @@
       display: flex; align-items: center; gap: 8px; flex: none; min-height: 45px; padding: 8px 12px;
       border-bottom: 1px solid var(--divider);
     }
+    .panel.nudge { animation: nudge 0.3s ease-in-out; }
+    @keyframes nudge { 25% { translate: -6px 0; } 75% { translate: 6px 0; } }
+    @media (prefers-reduced-motion: reduce) { .panel.nudge { animation: none; } }
     .panel-head h2 { font-size: 16px; line-height: 22px; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; }
     .panel-head .spacer { flex: 1; }
     .chip {
@@ -210,11 +222,12 @@
       font-size: 14px; line-height: 20px; font-weight: 500; color: var(--fg);
       background: var(--surface-1); border: 1px solid var(--input-border); border-radius: 6px; outline: none;
     }
-    input[data-title] { font-size: 15px; }
     textarea { height: 76px; min-height: 76px; max-height: 200px; padding: 7px 11px; resize: none; }
+    textarea.line { height: 32px; min-height: 32px; max-height: 128px; padding: 5px 11px; overflow-y: auto; }
+    [data-title] { font-size: 15px; }
     input[type="text"]:focus, textarea:focus { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
     ::placeholder { color: var(--muted-fg); opacity: 1; }
-    .seg { display: flex; gap: 2px; padding: 2px; background: var(--surface-3); border-radius: 6px; }
+    .seg { display: flex; gap: 2px; padding: 2px; background: var(--seg-track); border-radius: 6px; box-shadow: inset 0 0 0 1px var(--seg-edge); }
     .seg button {
       display: flex; align-items: center; justify-content: center; gap: 4px; flex: 1; min-width: 0; height: 28px; border-radius: 4px;
       font-size: 13px; line-height: 18px; font-weight: 600;
@@ -243,6 +256,7 @@
     }
     .picker-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .picker-row:hover, .picker-row.active { background: var(--surface-3); }
+    .picker-row:focus-visible { outline-offset: -2px; }
     .picker-row[aria-selected="true"] { background: var(--ink-tint); }
     .picker-row .icon { display: none; color: var(--ink); }
     .picker-row[aria-selected="true"] .icon { display: block; }
@@ -279,6 +293,7 @@
     .ctx button:hover, .more-menu button:hover { background: var(--surface-3); }
     .ctx button:focus, .more-menu button:focus { background: var(--surface-3); border-color: var(--ink); outline: none; }
     .more-menu button:disabled { color: var(--muted-fg); cursor: default; }
+    .more-menu .why { padding: 0 12px 6px; font-size: 13px; line-height: 18px; color: var(--muted-fg); }
     .ctx hr { height: 1px; margin: 4px 0; border: 0; background: var(--divider); }
 
     .toast {
@@ -304,7 +319,7 @@
       <div class="hover" hidden></div>
       <div class="band" hidden></div>
       <b class="flag draft" data-saving hidden>Saving</b>
-      <div class="hint">
+      <div class="hint" role="toolbar" aria-label="Margin annotation, Shift+F10 opens the actions menu">
         <span class="review"><i class="mark"></i><b data-group>Margin</b><span class="count" data-count></span></span>
         <span class="divider"></span>
         <button type="button" class="toggle" data-selectors aria-pressed="false"><span class="switch"></span><span>Selectors</span><kbd>S</kbd></button>
@@ -312,6 +327,7 @@
         <span class="divider pass-divider"></span>
         <span class="pass">Hold <kbd>Alt</kbd> to use the page</span>
         <span class="gap"></span>
+        <button type="button" class="btn" data-view title="Comment on the whole visible area">Visible area<kbd>V</kbd></button>
         <button type="button" class="btn" data-report>Open report</button>
         <button type="button" class="btn stop" data-stop><span>Stop</span><kbd>Esc</kbd></button>
       </div>
@@ -342,6 +358,8 @@
     saved: null,
     toast: null,
     tip: null,
+    escAt: 0,
+    keyMenuAt: 0,
   };
 
   const SHIELDED = ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'dblclick', 'auxclick', 'contextmenu', 'touchstart', 'touchend'];
@@ -459,14 +477,7 @@
     closeMenu();
     hideTip();
     placeSaved();
-    const p = state.panel;
-    if (!p) return;
-    p.node.style.top = '';
-    p.node.style.bottom = '';
-    place(band, p.rect);
-    placeFlag(p.flag, p.rect);
-    paintMarks();
-    placePanel();
+    placeDraft();
   }
 
   /**
@@ -632,6 +643,7 @@
   stopPresses(hint);
   selectorsBtn.addEventListener('click', () => setSelectors(!state.selectors));
   markersBtn.addEventListener('click', () => setMarkers(!state.markers));
+  shadow.querySelector('[data-view]').addEventListener('click', captureViewport);
   shadow.querySelector('[data-report]').addEventListener('click', () => chrome.runtime.sendMessage({ type: 'openReport' }).catch(() => {}));
   shadow.querySelector('[data-stop]').addEventListener('click', () => setActive(false));
   chrome.storage.local
@@ -680,11 +692,11 @@
     paintSaved();
   }
 
-  /** Writes how many comments the review holds, leaving out a draft that is still open. */
+  /** Writes how many comments the review holds, leaving out a draft that is still open, or how to start when there are none. */
   function paintCount() {
     const draft = state.panel?.id && !state.panel.reopened && state.comments.some((c) => c.id === state.panel.id) ? 1 : 0;
     const n = Math.max(0, state.total - draft);
-    countLabel.textContent = `${n} ${n === 1 ? 'comment' : 'comments'}`;
+    countLabel.textContent = n ? `${n} ${n === 1 ? 'comment' : 'comments'}` : 'Drag over anything to comment';
   }
 
   /**
@@ -693,6 +705,17 @@
    * @param {{rect: object, anchor: object | null, viewport: object}} comment A comment from pageComments.
    */
   function regionOf(comment) {
+    const box = liveBox(comment);
+    if (box.y + box.h < 0 || box.y > innerHeight || box.x > innerWidth || box.x + box.w < 0) return null;
+    return box;
+  }
+
+  /**
+   * Where a captured region sits now in viewport pixels, whether or not it is in view: by its anchor element when the
+   * window width changed, else moved by how far the page scrolled since the capture.
+   * @param {{rect: object, anchor: object | null, viewport: object}} comment A comment, or the card's draft.
+   */
+  function liveBox(comment) {
     let box = null;
     const sameWidth = Math.abs((comment.viewport?.width ?? innerWidth) - innerWidth) < 2;
     if (!sameWidth && comment.anchor) {
@@ -711,7 +734,6 @@
       w: comment.rect.w,
       h: comment.rect.h,
     };
-    if (box.y + box.h < 0 || box.y > innerHeight || box.x > innerWidth || box.x + box.w < 0) return null;
     return box;
   }
 
@@ -720,12 +742,13 @@
    * @param {HTMLElement} flag The flag.
    * @param {{x:number,y:number,w:number,h:number}} rect The region in viewport pixels.
    * @param {boolean} [inside] True when the flag is placed relative to the region box rather than the viewport.
+   * @param {boolean} [below] False when something else sits under the region, such as the card, so the flag goes inside.
    */
-  function placeFlag(flag, rect, inside = false) {
+  function placeFlag(flag, rect, inside = false, below = true) {
     const lift = 22 * scale;
     let top = Math.max(0, -rect.y) + 2 * scale;
     if (rect.y >= lift + 2 * scale) top = -lift;
-    else if (rect.y + rect.h + lift <= innerHeight) top = rect.h + 2 * scale;
+    else if (below && rect.y + rect.h + lift <= innerHeight - 2 * scale) top = rect.h + 2 * scale;
     flag.style.left = inside ? '0px' : px(Math.max(2 * scale, rect.x));
     flag.style.top = px(inside ? top : rect.y + top);
   }
@@ -733,18 +756,22 @@
   /** Draws the dashed regions and numbered flags of the comments saved on this page. */
   function paintSaved() {
     hideTip();
-    const hidden = state.panel?.id;
+    const hidden = [state.panel?.id, state.pending?.old?.id];
     layer.replaceChildren(
       ...state.comments
-        .filter((c) => c.id !== hidden)
+        .filter((c) => !hidden.includes(c.id))
         .map((comment) => {
           const node = document.createElement('div');
           node.className = 'saved';
           node.dataset.status = comment.status ?? 'open';
-          node.innerHTML = `<i class="halo"></i><i class="outline"></i><b class="flag">${pad(comment.n)}</b>`;
+          node.innerHTML = `<i class="halo"></i><i class="outline"></i><button type="button" class="flag" aria-label="Edit comment ${pad(comment.n)}, ${esc(comment.title || 'Untitled comment')}">${pad(comment.n)}</button>`;
           const flag = node.querySelector('.flag');
           flag.addEventListener('mouseenter', () => showTip(comment, node, flag));
           flag.addEventListener('mouseleave', hideTip);
+          flag.addEventListener('focus', () => showTip(comment, node, flag));
+          flag.addEventListener('blur', hideTip);
+          flag.addEventListener('click', () => editSaved(comment));
+          stopPresses(flag);
           node.comment = comment;
           return node;
         }),
@@ -765,12 +792,13 @@
 
   let scrollFrame = 0;
 
-  /** Repositions the saved flags once per frame while the page scrolls or resizes. */
+  /** Repositions the saved flags and the open card's area, flag, pins and card once per frame while the page scrolls or resizes. */
   function onScroll() {
     if (scrollFrame) return;
     scrollFrame = requestAnimationFrame(() => {
       scrollFrame = 0;
       placeSaved();
+      placeDraft();
     });
   }
 
@@ -788,18 +816,30 @@
     const tip = document.createElement('div');
     tip.className = 'tip';
     tip.dataset.sev = sev.key;
+    const note = comment.note && comment.note !== comment.title ? comment.note : '';
     tip.innerHTML = `
       <b>${esc(comment.title || 'Untitled comment')}</b>
+      ${note ? `<span class="note">${esc(note)}</span>` : ''}
       <span class="meta"><i class="icon glyph"></i>${sev.label}<span class="status" data-status="${status}">${STATUS_LABELS[status]}</span></span>
       ${comment.frame ? `<span class="where">${esc(comment.frame)}</span>` : ''}
     `;
     root.append(tip);
     const f = flag.getBoundingClientRect();
+    const r = node.getBoundingClientRect();
     const size = sizeOf(tip);
     const edge = EDGE * scale;
-    const right = f.right + 8 * scale;
-    tip.style.left = px(right + size.w > innerWidth - edge ? Math.max(edge, f.left - 8 * scale - size.w) : right);
-    tip.style.top = px(Math.min(Math.max(edge, f.top), innerHeight - size.h - edge));
+    const gap = 8 * scale;
+    const clampX = (x) => Math.min(Math.max(edge, x), innerWidth - size.w - edge);
+    const clampY = (y) => Math.min(Math.max(edge, y), innerHeight - size.h - edge);
+    const spots = [
+      { left: r.right + gap, top: clampY(f.top), fits: r.right + gap + size.w <= innerWidth - edge },
+      { left: r.left - gap - size.w, top: clampY(f.top), fits: r.left - gap - size.w >= edge },
+      { left: clampX(f.left), top: r.top - gap - size.h, fits: r.top - gap - size.h >= edge },
+      { left: clampX(f.left), top: r.bottom + gap, fits: r.bottom + gap + size.h <= innerHeight - edge },
+    ];
+    const spot = spots.find((s) => s.fits) ?? { left: clampX(f.right + gap), top: clampY(f.top) };
+    tip.style.left = px(spot.left);
+    tip.style.top = px(spot.top);
     state.tip = { tip, node };
   }
 
@@ -817,7 +857,8 @@
   function elementFor(rect) {
     if (!state.selectors) return null;
     try {
-      return describe(elementAt(rect.x + rect.w / 2, rect.y + rect.h / 2));
+      const pick = pickAt(rect.x + rect.w / 2, rect.y + rect.h / 2, true);
+      return describe(pick?.el, pick?.frame);
     } catch {
       return null;
     }
@@ -874,8 +915,9 @@
    * visible element holding the point wins. `full` is true when even that pick fills the view.
    * @param {number} x Viewport x of the point.
    * @param {number} y Viewport y of the point.
+   * @param {boolean} [deep] True to look inside a frame under the point.
    */
-  function pickAt(x, y) {
+  function pickAt(x, y, deep = false) {
     const hits = document.elementsFromPoint(x, y).filter((el) => el !== host);
     if (!hits.length) return null;
     const view = innerWidth * innerHeight;
@@ -892,7 +934,33 @@
       }
     }
     const full = r.width >= innerWidth * 0.95 && r.height >= innerHeight * 0.95;
-    return { el, full, rect: { x: r.left, y: r.top, w: r.width, h: r.height } };
+    const pick = { el, full, rect: { x: r.left, y: r.top, w: r.width, h: r.height } };
+    return deep && el.localName === 'iframe' ? inFrame(pick, x, y) : pick;
+  }
+
+  /**
+   * Looks inside a frame for the element under a point. A same-origin frame gives its own element, with its box in this
+   * page's viewport pixels and the frame kept for the selector. A frame Margin cannot read stays picked as a whole and
+   * is marked so the outline can say so.
+   * @param {{el: HTMLIFrameElement, full: boolean, rect: object}} pick The frame as picked.
+   * @param {number} x Viewport x of the point.
+   * @param {number} y Viewport y of the point.
+   */
+  function inFrame(pick, x, y) {
+    const frame = pick.el;
+    let doc = null;
+    try {
+      doc = frame.contentDocument;
+    } catch {}
+    if (!doc) return { ...pick, frame: true };
+    const box = frame.getBoundingClientRect();
+    const zoom = frame.currentCSSZoom ?? 1;
+    const left = box.left + frame.clientLeft * zoom;
+    const top = box.top + frame.clientTop * zoom;
+    const inner = doc.elementFromPoint((x - left) / zoom, (y - top) / zoom);
+    if (!inner || inner === doc.documentElement || inner === doc.body) return pick;
+    const r = inner.getBoundingClientRect();
+    return { el: inner, full: false, frame: frame, rect: { x: left + r.left * zoom, y: top + r.top * zoom, w: r.width * zoom, h: r.height * zoom } };
   }
 
   /**
@@ -964,12 +1032,16 @@
     return parts.join(' > ');
   }
 
-  /** Captures the facts about an element that a developer needs to find it again. */
-  function describe(el) {
+  /**
+   * Captures the facts about an element that a developer needs to find it again.
+   * @param {Element | null} el The element.
+   * @param {Element | boolean} [frame] The same-origin frame the element sits in, whose path leads the selector.
+   */
+  function describe(el, frame) {
     if (!el) return null;
-    const style = getComputedStyle(el);
+    const style = (el.ownerDocument.defaultView ?? window).getComputedStyle(el);
     return {
-      selector: cssPath(el),
+      selector: frame instanceof Element ? `${cssPath(frame)} >> ${cssPath(el)}` : cssPath(el),
       tag: el.localName,
       id: el.id || '',
       classes: [...el.classList].slice(0, 6).join(' '),
@@ -995,11 +1067,13 @@
     el.hidden = false;
   }
 
-  /** Removes the toast on screen, if any. */
+  /** Removes the toast on screen, if any, keeping keyboard focus in the overlay when it was on the toast. */
   function clearToast() {
     clearTimeout(state.toast?.timer);
+    const focused = state.toast?.node.contains(shadow.activeElement);
     state.toast?.node.remove();
     state.toast = null;
+    if (focused && !state.panel) selectorsBtn.focus({ preventScroll: true });
   }
 
   /**
@@ -1018,7 +1092,8 @@
   }
 
   /**
-   * Confirms a saved comment where its card was, with Undo to reopen the draft and a link to the report.
+   * Confirms a saved comment where its card was, with Edit to reopen it and a link to the report. Focus moves to Edit,
+   * and the toast stays while the pointer is on it.
    * @param {{number: number, box: DOMRect}} saved The comment number and the card's last position.
    */
   function savedToast(saved) {
@@ -1028,8 +1103,12 @@
     node.setAttribute('role', 'status');
     node.innerHTML = `
       <b class="flag">${pad(saved.number)}</b><span>Comment ${pad(saved.number)} saved</span>
-      <span class="actions"><button type="button" class="btn" data-undo>Undo</button><button type="button" class="btn" data-open>Open report</button></span>
+      <span class="actions"><button type="button" class="btn" data-undo>Edit</button><button type="button" class="btn" data-open>Open report</button></span>
     `;
+    node.addEventListener('mouseenter', () => clearTimeout(state.toast?.timer));
+    node.addEventListener('mouseleave', () => {
+      if (state.toast?.node === node) state.toast.timer = setTimeout(clearToast, 2500);
+    });
     stopPresses(node);
     node.querySelector('[data-undo]').addEventListener('click', undoSave);
     node.querySelector('[data-open]').addEventListener('click', () => {
@@ -1042,6 +1121,7 @@
     node.style.left = px(left);
     node.style.top = px(Math.min(saved.box.bottom, innerHeight - HINT_SPACE * scale) - size.h);
     state.toast = { node, timer: setTimeout(clearToast, 5000) };
+    node.querySelector('[data-undo]').focus({ preventScroll: true });
   }
 
   const nextFrame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
@@ -1068,34 +1148,60 @@
    * @param {{x:number,y:number,w:number,h:number}} rect The region in viewport pixels.
    */
   function fitRect(rect) {
+    const left = Math.max(0, rect.x);
+    const top = Math.max(0, rect.y);
+    const right = Math.min(window.innerWidth, rect.x + rect.w);
+    const bottom = Math.min(window.innerHeight, rect.y + rect.h);
     return {
-      x: Math.max(0, Math.round(rect.x)),
-      y: Math.max(0, Math.round(rect.y)),
-      w: Math.round(Math.min(rect.w, window.innerWidth)),
-      h: Math.round(Math.min(rect.h, window.innerHeight)),
+      x: Math.round(left),
+      y: Math.round(top),
+      w: Math.max(0, Math.round(right - left)),
+      h: Math.max(0, Math.round(bottom - top)),
     };
   }
 
-  /** Captures the whole visible area as one comment. */
+  /**
+   * Draws a region a little inside the edges of the view it touches, so an area as big as the view still reads as a
+   * selection instead of merging with the overlay's frame.
+   * @param {{x:number,y:number,w:number,h:number}} rect The region in viewport pixels.
+   */
+  function inset(rect) {
+    const k = 4 * scale;
+    const left = rect.x <= 4 ? k : 0;
+    const top = rect.y <= 4 ? k : 0;
+    const right = rect.x + rect.w >= innerWidth - 4 ? k : 0;
+    const bottom = rect.y + rect.h >= innerHeight - 4 ? k : 0;
+    return { x: rect.x + left, y: rect.y + top, w: Math.max(2, rect.w - left - right), h: Math.max(2, rect.h - top - bottom) };
+  }
+
+  /** Captures the whole visible area as one comment, unless an open card would lose work. */
   function captureViewport() {
+    if (state.panel && !replaceable()) {
+      holdCard();
+      return;
+    }
     closePanel(true);
     capture(fitRect({ x: 0, y: 0, w: window.innerWidth, h: window.innerHeight }));
   }
 
   /**
-   * Captures the element under a point with its selector, whether or not selector capture is on.
+   * Captures the part of the element under a point that is in view, with its selector, whether or not selector capture is on.
    * @param {number} x Viewport x of the point.
    * @param {number} y Viewport y of the point.
    */
   function captureElementAt(x, y) {
-    const el = elementAt(x, y);
-    if (!el) return;
-    const r = el.getBoundingClientRect();
+    const pick = pickAt(x, y, true);
+    if (!pick) return;
     let element = null;
     try {
-      element = describe(el);
+      element = describe(pick.el, pick.frame);
     } catch {}
-    capture(fitRect({ x: r.left, y: r.top, w: r.width, h: r.height }), element);
+    const rect = fitRect(pick.rect);
+    if (rect.w < 2 || rect.h < 2) {
+      toast('That element is out of view. Scroll to it first.', 2400);
+      return;
+    }
+    capture(rect, element);
   }
 
   /**
@@ -1155,6 +1261,7 @@
         closeMenu();
         item[1]();
       });
+      button.addEventListener('mousemove', () => shadow.activeElement !== button && button.focus({ preventScroll: true }));
       menu.append(button);
     }
     stopPresses(menu);
@@ -1165,11 +1272,12 @@
     root.append(menu);
     const size = sizeOf(menu);
     const edge = EDGE * scale;
+    const floor = innerHeight - (hint.classList.contains('top') ? edge : HINT_SPACE * scale);
     let top = y + 8 * scale;
-    const fitsBelow = target && target.height < innerHeight / 3 && target.bottom + 6 * scale + size.h <= innerHeight - edge;
+    const fitsBelow = target && target.height < innerHeight / 3 && target.bottom + 6 * scale + size.h <= floor;
     if (fitsBelow) top = target.bottom + 6 * scale;
     menu.style.left = px(Math.max(edge, Math.min(x + 6 * scale, window.innerWidth - size.w - edge)));
-    menu.style.top = px(Math.max(edge, Math.min(top, window.innerHeight - size.h - edge)));
+    menu.style.top = px(Math.max(edge, Math.min(top, floor - size.h)));
     state.menu = menu;
     menu.querySelector('button').focus();
   }
@@ -1185,11 +1293,50 @@
     items[(at + step + items.length) % items.length]?.focus();
   }
 
-  /** Opens the annotation menu on right-click, unless a comment is being written or dragged. */
+  /**
+   * Opens the annotation menu on right-click, unless a comment is being dragged. With a card open it says to finish the
+   * card first. The contextmenu event Chrome sends after Shift+F10 or the menu key is skipped, since the key opened the menu.
+   */
   function onContext(e) {
     e.preventDefault();
-    if (state.panel || state.drag) return;
+    if (state.drag || performance.now() - state.keyMenuAt < 1000) return;
+    if (state.panel) {
+      holdCard();
+      return;
+    }
     openMenu(e.clientX, e.clientY);
+  }
+
+  /** Opens the annotation menu from the keyboard, at the focused page element or else the middle of the view. */
+  function openKeyMenu() {
+    state.keyMenuAt = performance.now();
+    if (state.panel) {
+      holdCard();
+      return;
+    }
+    const focused = document.activeElement;
+    const box = focused && focused !== host && focused !== document.body && focused !== document.documentElement ? focused.getBoundingClientRect() : null;
+    const visible = box && box.width && box.bottom > 0 && box.top < innerHeight;
+    openMenu(visible ? box.left + Math.min(box.width / 2, 24) : innerWidth / 2, visible ? box.top + box.height / 2 : innerHeight / 2);
+  }
+
+  /**
+   * True when the open card can give way to a new capture without losing anything: a new draft with nothing typed or placed.
+   */
+  function replaceable() {
+    const p = state.panel;
+    return Boolean(p && !p.reopened && !hasWork());
+  }
+
+  /** Says the open card has to be saved or discarded first, gives it a small shake and puts focus back in it. */
+  function holdCard() {
+    const p = state.panel;
+    if (!p) return;
+    toast(`Save or discard comment ${pad(p.number)} first`, 2400);
+    p.node.classList.remove('nudge');
+    void p.node.offsetWidth;
+    p.node.classList.add('nudge');
+    if (!p.node.contains(shadow.activeElement)) p.title.focus({ preventScroll: true });
   }
 
   /**
@@ -1243,10 +1390,17 @@
     showSaving(rect);
     const pending = state.pending;
     state.pending = null;
-    if (pending?.old.id && res.id) chrome.runtime.sendMessage({ type: 'discard', id: pending.old.id }).catch(() => {});
+    if (pending?.old?.id && res.id) chrome.runtime.sendMessage({ type: 'discard', id: pending.old.id }).catch(() => {});
     if (res.id) await refreshReview();
     showSaving(null);
-    openPanel({ id: res.id ?? null, rect, element, msg, error: res.error, draft: pending?.draft });
+    const carried = pending?.draft?.pageMarks ?? [];
+    const marks = carried
+      .map((m) => ({ x: Math.round(m.px - scrollX), y: Math.round(m.py - scrollY), note: m.note }))
+      .filter((m) => m.x >= rect.x && m.x <= rect.x + rect.w && m.y >= rect.y && m.y <= rect.y + rect.h);
+    openPanel({ id: res.id ?? null, rect, element, msg, error: res.error, draft: pending?.draft && { ...pending.draft, marks } });
+    const dropped = carried.length - marks.length;
+    if (dropped === 1) toast('1 marker was outside the new area and was removed', 3600);
+    else if (dropped > 1) toast(`${dropped} markers were outside the new area and were removed`, 3600);
   }
 
   /**
@@ -1258,7 +1412,7 @@
     root.classList.toggle('busy', Boolean(rect));
     savingFlag.hidden = !rect;
     if (!rect) return;
-    place(band, rect);
+    place(band, inset(rect));
     placeFlag(savingFlag, rect);
   }
 
@@ -1285,33 +1439,37 @@
    * @param {number} [opts.number] The comment number, when reopening a saved comment.
    * @param {boolean} [opts.reopened] True when the card reopens a comment that was already saved.
    * @param {boolean} [opts.hasShot] False for a comment saved without a screenshot.
+   * @param {object} [opts.viewport] The viewport the area was captured in, with its scroll offset.
+   * @param {object | null} [opts.anchor] The element the area was recorded against, to find it after a resize.
+   * @param {object[]} [opts.extraMarks] Boxes and arrows drawn in the report's editor, kept as they are when the card saves.
    */
-  function openPanel({ id, rect, element, msg = null, error, draft = {}, number, reopened = false, hasShot = Boolean(id) }) {
+  function openPanel({ id, rect, element, msg = null, error, draft = {}, number, reopened = false, hasShot = Boolean(id), viewport = msg?.viewport, anchor = msg?.anchor ?? null, extraMarks = [] }) {
     closePanel(false);
     closeMenu();
     clearToast();
     const n = number ?? state.comments.find((c) => c.id === id)?.n ?? state.total + 1;
     const files = state.review?.figma;
     const linkLabel = files?.frames?.length ? 'Frame' : 'Figma link';
+    const heading = reopened ? 'Edit comment' : 'New comment';
     const node = document.createElement('div');
     node.className = 'panel';
     node.setAttribute('role', 'dialog');
-    node.setAttribute('aria-label', `New comment ${pad(n)}`);
+    node.setAttribute('aria-label', `${heading} ${pad(n)}`);
     node.innerHTML = `
       <div class="panel-head">
-        <b class="flag draft">${pad(n)}</b><h2>New comment</h2><span class="spacer"></span>
+        <b class="flag draft">${pad(n)}</b><h2>${heading}</h2><span class="spacer"></span>
         <button type="button" class="chip" data-redraw title="Drag a new area and keep this draft, key R">Redraw</button>
         <button type="button" class="chip square" data-more aria-label="More actions" aria-haspopup="menu"><i class="icon i-more"></i></button>
       </div>
       <div class="error" data-error hidden>
         <span class="head"><i class="icon i-alert"></i><span data-error-head></span></span>
         <p data-error-body></p>
-        <button type="button" class="btn primary" data-retry>Try again</button>
+        <span class="ask-row"><button type="button" class="btn primary" data-retry>Try again</button><span class="save-hint">Enter tries again</span></span>
       </div>
       <div class="panel-body">
         <div class="field">
-          <input type="text" data-title placeholder="What is wrong" aria-label="What is wrong" />
-          <span class="field-hint" data-title-hint>Add a title to save</span>
+          <textarea class="line" rows="1" data-title placeholder="What is wrong" aria-label="What is wrong"></textarea>
+          <span class="field-hint" data-title-hint>Add a title or a note to save</span>
         </div>
         <div class="seg" role="group" aria-label="Severity">
           ${SEVERITIES.map((s, i) => `<button type="button" data-sev="${s.key}" aria-pressed="false" title="${s.label}, key ${i + 1}"><i class="icon i-check"></i>${s.label}</button>`).join('')}
@@ -1342,14 +1500,15 @@
     flag.className = 'flag draft';
     flag.textContent = pad(n);
     root.append(flag, node, tail);
-    place(band, rect);
-    placeFlag(flag, rect);
 
     const p = {
       id,
       rect,
       element,
       msg,
+      viewport: viewport ?? { width: innerWidth, height: innerHeight, scrollY: Math.round(scrollY) },
+      anchor,
+      extraMarks,
       node,
       tail,
       flag,
@@ -1377,9 +1536,25 @@
     p.note.hidden = !draft.note;
     p.links.value = draft.link ?? '';
     q('[data-link-row]').hidden = !draft.link;
+    p.original = JSON.stringify(readDraft());
 
     for (const button of node.querySelectorAll('.seg button')) button.addEventListener('click', () => setSeverity(button.dataset.sev));
-    p.title.addEventListener('input', refreshSave);
+    q('.seg').addEventListener('keydown', onSegKey);
+    p.title.addEventListener('input', () => {
+      oneLine(p.title);
+      refreshSave();
+    });
+    node.addEventListener('focusin', (e) => {
+      if (p.more && e.target !== q('[data-more]')) closeMore();
+    });
+    for (const type of ['click', 'input']) {
+      node.addEventListener(type, (e) => {
+        if (p.asking && state.panel === p && !e.composedPath().includes(q('[data-foot]'))) stopAsking();
+      });
+    }
+    node.addEventListener('mousedown', (e) => {
+      if (p.more && !q('[data-more]').contains(e.target)) closeMore();
+    });
     p.note.addEventListener('input', () => {
       fitNote();
       refreshSave();
@@ -1424,15 +1599,86 @@
 
     setSeverity(p.severity);
     fitNote();
+    oneLine(p.title);
     paintMarks();
     paintFrame();
     paintFoot();
-    placePanel();
+    placeDraft();
     p.observer = new ResizeObserver(placeTail);
     p.observer.observe(node);
     paintCount();
     paintSaved();
     p.title.focus();
+  }
+
+  /**
+   * Where the open card's area sits now in viewport pixels. It follows the page as it scrolls, and its anchor element
+   * when the window width changes, so the band, flag, pins and card stay on the content that was captured.
+   * @param {object} p The open card.
+   */
+  function liveRect(p) {
+    return liveBox({ rect: p.rect, anchor: p.anchor, viewport: p.viewport });
+  }
+
+  /**
+   * Turns a point stored against the captured area into where it shows now, or back again with `back`.
+   * Markers are stored in the capture's viewport pixels, since that is how the screenshot is drawn on.
+   * @param {object} p The open card.
+   * @param {{x:number,y:number}} point The point.
+   * @param {boolean} [back] True to turn a point on screen now into capture pixels.
+   */
+  function mapPoint(p, point, back = false) {
+    const live = liveRect(p);
+    const from = back ? live : p.rect;
+    const to = back ? p.rect : live;
+    return { x: to.x + ((point.x - from.x) * to.w) / from.w, y: to.y + ((point.y - from.y) * to.h) / from.h };
+  }
+
+  /** Moves the open card's band, flag, pins and the card itself to where its area sits now, and the hint bar out of its way. */
+  function placeDraft() {
+    const p = state.panel;
+    if (!p) return;
+    const live = liveRect(p);
+    placeHint(live);
+    place(band, inset(live));
+    placePanel();
+    placeFlag(p.flag, live, false, p.side !== 'below');
+    placePins();
+  }
+
+  /**
+   * Puts the hint bar at the top of the view while an area or a drag reaches into the strip it covers at the bottom.
+   * @param {{x:number,y:number,w:number,h:number} | null} rect The area, or null to put the bar back at the bottom.
+   */
+  function placeHint(rect) {
+    const strip = HINT_SPACE * scale;
+    const low = Boolean(rect) && rect.y + rect.h > innerHeight - strip && rect.y > strip && rect.y < innerHeight;
+    hint.classList.toggle('top', low);
+  }
+
+  /**
+   * Keeps a one line field to one paragraph and grows it with its text.
+   * @param {HTMLTextAreaElement} field The field.
+   */
+  function oneLine(field) {
+    if (/\n/.test(field.value)) field.value = field.value.replace(/\s*\n\s*/g, ' ');
+    field.style.height = '';
+    field.style.height = `${field.scrollHeight + 2}px`;
+  }
+
+  /**
+   * Moves the severity choice with the arrow keys, as in a radio group.
+   * @param {KeyboardEvent} e The key press inside the severity row.
+   */
+  function onSegKey(e) {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const at = SEVERITIES.findIndex((s) => s.key === (e.target.dataset?.sev ?? state.panel.severity));
+    const next = SEVERITIES[(at + step + SEVERITIES.length) % SEVERITIES.length].key;
+    setSeverity(next);
+    state.panel.node.querySelector(`.seg [data-sev="${next}"]`).focus();
   }
 
   /**
@@ -1451,8 +1697,8 @@
       return;
     }
     const ctrl = e.ctrlKey || e.metaKey;
-    if (target?.localName === 'textarea' && !ctrl) return;
-    if (target?.localName !== 'input' && target?.localName !== 'textarea' && !ctrl) return;
+    const line = target?.localName === 'input' || target?.classList?.contains('line');
+    if (!line && !ctrl) return;
     e.preventDefault();
     if (p.error) retry();
     else save();
@@ -1495,7 +1741,7 @@
     if (!p) return;
     const ok = filled();
     p.node.querySelector('[data-title-hint]').hidden = ok;
-    const save = p.node.querySelector('[data-save]');
+    const save = p.node.querySelector('[data-save], [data-no-shot]');
     if (save) {
       save.disabled = !ok;
       save.title = ok ? '' : 'Add a title or a note first';
@@ -1526,21 +1772,27 @@
     foot.className = `panel-foot${p.asking ? ' ask' : ''}`;
     if (p.asking) {
       const parts = [p.note.value.trim() && 'its note', p.marks.length && `${p.marks.length} ${p.marks.length === 1 ? 'marker' : 'markers'}`].filter(Boolean);
+      const ask = {
+        discard: [`Discard comment ${pad(p.number)}${parts.length ? `, ${parts.join(' and ')}` : ''}?`, 'Discard', 'Keep editing'],
+        delete: [`Delete comment ${pad(p.number)}?`, 'Delete', 'Keep it'],
+        changes: [`Discard your changes to comment ${pad(p.number)}?`, 'Discard changes', 'Keep editing'],
+      }[p.asking];
       foot.innerHTML = `
-        <span class="ask-q">Discard comment ${pad(p.number)}${parts.length ? `, ${parts.join(' and ')}` : ''}?</span>
+        <span class="ask-q">${esc(ask[0])}</span>
         <span class="ask-row"><span class="save-hint">Esc again keeps it</span><span class="spacer"></span>
-          <button type="button" class="btn danger" data-confirm>Discard</button>
-          <button type="button" class="btn primary" data-keep>Keep editing</button></span>
+          <button type="button" class="btn danger" data-confirm>${ask[1]}</button>
+          <button type="button" class="btn primary" data-keep>${ask[2]}</button></span>
       `;
-      foot.querySelector('[data-confirm]').addEventListener('click', () => closePanel(true));
+      foot.querySelector('[data-confirm]').addEventListener('click', () => closePanel(p.asking !== 'changes'));
       foot.querySelector('[data-keep]').addEventListener('click', keepEditing);
       foot.querySelector('[data-keep]').focus();
       return;
     }
+    const cancel = p.reopened ? '<button type="button" class="btn danger" data-cancel>Delete</button>' : '<button type="button" class="btn" data-cancel>Discard</button>';
     foot.innerHTML = p.error
-      ? `<button type="button" class="btn" data-cancel>Discard</button><span class="spacer"></span>
+      ? `${cancel}<span class="spacer"></span>
          <button type="button" class="btn secondary" data-no-shot>Save without screenshot</button>`
-      : `<button type="button" class="btn" data-cancel>Discard</button><span class="spacer"></span>
+      : `${cancel}<span class="spacer"></span>
          <span class="save-hint">Enter to save</span><button type="button" class="btn primary" data-save>Save comment</button>`;
     foot.querySelector('[data-cancel]').addEventListener('click', askDiscard);
     foot.querySelector('[data-save]')?.addEventListener('click', save);
@@ -1548,27 +1800,45 @@
     refreshSave();
   }
 
-  /** Discards an untouched draft at once, or asks in place of the footer when something would be lost. */
+  /**
+   * Discards an untouched draft at once, or asks in place of the footer when something would be lost. On a saved
+   * comment the button deletes it, after asking.
+   */
   function askDiscard() {
     const p = state.panel;
     if (!p) return;
-    if (!hasWork()) {
+    if (p.reopened) p.asking = 'delete';
+    else if (hasWork()) p.asking = 'discard';
+    else {
       closePanel(true);
       return;
     }
-    p.asking = true;
     paintFoot();
   }
 
-  /** Closes the discard question and goes back to the title. */
+  /** Closes the question in the footer and goes back to the title. */
   function keepEditing() {
+    stopAsking();
+    state.panel.title.focus();
+  }
+
+  /** Closes the question in the footer without moving focus, as when the card is used while it is showing. */
+  function stopAsking() {
     const p = state.panel;
     p.asking = false;
     paintFoot();
-    p.title.focus();
   }
 
-  /** Steps back one level on Esc: the More menu, the frame list, marker placing, the discard question, then the draft. */
+  /** True when the fields of a reopened comment differ from what was saved. */
+  function changed() {
+    const p = state.panel;
+    return JSON.stringify(readDraft()) !== p.original;
+  }
+
+  /**
+   * Steps back one level on Esc: the More menu, the frame list, marker placing, the question in the footer, then the card.
+   * A saved comment closes as it was, after asking when it has changes.
+   */
   function escapePanel() {
     const p = state.panel;
     if (p.more) closeMore();
@@ -1577,21 +1847,32 @@
       p.placing = false;
       paintMarks();
     } else if (p.asking) keepEditing();
-    else askDiscard();
+    else if (!p.reopened) askDiscard();
+    else if (changed()) {
+      p.asking = 'changes';
+      paintFoot();
+    } else closePanel(false);
   }
 
   /**
-   * Places the card once, when it opens: right of the area, then left, below and above, 12px from the area and clear of the hint bar.
-   * In the top half of the viewport it grows down from its top edge. In the bottom half its footer stays put and it grows up.
+   * Places the card beside where its area sits now: right of the area, then left, below and above, 12px from the area
+   * and clear of the hint bar, always inside the window. In the top half of the viewport it grows down from its top edge.
+   * In the bottom half its footer stays put and it grows up.
    */
   function placePanel() {
     const p = state.panel;
-    const { node, rect: r } = p;
+    const { node } = p;
+    const r = liveRect(p);
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const edge = EDGE * scale;
     const gap = GAP * scale;
+    const atTop = hint.classList.contains('top');
+    const ceil = atTop ? HINT_SPACE * scale : edge;
     const floor = vh - HINT_SPACE * scale;
+    node.style.top = '';
+    node.style.bottom = '';
+    node.style.maxHeight = '';
     const { w, h } = sizeOf(node);
     const clampX = (x) => Math.min(Math.max(edge, x), vw - w - edge);
     const right = r.x + r.w + gap;
@@ -1600,18 +1881,18 @@
     if (right + w <= vw - edge) side = 'right';
     else if (left >= edge) side = 'left';
     else if (r.y + r.h + gap + h <= floor) side = 'below';
-    else if (r.y - gap - h >= edge) side = 'above';
+    else if (r.y - gap - h >= ceil) side = 'above';
     else side = 'inside';
     p.side = side;
     const anchorTop = (top) => {
-      const at = Math.min(Math.max(edge, top), Math.max(edge, floor - h));
+      const at = Math.min(Math.max(ceil, top), Math.max(ceil, floor - h));
       node.style.top = px(at);
       node.style.maxHeight = px(floor - at);
     };
     const anchorBottom = (bottom) => {
-      const at = Math.min(floor, Math.max(bottom, h + edge));
+      const at = Math.min(floor, Math.max(bottom, h + ceil));
       node.style.bottom = px(vh - at);
-      node.style.maxHeight = px(at - edge);
+      node.style.maxHeight = px(at - ceil);
     };
     if (side === 'right' || side === 'left') {
       node.style.left = px(side === 'right' ? right : left);
@@ -1635,7 +1916,7 @@
     const p = state.panel;
     if (!p) return;
     const box = p.node.getBoundingClientRect();
-    const r = p.rect;
+    const r = liveRect(p);
     const { tail } = p;
     tail.hidden = p.side === 'inside';
     if (tail.hidden) return;
@@ -1660,8 +1941,7 @@
     root.querySelectorAll(':scope > .pin').forEach((pin) => pin.remove());
     p.marks.forEach((m, i) => {
       const pin = Object.assign(document.createElement('b'), { className: 'pin', textContent: String(i + 1) });
-      pin.style.left = px(m.x);
-      pin.style.top = px(m.y);
+      pin.mark = m;
       pin.title = 'Right-click to remove';
       pin.addEventListener('mousedown', (e) => e.stopPropagation());
       pin.addEventListener('contextmenu', (e) => {
@@ -1676,41 +1956,64 @@
     list.replaceChildren(
       ...p.marks.map((m, i) => {
         const row = Object.assign(document.createElement('div'), { className: 'mrow' });
-        row.innerHTML = `<b class="pin">${i + 1}</b><input type="text" placeholder="What marker ${i + 1} points out" aria-label="Note for marker ${i + 1}" />
+        row.innerHTML = `<b class="pin">${i + 1}</b><textarea class="line" rows="1" placeholder="What marker ${i + 1} points out" aria-label="Note for marker ${i + 1}"></textarea>
           <button type="button" class="remove" aria-label="Remove marker ${i + 1}"><i class="icon i-close"></i></button>`;
-        const input = row.querySelector('input');
+        const input = row.querySelector('textarea');
         input.value = m.note;
-        input.addEventListener('input', () => (m.note = input.value));
-        row.querySelector('.remove').addEventListener('click', () => removeMark(i));
+        input.addEventListener('input', () => {
+          oneLine(input);
+          m.note = input.value;
+        });
+        row.querySelector('.remove').addEventListener('click', () => removeMark(i, true));
         return row;
       }),
     );
-    const placeHint = p.node.querySelector('[data-place]');
-    placeHint.hidden = !p.placing;
-    placeHint.innerHTML = `<b class="pin ghost">${p.marks.length + 1}</b>Click inside the area to place marker ${p.marks.length + 1}`;
+    list.querySelectorAll('textarea').forEach(oneLine);
+    const placing = p.node.querySelector('[data-place]');
+    placing.hidden = !p.placing;
+    placing.innerHTML = `<b class="pin ghost">${p.marks.length + 1}</b>Click inside the area to place marker ${p.marks.length + 1}`;
     paintQuiet();
+    placePins();
+  }
+
+  /** Puts each numbered pin where its marker sits on the page now. */
+  function placePins() {
+    const p = state.panel;
+    for (const pin of root.querySelectorAll(':scope > .pin')) {
+      const at = mapPoint(p, pin.mark);
+      pin.style.left = px(at.x);
+      pin.style.top = px(at.y);
+    }
   }
 
   /**
-   * Removes one numbered marker and renumbers the rest.
+   * Removes one numbered marker and renumbers the rest. From the card, focus moves to the next marker's note, or to
+   * Add marker when none is left after it.
    * @param {number} index The marker's position.
+   * @param {boolean} [fromCard] True when the remove button in the card was used.
    */
-  function removeMark(index) {
-    state.panel.marks.splice(index, 1);
+  function removeMark(index, fromCard = false) {
+    const p = state.panel;
+    p.marks.splice(index, 1);
     paintMarks();
+    if (!fromCard) return;
+    const rows = p.node.querySelectorAll('.mrow textarea');
+    (rows[index] ?? rows[index - 1] ?? p.node.querySelector('[data-add-marker]'))?.focus();
   }
 
   /**
-   * Drops the next numbered marker at a point inside the area and focuses its note.
+   * Drops the next numbered marker at a point inside the area and focuses its note. The point is stored in the
+   * capture's viewport pixels, however far the page has scrolled since.
    * @param {number} x Viewport x of the click.
    * @param {number} y Viewport y of the click.
    */
   function addMark(x, y) {
     const p = state.panel;
-    p.marks.push({ x: Math.round(x), y: Math.round(y), note: '' });
+    const at = mapPoint(p, { x, y }, true);
+    p.marks.push({ x: Math.round(at.x), y: Math.round(at.y), note: '' });
     p.placing = false;
     paintMarks();
-    p.node.querySelector('.mrow:last-child input')?.focus();
+    p.node.querySelector('.mrow:last-child textarea')?.focus();
   }
 
   /** Draws the linked Figma frame row, or hides it when no frame is picked. */
@@ -1817,7 +2120,7 @@
     p.title.focus();
   }
 
-  /** Opens or closes the card's More menu, which holds the capture at three widths. */
+  /** Opens or closes the card's More menu, which holds the capture at three widths. It opens beside the card, so it never hides a field. */
   function toggleMore() {
     const p = state.panel;
     if (p.more) {
@@ -1827,7 +2130,8 @@
     const menu = document.createElement('div');
     menu.className = 'more-menu';
     menu.setAttribute('role', 'menu');
-    menu.innerHTML = `<button type="button" role="menuitem" data-widths${p.id && p.hasShot ? '' : ' disabled'}>Capture at mobile, tablet and desktop widths</button>`;
+    const ready = p.id && p.hasShot;
+    menu.innerHTML = `<button type="button" role="menuitem" data-widths${ready ? '' : ' disabled title="Needs a screenshot"'}>Capture at mobile, tablet and desktop widths</button>${ready ? '' : '<span class="why">Needs a screenshot of the area first</span>'}`;
     stopPresses(menu);
     menu.addEventListener('keydown', (e) => e.stopPropagation());
     const widths = menu.querySelector('[data-widths]');
@@ -1840,8 +2144,18 @@
     });
     root.append(menu);
     const at = p.node.querySelector('[data-more]').getBoundingClientRect();
-    menu.style.left = px(Math.max(EDGE * scale, at.right - sizeOf(menu).w));
-    menu.style.top = px(at.bottom + 4 * scale);
+    const card = p.node.getBoundingClientRect();
+    const { w } = sizeOf(menu);
+    const edge = EDGE * scale;
+    const gap = 4 * scale;
+    const spots = [
+      { left: card.right + gap, fits: card.right + gap + w <= innerWidth - edge },
+      { left: card.left - gap - w, fits: card.left - gap - w >= edge },
+    ];
+    if (p.side === 'left') spots.reverse();
+    const spot = spots.find((s) => s.fits);
+    menu.style.left = px(spot ? spot.left : Math.max(edge, at.right - w));
+    menu.style.top = px(spot ? at.top : at.bottom + gap);
     p.more = menu;
     widths.focus();
   }
@@ -1912,10 +2226,23 @@
   function redraw() {
     const p = state.panel;
     if (!p) return;
-    const draft = { ...readDraft(), marks: [] };
-    state.pending = { draft, old: { id: p.id, rect: p.rect, element: p.element, msg: p.msg, error: p.error, number: p.number, reopened: p.reopened, hasShot: p.hasShot, draft: readDraft() } };
+    const pageMarks = p.marks.map((m) => {
+      const at = mapPoint(p, m);
+      return { px: at.x + scrollX, py: at.y + scrollY, note: m.note };
+    });
+    const draft = { ...readDraft(), marks: [], pageMarks };
+    state.pending = { draft, old: { ...reopenArgs(p), error: p.error, draft: readDraft() } };
     closePanel(false);
-    toast('Drag over the new area. Esc keeps the old one.', 4200);
+    const kept = pageMarks.length ? ' Markers inside it are kept.' : '';
+    toast(`Drag over the new area.${kept} Esc keeps the old one.`, 4200);
+  }
+
+  /**
+   * What reopening a card needs to bring it back on the same area.
+   * @param {object} p The card.
+   */
+  function reopenArgs(p) {
+    return { id: p.id, rect: p.rect, element: p.element, msg: p.msg, number: p.number, reopened: p.reopened, hasShot: p.hasShot, viewport: p.viewport, anchor: p.anchor, extraMarks: p.extraMarks };
   }
 
   /** Brings back the card a redraw left, with its old area and fields. */
@@ -1923,17 +2250,19 @@
     const { old } = state.pending;
     state.pending = null;
     clearToast();
-    openPanel({ ...old });
+    if (old) openPanel({ ...old });
+    else paintSaved();
   }
 
-  /** Saves the card's fields to the draft comment, with markers drawn into its images, then shows the saved toast. */
-  async function save() {
-    const p = state.panel;
-    if (!p?.id || !filled() || p.saving) return;
-    p.saving = true;
-    const draft = readDraft();
+  /**
+   * Turns the card's fields into what is stored: the comment fields, the markers, and whether the images need redrawing.
+   * @param {object} p The card.
+   * @param {object} [draft] The fields, read from the card unless given.
+   */
+  function patchFor(p, draft = readDraft()) {
     const note = draft.note.trim();
-    const marks = draft.marks.map((m) => ({ kind: 'dot', x: m.x, y: m.y, note: m.note.trim() })).filter((m) => m.note);
+    const dots = draft.marks.map((m) => ({ kind: 'dot', x: m.x, y: m.y, note: m.note.trim() })).filter((m) => m.note);
+    const marks = [...p.extraMarks, ...dots];
     const links = [...new Set([...parseLinks(draft.link), ...(draft.frame ? [frameUrl(draft.frame)] : [])])];
     const patch = {
       severity: draft.severity,
@@ -1944,28 +2273,99 @@
     if (draft.frame) patch.figmaFrame = { ...draft.frame };
     else if (p.hadFrame) patch.figmaFrame = null;
     if (!p.hasShot) patch.marks = marks;
+    const moved = JSON.stringify(draft.marks) !== JSON.stringify(JSON.parse(p.original).marks);
+    const redrawImages = p.hasShot && (p.reopened ? moved : dots.length > 0);
+    return { draft, patch, marks, redrawImages };
+  }
+
+  /** Saves the card's fields to the draft comment, with markers drawn into its images, then shows the saved toast. */
+  async function save() {
+    const p = state.panel;
+    if (!p?.id || !filled() || p.saving) return;
+    p.saving = true;
+    const { draft, patch, marks, redrawImages } = patchFor(p);
     try {
       await chrome.runtime.sendMessage({ type: 'update', id: p.id, patch });
-      if (p.hasShot && (marks.length || p.reopened)) await chrome.runtime.sendMessage({ type: 'annotate', id: p.id, marks });
+      if (redrawImages) await chrome.runtime.sendMessage({ type: 'annotate', id: p.id, marks });
     } catch (err) {
       p.saving = false;
       toast(`Could not save. ${String(err.message ?? err)}`, 4200);
       return;
     }
     const box = p.node.getBoundingClientRect();
-    state.saved = { id: p.id, rect: p.rect, element: p.element, msg: p.msg, number: p.number, hasShot: p.hasShot, draft, box };
+    state.saved = { ...reopenArgs(p), draft, box };
     closePanel(false);
     await refreshReview();
     savedToast(state.saved);
   }
 
-  /** Reopens the comment just saved, with its fields as they were, and hides its flag while it is edited. */
+  /** Reopens the comment just saved for editing, with its fields as they were, and hides its flag while it is edited. */
   function undoSave() {
     const saved = state.saved;
     clearToast();
     if (!saved) return;
     state.saved = null;
     openPanel({ ...saved, reopened: true });
+  }
+
+  /**
+   * Opens a saved comment from its flag for editing, with its fields, markers and area as stored.
+   * @param {object} comment The comment from pageComments.
+   */
+  async function editSaved(comment) {
+    if (state.panel) {
+      if (state.panel.id === comment.id) return;
+      if (!replaceable()) {
+        holdCard();
+        return;
+      }
+      closePanel(true);
+    }
+    hideTip();
+    const full = await chrome.runtime.sendMessage({ type: 'comment', id: comment.id }).catch(() => null);
+    if (!full?.id || !state.active || state.panel) return;
+    const figma = full.figmaFrame?.nodeId ? full.figmaFrame : null;
+    const frameLink = figma ? frameUrl(figma) : '';
+    const marks = full.marks ?? [];
+    openPanel({
+      id: full.id,
+      rect: full.rect,
+      element: full.element ?? null,
+      number: comment.n,
+      reopened: true,
+      hasShot: full.hasShot,
+      viewport: full.viewport,
+      anchor: full.anchor ?? null,
+      extraMarks: marks.filter((m) => m.kind && m.kind !== 'dot'),
+      draft: {
+        title: full.title ?? '',
+        note: full.note ?? '',
+        severity: full.severity ?? 'major',
+        marks: marks.filter((m) => !m.kind || m.kind === 'dot').map((m) => ({ x: m.x, y: m.y, note: m.note ?? '' })),
+        frame: figma,
+        link: (full.links ?? []).filter((link) => link !== frameLink).join(' '),
+      },
+    });
+  }
+
+  /**
+   * Keeps what was typed in the open card when the page goes away. A card with a title or note is saved with its
+   * markers and the next page says so. An empty new draft is dropped, and edits to a saved comment are let go.
+   */
+  function onLeave() {
+    const p = state.panel;
+    const old = state.pending?.old;
+    const card = p ?? (old && { ...old, extraMarks: old.extraMarks ?? [], hadFrame: false, original: JSON.stringify({ marks: [] }) });
+    const draft = p ? readDraft() : old?.draft;
+    if (card?.id && !card.reopened) {
+      if (draft.title.trim() || draft.note.trim()) {
+        const { patch, marks, redrawImages } = patchFor(card, draft);
+        const notice = `Comment ${pad(card.number)} was saved when the page changed`;
+        chrome.runtime.sendMessage({ type: 'keep', id: card.id, patch, marks: redrawImages ? marks : null, notice }).catch(() => {});
+      } else chrome.runtime.sendMessage({ type: 'discard', id: card.id }).catch(() => {});
+    }
+    state.pending = null;
+    closePanel(false);
   }
 
   /**
@@ -1983,6 +2383,7 @@
     p.flag.remove();
     root.querySelectorAll(':scope > .pin').forEach((pin) => pin.remove());
     band.hidden = true;
+    placeHint(null);
     if (discard && p.id) {
       chrome.runtime
         .sendMessage({ type: 'discard', id: p.id })
@@ -1993,32 +2394,49 @@
     paintSaved();
   }
 
-  /** Follows the pointer with the drag band, or with the element outline when selector capture is on. */
+  /**
+   * Follows the pointer with the drag band, or with the element outline when selector capture is on. Over Margin's own
+   * bar, card, menus and flags there is no outline.
+   * @param {MouseEvent} e A mousemove on the overlay or the page.
+   */
   function onMove(e) {
     if (state.drag) {
       const x = Math.min(e.clientX, state.drag.x);
       const y = Math.min(e.clientY, state.drag.y);
-      place(band, { x, y, w: Math.abs(e.clientX - state.drag.x), h: Math.abs(e.clientY - state.drag.y) });
+      const rect = { x, y, w: Math.abs(e.clientX - state.drag.x), h: Math.abs(e.clientY - state.drag.y) };
+      place(band, rect);
+      placeHint(rect);
       return;
     }
     if (state.panel || state.menu || !state.selectors) return;
-    outline(pickAt(e.clientX, e.clientY));
+    if (e.target instanceof Element && root.contains(e.target) && e.target.closest('.hint, .toast, .ctx, .panel, .more-menu, .flag')) {
+      hoverBox.hidden = true;
+      return;
+    }
+    outline(pickAt(e.clientX, e.clientY, true));
   }
 
   /**
-   * Outlines a picked element, saying so when it fills the whole view, or hides the outline when nothing was picked.
-   * @param {{rect: object, full: boolean} | null} pick The pick from pickAt.
+   * Outlines a picked element, saying so when it fills the whole view or is a frame Margin cannot look into, or hides
+   * the outline when nothing was picked.
+   * @param {{rect: object, full: boolean, frame?: Element | boolean} | null} pick The pick from pickAt.
    */
   function outline(pick) {
     if (!pick) {
       hoverBox.hidden = true;
       return;
     }
+    hoverBox.classList.toggle('frame', pick.frame === true && !pick.full);
     hoverBox.classList.toggle('full', pick.full);
     place(hoverBox, pick.rect);
   }
 
-  /** Starts a drag, or drops a marker when a card is open and the press lands inside its area. */
+  /**
+   * Starts a drag, or with a card open drops a marker when the press lands inside its area. A press outside the area
+   * starts a drag that replaces an empty draft, and focus stays in the card. A press that only closes the More menu
+   * does nothing else.
+   * @param {MouseEvent} e A mousedown on the overlay.
+   */
   function onDown(e) {
     if (state.menu) {
       e.preventDefault();
@@ -2026,24 +2444,30 @@
       return;
     }
     if (e.button !== 0) return;
-    if (state.panel) {
-      const p = state.panel;
-      closeMore();
-      const r = p.rect;
-      const inside = e.clientX >= r.x && e.clientX <= r.x + r.w && e.clientY >= r.y && e.clientY <= r.y + r.h;
-      if (inside && (state.markers || p.placing)) {
-        e.preventDefault();
-        addMark(e.clientX, e.clientY);
-      }
-      return;
-    }
     e.preventDefault();
     hideTip();
+    if (state.panel) {
+      const p = state.panel;
+      if (p.more) {
+        closeMore();
+        return;
+      }
+      const r = liveRect(p);
+      const inside = e.clientX >= r.x && e.clientX <= r.x + r.w && e.clientY >= r.y && e.clientY <= r.y + r.h;
+      if (inside) {
+        if ((state.markers || p.placing) && !p.asking) addMark(e.clientX, e.clientY);
+        return;
+      }
+    }
     state.drag = { x: e.clientX, y: e.clientY };
     hoverBox.hidden = true;
   }
 
-  /** Finishes a drag and captures the area, or the element under the pointer for a click with selector capture on. */
+  /**
+   * Finishes a drag and captures the area, or the element under the pointer for a click with selector capture on.
+   * With a card open, a drag replaces an empty draft and is refused for one with work in it.
+   * @param {MouseEvent} e A mouseup on the overlay.
+   */
   function onUp(e) {
     if (!state.drag) return;
     const start = state.drag;
@@ -2056,12 +2480,31 @@
       w: Math.abs(e.clientX - start.x),
       h: Math.abs(e.clientY - start.y),
     };
-    if (rect.w < MIN_DRAG || rect.h < MIN_DRAG) {
-      if (!state.selectors) return;
-      const el = elementAt(e.clientX, e.clientY);
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      rect = { x: r.left, y: r.top, w: r.width, h: r.height };
+    const tiny = rect.w < MIN_DRAG || rect.h < MIN_DRAG;
+    if (state.panel) {
+      placeDraft();
+      if (tiny) return;
+      if (!replaceable()) {
+        holdCard();
+        return;
+      }
+      const severity = state.panel.severity;
+      closePanel(true);
+      state.pending = { draft: { severity }, old: null };
+      rect = fitRect(rect);
+      if (rect.w >= 2 && rect.h >= 2) capture(rect);
+      else state.pending = null;
+      return;
+    }
+    placeHint(null);
+    if (tiny) {
+      if (!state.selectors) {
+        toast('Drag over an area to comment, or press S to pick elements', 2400);
+        return;
+      }
+      const pick = pickAt(e.clientX, e.clientY, true);
+      if (!pick) return;
+      rect = pick.rect;
     }
     rect = fitRect(rect);
     if (rect.w < 2 || rect.h < 2) return;
@@ -2069,9 +2512,11 @@
   }
 
   /**
-   * Keyboard shortcuts while annotating: S and M toggle modes, 1 to 4 and R act on the open card, arrows walk menus,
-   * Esc steps back and holding Alt hands the pointer to the page. Letters and digits typed into a page field stay there,
-   * and an Esc meant for the page, with a page dialog or field open or handled by the page, never stops annotating.
+   * Keyboard shortcuts while annotating: S and M toggle modes, V comments on the visible area, 1 to 4 and R act on the
+   * open card, Ctrl+Z takes back the last marker, arrows walk menus, Tab stays inside Margin, Shift+F10 and the menu key
+   * open the annotation menu, Esc steps back, and holding Alt hands the pointer to the page. Letters and digits typed
+   * into a page field stay there. With nothing of Margin's open, Esc pressed twice stops annotating, and an Esc meant
+   * for the page, with a page dialog or field open or handled by the page, never does.
    * @param {KeyboardEvent} e A keydown caught at the window.
    */
   function onKey(e) {
@@ -2084,10 +2529,27 @@
     const plain = !e.ctrlKey && !e.metaKey && !e.altKey && !pageField;
     const key = e.key?.toLowerCase();
     const menu = state.menu ?? state.panel?.more;
-    if (menu && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+    const stop = () => {
       e.preventDefault();
       e.stopPropagation();
+    };
+    if (menu && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      stop();
       stepMenu(menu, e.key === 'ArrowDown' ? 1 : -1);
+      return;
+    }
+    if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey && !pageField) {
+      stop();
+      stepFocus(e.shiftKey ? -1 : 1);
+      return;
+    }
+    if (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey)) {
+      stop();
+      openKeyMenu();
+      return;
+    }
+    if (state.panel && (e.ctrlKey || e.metaKey) && key === 'z' && !e.shiftKey && undoMarkKey()) {
+      stop();
       return;
     }
     if (state.panel && plain && !isField(shadow.activeElement)) {
@@ -2116,10 +2578,15 @@
       setMarkers(!state.markers);
       return;
     }
+    if (plain && !state.panel && !state.menu && !state.pending && key === 'v' && !e.shiftKey) {
+      stop();
+      captureViewport();
+      return;
+    }
     if (e.key !== 'Escape') return;
     if (!state.menu && !state.panel && !state.pending) {
       if (pageField || pageLayerOpen()) return;
-      window.addEventListener('keydown', (after) => after === e && !e.defaultPrevented && setActive(false), { once: true });
+      window.addEventListener('keydown', (after) => after === e && !e.defaultPrevented && escapeToStop(), { once: true });
       return;
     }
     e.preventDefault();
@@ -2127,6 +2594,55 @@
     if (state.menu) closeMenu();
     else if (state.panel) escapePanel();
     else cancelRedraw();
+  }
+
+  /** Stops annotating on the second Esc within a moment, and says so after the first. */
+  function escapeToStop() {
+    const now = performance.now();
+    if (now - state.escAt < 1600) {
+      state.escAt = 0;
+      setActive(false);
+      return;
+    }
+    state.escAt = now;
+    toast('Press Esc again to stop annotating', 1600);
+  }
+
+  /**
+   * Takes back the last marker on Ctrl+Z when focus is not in a field with text to undo, or is in the last marker's
+   * empty note. Returns true when a marker was removed.
+   */
+  function undoMarkKey() {
+    const p = state.panel;
+    if (!p.marks.length) return false;
+    const active = shadow.activeElement;
+    const notes = p.node.querySelectorAll('.mrow textarea');
+    const lastEmpty = active === notes[notes.length - 1] && !active.value;
+    if (isField(active) && !lastEmpty) return false;
+    removeMark(p.marks.length - 1);
+    p.title.focus();
+    return true;
+  }
+
+  /**
+   * Moves keyboard focus to the next or previous control, staying inside the open menu, the open card, or else the
+   * hint bar, the toast and the saved flags, so Tab never wanders into the page hidden under the overlay.
+   * @param {number} step 1 for Tab, -1 for Shift+Tab.
+   */
+  function stepFocus(step) {
+    let scope = [hint, state.toast?.node, layer];
+    if (state.menu) scope = [state.menu];
+    else if (state.panel?.more) scope = [state.panel.more];
+    else if (state.panel) scope = [state.panel.node];
+    const items = scope
+      .filter(Boolean)
+      .flatMap((el) => [...el.querySelectorAll('button, input, textarea, [tabindex]')])
+      .filter((el) => !el.disabled && el.tabIndex >= 0 && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
+    if (!items.length) return;
+    const at = items.indexOf(shadow.activeElement);
+    let next = (at + step + items.length) % items.length;
+    if (at < 0) next = step > 0 ? 0 : items.length - 1;
+    items[next].focus({ preventScroll: true });
   }
 
   /** True when the page has its own modal dialog, popover or fullscreen element open, which Esc should close first. */
@@ -2159,11 +2675,13 @@
       window.addEventListener('scroll', onScroll, { passive: true, capture: true });
       window.addEventListener('resize', onScroll);
       window.addEventListener('resize', fitZoom);
+      window.addEventListener('pagehide', onLeave);
       refreshReview();
+      if (!isEditable(document.activeElement)) selectorsBtn.focus({ preventScroll: true });
     } else {
       closeMenu();
       closePanel(!state.panel?.reopened);
-      if (state.pending?.old.id && !state.pending.old.reopened) chrome.runtime.sendMessage({ type: 'discard', id: state.pending.old.id }).catch(() => {});
+      if (state.pending?.old?.id && !state.pending.old.reopened) chrome.runtime.sendMessage({ type: 'discard', id: state.pending.old.id }).catch(() => {});
       state.pending = null;
       state.saved = null;
       clearToast();
@@ -2192,13 +2710,16 @@
       window.removeEventListener('scroll', onScroll, { capture: true });
       window.removeEventListener('resize', onScroll);
       window.removeEventListener('resize', fitZoom);
+      window.removeEventListener('pagehide', onLeave);
+      placeHint(null);
       host.remove();
     }
+    chrome.runtime.sendMessage({ type: 'annotating', active: next }).catch(() => {});
     return state.active;
   }
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-    if (msg?.type === 'ping') sendResponse({ ok: true });
+    if (msg?.type === 'ping') sendResponse({ ok: true, active: state.active });
     else if (msg?.type === 'toggle') {
       if (msg.groupName) groupLabel.textContent = msg.groupName;
       if (msg.zoom) tabZoom = msg.zoom;
@@ -2208,6 +2729,12 @@
       tabZoom = msg.zoom || 1;
       if (state.active) refit();
       sendResponse({ ok: true });
+    }
+    else if (msg?.type === 'start') {
+      if (msg.groupName) groupLabel.textContent = msg.groupName;
+      if (msg.zoom) tabZoom = msg.zoom;
+      sendResponse({ active: setActive(true) });
+      if (msg.notice) toast(msg.notice, 4200);
     }
     else if (msg?.type === 'stop') sendResponse({ active: setActive(false) });
     else if (msg?.type === 'toast') {
