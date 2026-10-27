@@ -1,6 +1,6 @@
 import { SEVERITIES, severityOf } from './severity.js';
 import { statusOf as reviewStatusOf } from './status.js';
-import { environmentText, escapeHtml as esc, recheckCaption, routeOf, sortIssues } from './report-template.js';
+import { environmentText, escapeHtml as esc, hexColour, linkName, linksLabel, numbering, recheckCaption, routeOf, sortIssues } from './report-template.js';
 import { DEFAULT_FIELDS, withDefaults } from './fields.js';
 import { markList } from './marks.js';
 import { widthCaption, widthShots, widthsLine } from './widths.js';
@@ -37,20 +37,20 @@ div.WordSection1 { page: WordSection1; }
 `;
 
 const SEV_COLOR = {
-  blocker: '#d92020',
-  major: '#b26a00',
-  minor: '#1f5fd0',
-  nit: '#5c6270',
+  blocker: '#ce2c31',
+  major: '#c2410c',
+  minor: '#0d74ce',
+  nit: '#60646c',
 };
 
-/** Review workflow states. Everything the extension captures starts at New. */
-const STATUSES = [
-  { label: 'New', fill: '#fdeaea' },
-  { label: 'In Progress', fill: '#e6f0fb' },
-  { label: 'Pending Testing', fill: '#efeafa' },
-  { label: 'Ready for Review', fill: '#fdf0e3' },
-  { label: 'Signed Off', fill: '#e9f4e8' },
-];
+/** The status cell colours, the same Open, Fixed and Won't fix the report uses. */
+const STATUS_STYLE = {
+  open: { fill: '#ffffff', ink: INK },
+  fixed: { fill: '#e6f6eb', ink: '#18794e' },
+  wontfix: { fill: '#f0f0f3', ink: '#60646c' },
+};
+
+const pad = (n) => String(n).padStart(2, '0');
 
 const H1 = `font-family: ${SANS}; font-size: 18pt; font-weight: 700; color: ${INK}; margin: 0 0 2px;`;
 const H2 = `font-family: ${SANS}; font-size: 13pt; font-weight: 700; color: ${INK}; margin: 26px 0 4px;`;
@@ -64,28 +64,20 @@ const MONO = `font-family: ${MONO_FACE}; font-size: 8pt;`;
 const FACT_LINE = `font-family: ${SANS}; font-size: 8pt; color: ${INK}; margin: 0 0 2px;`;
 const FACT_LABEL = `color: ${INK_2}; font-weight: 700;`;
 
-const CATEGORY_FILL = {
-  new: STATUSES[0].fill,
-  indeterminate: STATUSES[1].fill,
-  done: STATUSES[4].fill,
-};
-
-/** Margin's own verdicts, shown in place of the workflow state once a comment is marked. */
-const VERDICT_FILL = { fixed: STATUSES[4].fill, wontfix: '#eef0f3' };
+/**
+ * Text linked to an address, or the plain text when there is no address.
+ * @param {string} label The words shown.
+ * @param {string} [url] Where they link to.
+ */
+const linked = (label, url) => (url ? `<a href="${esc(url)}">${esc(label)}</a>` : esc(label));
 
 /**
- * The Status cell. A comment marked fixed or won't fix says so, linked comments carry their live Jira status,
- * and everything else starts at New.
+ * The Status cell, Open, Fixed or Won't fix as in the report, with its colours.
  * @param {object} issue The stored comment.
  */
 function statusOf(issue) {
-  const verdict = reviewStatusOf(issue.status);
-  if (VERDICT_FILL[verdict.key]) return { label: verdict.label, fill: VERDICT_FILL[verdict.key] };
-  if (!issue.jira?.status) return STATUSES[0];
-  return {
-    label: issue.jira.status,
-    fill: CATEGORY_FILL[issue.jira.statusCategory] ?? STATUSES[0].fill,
-  };
+  const status = reviewStatusOf(issue.status);
+  return { label: status.label, ...STATUS_STYLE[status.key] };
 }
 
 /** One line of provenance under the comment text. */
@@ -111,16 +103,16 @@ function image(src, alt, caption) {
 /**
  * The region at mobile, tablet and desktop widths as a borderless one row table, which Docs and Word both keep side by side.
  * @param {object} issue The stored comment.
- * @param {number} index Its position in its page section.
+ * @param {number} number Its comment number.
  */
-function widthRow(issue, index) {
+function widthRow(issue, number) {
   const shots = widthShots(issue);
   if (!shots.length) return '';
   const cell = Math.floor(IMAGE_WIDTH / 3) - 8;
   return `<table cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin: 8px 0 4px;"><tbody><tr>${shots
     .map(
       (shot) =>
-        `<td style="padding: 0 8px 0 0; vertical-align: top; width: ${cell}px;"><img src="${shot.src}" alt="${esc(shot.label)} width for C${index + 1}" width="${cell}" /><p style="${SMALL} margin: 2px 0 0;">${esc(widthCaption(shot))}</p></td>`,
+        `<td style="padding: 0 8px 0 0; vertical-align: top; width: ${cell}px;"><img src="${shot.src}" alt="${esc(shot.label)} width for comment ${number}" width="${cell}" /><p style="${SMALL} margin: 2px 0 0;">${esc(widthCaption(shot))}</p></td>`,
     )
     .join('')}</tr></tbody></table>`;
 }
@@ -131,7 +123,7 @@ function factLines(issue, fields) {
   const rows = [
     fields.page ? ['Page', `<a href="${esc(issue.page.url)}">${esc(issue.page.url)}</a>`] : null,
     fields.figma && issue.links?.length
-      ? ['Figma', issue.links.map((url, i) => `<a href="${esc(url)}">Link ${i + 1}</a>`).join(', ')]
+      ? [linksLabel(issue.links), issue.links.map((url, i) => `<a href="${esc(url)}">${esc(linkName(url, i, issue))}</a>`).join(', ')]
       : null,
     fields.selector && el?.selector ? ['Selector', `<span style="${MONO}">${esc(el.selector)}</span>`] : null,
     fields.element && el
@@ -139,7 +131,7 @@ function factLines(issue, fields) {
       : null,
     fields.text && el?.text ? ['Text', esc(el.text)] : null,
     fields.styles && el?.styles
-      ? ['Styles', `<span style="${MONO}">${esc(el.styles.font)}, color ${esc(el.styles.color)}</span>`]
+      ? ['Styles', `<span style="${MONO}">${esc(el.styles.font)}, color ${esc(hexColour(el.styles.color))}</span>`]
       : null,
     fields.position
       ? [
@@ -157,12 +149,21 @@ function factLines(issue, fields) {
   return rows;
 }
 
-function commentRow(issue, index, shots, fields, widths) {
+/**
+ * One comment as a table row: its number, the comment with its images, its status and its Jira issue.
+ * @param {object} issue The stored comment.
+ * @param {number} n Its comment number.
+ * @param {string} shots Which screenshots to include.
+ * @param {Record<string, boolean>} fields Which detail rows to include.
+ * @param {boolean} widths Whether to add the width shots.
+ */
+function commentRow(issue, n, shots, fields, widths) {
   const sev = severityOf(issue.severity);
+  const status = statusOf(issue);
   return `<tr>
-        <td style="${CELL} width: ${COLS.number}px; font-weight: 700;">C${index + 1}</td>
+        <td style="${CELL} width: ${COLS.number}px; font-weight: 700;">${pad(n)}</td>
         <td style="${CELL} width: ${COLS.comment}px;">
-          <h3 style="${H3} margin: 0 0 2px;">${esc(issue.title || 'Untitled issue')}</h3>
+          <h3 style="${H3} margin: 0 0 2px;">${esc(issue.title || 'Untitled comment')}</h3>
           <p style="${P} margin: 0 0 6px; font-size: 9pt; color: ${SEV_COLOR[sev.key]};"><b>${esc(sev.label)}</b></p>
           ${issue.note ? `<p style="${P} margin: 0 0 6px;">${esc(issue.note).replace(/\n/g, '<br />')}</p>` : ''}
           ${markList(issue)
@@ -172,19 +173,30 @@ function commentRow(issue, index, shots, fields, widths) {
             )
             .join('\n          ')}
           ${factLines(issue, fields)}
-          ${shots === 'viewport' ? '' : image(issue.detail, `Marked region for C${index + 1}`)}
-          ${shots === 'viewport' || !issue.after ? '' : image(issue.after, `Same region after recheck for C${index + 1}`, recheckCaption(issue))}
-          ${widths ? widthRow(issue, index) : ''}
-          ${shots === 'detail' ? '' : image(issue.shot, `Full viewport for C${index + 1}`, 'Full viewport')}
+          ${shots === 'viewport' ? '' : image(issue.detail, `Marked region for comment ${n}`)}
+          ${shots === 'viewport' || !issue.after ? '' : image(issue.after, `Same region after recheck for comment ${n}`, recheckCaption(issue))}
+          ${widths ? widthRow(issue, n) : ''}
+          ${shots === 'detail' ? '' : image(issue.shot, `Full viewport for comment ${n}`, 'Full viewport')}
         </td>
-        <td style="${CELL} width: ${COLS.status}px; background: ${statusOf(issue).fill};">${esc(statusOf(issue).label)}</td>
+        <td style="${CELL} width: ${COLS.status}px; background: ${status.fill}; color: ${status.ink}; font-weight: 700;">${esc(status.label)}</td>
         <td style="${CELL} width: ${COLS.notes}px;">${
-          fields.jira && issue.jira?.key ? `<a href="${esc(issue.jira.url)}">${esc(issue.jira.key)}</a>` : ''
+          fields.jira && issue.jira?.key
+            ? `<a href="${esc(issue.jira.url)}">${esc(issue.jira.key)}</a>${issue.jira.status ? `, ${esc(issue.jira.status)} in Jira` : ''}`
+            : ''
         }</td>
       </tr>`;
 }
 
-function commSection(group, number, shots, fields, widths) {
+/**
+ * One page's section: its route, its link and a table of its comments.
+ * @param {{ page: object, issues: object[] }} group The page and its comments.
+ * @param {number} number The section number.
+ * @param {(issue: object) => number} numberOf The comment numbers.
+ * @param {string} shots Which screenshots to include.
+ * @param {Record<string, boolean>} fields Which detail rows to include.
+ * @param {boolean} widths Whether to add the width shots.
+ */
+function commSection(group, number, numberOf, shots, fields, widths) {
   return `
   <h2 style="${H2}">COMM${number}: ${esc(routeOf(group.page))}</h2>
   <p style="${P}"><a href="${esc(group.page.url)}">${esc(group.page.url)}</a></p>
@@ -200,18 +212,18 @@ function commSection(group, number, shots, fields, widths) {
         <td style="${HEAD_CELL} width: ${COLS.number}px; border: 0;"></td>
         <td style="${HEAD_CELL} width: ${COLS.comment}px; border: 0;"></td>
         <td style="${HEAD_CELL} width: ${COLS.status}px; border: 0;">Status</td>
-        <td style="${HEAD_CELL} width: ${COLS.notes}px; border: 0;">Notes</td>
+        <td style="${HEAD_CELL} width: ${COLS.notes}px; border: 0;">Jira</td>
       </tr>
-      ${group.issues.map((issue, i) => commentRow(issue, i, shots, fields, widths)).join('\n      ')}
+      ${group.issues.map((issue) => commentRow(issue, numberOf(issue), shots, fields, widths)).join('\n      ')}
     </tbody>
   </table>`;
 }
 
+/** A one row table naming the three statuses in their colours. */
 function statusLegend() {
-  const verdicts = ['fixed', 'wontfix'].map((key) => ({ label: reviewStatusOf(key).label, fill: VERDICT_FILL[key] }));
-  const cells = [...STATUSES, ...verdicts].map(
-    (s) => `<td style="${CELL} background: ${s.fill}; text-align: center;">${s.label}</td>`,
-  ).join('\n      ');
+  const cells = ['open', 'fixed', 'wontfix']
+    .map((key) => `<td style="${CELL} background: ${STATUS_STYLE[key].fill}; color: ${STATUS_STYLE[key].ink}; font-weight: 700; text-align: center;">${esc(reviewStatusOf(key).label)}</td>`)
+    .join('\n      ');
   return `<table cellspacing="0" cellpadding="0" style="border-collapse: collapse; width: 100%; margin: 0 0 8px;">
     <tbody>
       <tr>
@@ -235,11 +247,13 @@ export function groupByPage(issues) {
 /** Plain text version, used as the second clipboard flavour. */
 export function buildDocsText(issues, { title = 'UI review comments', widths = true } = {}) {
   const lines = [title, ''];
+  const numberOf = numbering(issues);
   groupByPage(issues).forEach((group, index) => {
     lines.push(`COMM${index + 1}: ${routeOf(group.page)}`, group.page.url, '');
-    group.issues.forEach((issue, i) => {
+    group.issues.forEach((issue) => {
       const sev = severityOf(issue.severity);
-      lines.push(`C${i + 1}  [${sev.label}, ${statusOf(issue).label}] ${issue.title || 'Untitled issue'}`);
+      const jira = issue.jira?.key ? `, ${issue.jira.key}${issue.jira.status ? ` ${issue.jira.status} in Jira` : ''}` : '';
+      lines.push(`${pad(numberOf(issue))}  [${sev.label}, ${statusOf(issue).label}${jira}] ${issue.title || 'Untitled comment'}`);
       if (issue.note) lines.push(`    ${issue.note.replace(/\n/g, '\n    ')}`);
       markList(issue).forEach((item) => lines.push(`    ${item.n}. ${item.note.replace(/\n/g, ' ')}`));
       if (issue.after) lines.push(`    ${recheckCaption(issue)}`);
@@ -259,11 +273,12 @@ export function buildDocsHtml(
   { title = 'UI review comments', generatedAt = new Date(), group = null, shots = 'both', fields = DEFAULT_FIELDS, widths = true } = {},
 ) {
   const groups = groupByPage(issues);
+  const numberOf = numbering(issues);
   const total = issues.length;
   const counts = SEVERITIES.map((s) => `${issues.filter((i) => severityOf(i.severity).key === s.key).length} ${s.label}`).join(', ');
 
   const body = groups.length
-    ? groups.map((pageGroup, index) => commSection(pageGroup, index + 1, shots, withDefaults(fields), widths)).join('\n')
+    ? groups.map((pageGroup, index) => commSection(pageGroup, index + 1, numberOf, shots, withDefaults(fields), widths)).join('\n')
     : `<p style="${P}">No comments captured.</p>`;
 
   return `<!doctype html>
@@ -278,12 +293,12 @@ export function buildDocsHtml(
   <h1 style="${H1}">${esc(title)}</h1>
   <p style="${SMALL}">Date: ${esc(generatedAt.toLocaleString())}${
     group?.jira?.key
-      ? `, ticket <a href="${esc(group.jira.url)}">${esc(group.jira.key)}</a>, ${esc(group.jira.status ?? 'New')}`
+      ? `, ticket ${linked(group.jira.key, group.jira.url)}${group.jira.status ? `, ${esc(group.jira.status)} in Jira` : ''}`
       : ''
-  }</p>
+  }${group?.figma?.fileKey ? `, file ${linked(group.figma.name || 'Figma file', group.figma.url)}` : ''}</p>
 
   <h2 style="${H2}">Introduction, important notes</h2>
-  <p style="${P}">${total} ${total === 1 ? 'comment' : 'comments'} across ${groups.length} ${groups.length === 1 ? 'page' : 'pages'}: ${counts}. Each comment carries the element selector, the marked region, and the viewport it was captured at. Every comment starts at New and shows Fixed or Won't fix once it is verified.</p>
+  <p style="${P}">${total} ${total === 1 ? 'comment' : 'comments'} across ${groups.length} ${groups.length === 1 ? 'page' : 'pages'}: ${counts}. Each comment keeps the number it has in the Margin report, and carries the element selector, the marked region, and the viewport it was captured at. Every comment starts Open and shows Fixed or Won't fix once it is rechecked. A linked Jira issue shows its own status in the Jira column.</p>
 
   <h3 style="${H3}">Statuses</h3>
   ${statusLegend()}

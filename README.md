@@ -24,12 +24,14 @@ It needs no account. Everything stays in your browser until you choose to send a
 
 ## What it does
 
-- **Comment on any area.** Drag a box over part of the page and the note opens beside it, so the selection stays in view.
+- **Start a review.** Name it, and link the Jira ticket and the Figma file it belongs to. Margin brings in the ticket's summary, status and assignee, and the file's frames, and uses them as the defaults when you send.
+- **Comment on any area.** Drag a box over part of the page and a small card opens beside it, never over it. Type a title and press Enter to save.
 - **Number the details.** Click inside the box to drop numbered markers, each with its own note. Right-click a marker to remove it.
+- **Keep using the page.** Hold Alt to hover, open menus and scroll the page while annotating. Page dialogs and zoom don't get in the way.
 - **Edit the image.** Add markers, boxes and arrows, resize them and zoom in. Changes save as you go.
 - **Right-click for more.** Comment on one element or the whole visible screen without leaving the page.
 - **Capture selectors when you need them.** Selector capture is off by default and one key turns it on.
-- **Capture three widths at once.** All widths shoots the same selection at mobile, tablet and desktop sizes, and puts your window back exactly as it was.
+- **Capture three widths at once.** From the comment card's menu or the right-click menu, Margin shoots the same selection at mobile, tablet and desktop sizes, and puts your window back exactly as it was.
 - **Track each comment.** Every comment is Open, Fixed or Won't fix, and the report filters by status as well as severity.
 - **Verify fixes in one pass.** Verify this page rechecks every comment on the open page, then walks you through before and after side by side. A pixel comparison hints at what changed.
 - **Export it your way.** Copy for Docs pastes into Google Docs with images and numbered lists intact. Word, HTML and PDF exports are one click away. Copy as Markdown suits GitHub, Slack and coding agents, and any single comment copies on its own.
@@ -51,8 +53,8 @@ To run it from source:
 
 ## Using it
 
-1. Open any page and click the Margin icon, or press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd>.
-2. Drag over what looks wrong, write a note and save it.
+1. Open any page and click the Margin icon. Start a review, and link a Jira ticket or Figma file if you have one.
+2. Drag over what looks wrong, type a title and press Enter.
 3. Right-click the page and choose Open the review report.
 4. Click Copy for Docs, or open More for Word, HTML, Print, Markdown, review files, Jira issues and Figma comments.
 
@@ -61,8 +63,12 @@ To run it from source:
 | <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd> | Start or stop annotating |
 | <kbd>S</kbd> | Turn selector capture on or off |
 | <kbd>M</kbd> | Turn numbered markers on or off |
-| <kbd>Ctrl</kbd>+<kbd>Enter</kbd> | Save the open comment |
-| <kbd>Esc</kbd> | Close the comment, or stop annotating |
+| <kbd>V</kbd> | Comment on the whole visible area |
+| <kbd>1</kbd> to <kbd>4</kbd> | Pick the severity of the open comment |
+| <kbd>Enter</kbd> | Save the open comment from its title, or <kbd>Ctrl</kbd>+<kbd>Enter</kbd> from a note |
+| Hold <kbd>Alt</kbd> | Use the page normally while annotating |
+| <kbd>Shift</kbd>+<kbd>F10</kbd> | Open Margin's menu from the keyboard |
+| <kbd>Esc</kbd> | Close the comment, or press twice to stop annotating |
 
 ## Privacy and permissions
 

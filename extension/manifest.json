@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Margin",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Mark up UI issues on any page, number the details, and export a clean review.",
   "permissions": [
     "activeTab",
@@ -18,6 +18,12 @@
     "https://*.atlassian.net/*"
   ],
   "options_page": "options.html",
+  "web_accessible_resources": [
+    {
+      "resources": ["fonts/*.woff2", "icons/ui/*.svg"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"
