@@ -57,6 +57,7 @@
       async create() {},
       async update() {},
       captureVisibleTab: async () => window.__CAPTURE ?? blankCapture(),
+      onZoomChange: noopEvent,
     },
     scripting: {
       executeScript: async ({ func, args = [] }) => (func ? [{ result: await func(...args) }] : [{ result: undefined }]),
