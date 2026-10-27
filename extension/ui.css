@@ -468,6 +468,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { border-color
 .quiet-link .link-title:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 2px; }
 .quiet-link .link-title:disabled { cursor: default; }
 .quiet-link .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted-foreground); }
+.quiet-link > [class^="tone-"] { flex: 0 1 auto; max-width: 45%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .quiet-link .grow > .text-link { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .quiet-link.stale .grow, .quiet-link.stale [class*="tone-"] { color: var(--muted-foreground); opacity: 0.7; }
 .pop-meta { display: flex; align-items: center; gap: var(--s1); min-height: 20px; font-size: 12px; line-height: 16px; color: var(--muted-foreground); }
@@ -500,6 +501,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { border-color
 .pop-hint { margin: 0; padding: 0 var(--s4) var(--s2); font-size: 12px; line-height: 16px; color: var(--muted-foreground); }
 .pop-page > .pop-rows { list-style: none; margin: 0; padding: 0; flex: 0 1 auto; min-height: 0; overflow: auto; }
 .pop-page > .pop-rows.many { min-height: 96px; }
+.pop-page > [data-folds] { flex: 0 0.01 auto; min-height: 0; overflow: hidden auto; scrollbar-width: none; }
+.pop-page > [data-folds]:not(:empty) { min-height: 40px; }
 .pop-row { display: flex; align-items: center; gap: var(--s2); height: 48px; padding: 0 var(--s4); border-top: 1px solid var(--border); }
 .pop-row:hover, .pop-row:focus-within { background: var(--muted); }
 .pop-row .sev { display: inline-flex; width: 10px; height: 10px; color: var(--sev-solid); }

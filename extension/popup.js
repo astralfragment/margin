@@ -231,7 +231,7 @@ function linkRow(kind, link) {
   const opens = link.url ? `title="${esc(link.url)}"` : `disabled title="Connect ${service} or paste the full link to open it"`;
   return `<div class="quiet-link${stale ? ' stale' : ''}">${icon(kind)}<button class="link-title" type="button" data-open-url="${esc(link.url)}" ${opens}>${esc(title)}</button>${
     known
-      ? `<span class="grow" title="${esc(detail)}">${esc(detail)}</span>${kind === 'jira' && link.status ? `<span class="tone-${statusTone(link.statusCategory)}">${esc(link.status)}</span>` : ''}`
+      ? `<span class="grow" title="${esc(detail)}">${esc(detail)}</span>${kind === 'jira' && link.status ? `<span class="tone-${statusTone(link.statusCategory)}" title="${esc(link.status)}">${esc(link.status)}</span>` : ''}`
       : `<span class="grow"><button class="text-link" type="button" data-connect="${kind}">Connect to bring in details</button></span>`
   }</div>`;
 }
@@ -247,7 +247,7 @@ function renderLinks() {
   const group = state.group;
   const total = inReview().length;
   const fresh = freshness(group);
-  const showTotal = restricted || total !== pageView().shown.length;
+  const showTotal = !restricted && total !== pageView().shown.length;
   const meta = showTotal || fresh ? `<div class="pop-meta"><span class="grow">${showTotal ? plural(total, 'comment') : ''}</span>${fresh}</div>` : '';
   el.innerHTML = `${group.jira?.key ? linkRow('jira', group.jira) : ''}${group.figma?.fileKey ? linkRow('figma', group.figma) : ''}${meta}`;
   el.hidden = !el.innerHTML;
@@ -343,6 +343,7 @@ $('[data-toggle]').addEventListener('click', async () => {
   if (res?.error) {
     state.alert = startAlert(res.error);
     renderStart();
+    fitHeight();
     return;
   }
   window.close();
@@ -611,12 +612,14 @@ function askDelete() {
   $('[data-more]').open = false;
   $('[data-confirm-text]').textContent = `Delete ${state.group.name} and its ${plural(inReview().length, 'comment')}? This cannot be undone.`;
   confirmEl.hidden = false;
+  fitHeight();
   $('[data-confirm-cancel]').focus();
 }
 
 /** Puts the delete question away and returns focus to the review menu. */
 function cancelDelete() {
   confirmEl.hidden = true;
+  fitHeight();
   $('[data-more] > summary').focus();
 }
 
