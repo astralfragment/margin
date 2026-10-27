@@ -31,7 +31,7 @@ It needs no account. Everything stays in your browser until you choose to send a
 - **Edit the image.** Add markers, boxes and arrows, resize them and zoom in. Changes save as you go.
 - **Right-click for more.** Comment on one element or the whole visible screen without leaving the page.
 - **Capture selectors when you need them.** Selector capture is off by default and one key turns it on.
-- **Capture three widths at once.** All widths shoots the same selection at mobile, tablet and desktop sizes, and puts your window back exactly as it was.
+- **Capture three widths at once.** From the comment card's menu or the right-click menu, Margin shoots the same selection at mobile, tablet and desktop sizes, and puts your window back exactly as it was.
 - **Track each comment.** Every comment is Open, Fixed or Won't fix, and the report filters by status as well as severity.
 - **Verify fixes in one pass.** Verify this page rechecks every comment on the open page, then walks you through before and after side by side. A pixel comparison hints at what changed.
 - **Export it your way.** Copy for Docs pastes into Google Docs with images and numbered lists intact. Word, HTML and PDF exports are one click away. Copy as Markdown suits GitHub, Slack and coding agents, and any single comment copies on its own.
