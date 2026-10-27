@@ -303,7 +303,8 @@ try {
     const report = await import('../../extension/lib/report-template.js');
     const share = await import('../../extension/lib/share-template.js');
     const file = await import('../../extension/lib/review-file.js');
-    const issues = window.__bag.issues;
+    const store = await import('../../extension/lib/store.js');
+    const issues = await store.hydrate(window.__bag.issues);
     const back = file.parseReviewFile(file.buildReviewFile({ name: 'Round trip' }, issues, {}));
     return {
       text: docs.buildDocsText(issues),
@@ -312,11 +313,13 @@ try {
       markdown: share.buildMarkdown(issues),
       rich: share.commentHtml(issues.find((i) => i.id === 'c3')),
       imported: (back.issues ?? []).map((i) => i.status).sort().join(','),
+      images: (back.issues ?? []).filter((i) => i.shot && i.detail).length,
     };
   })()`);
   check(/\*\*Major\*\*, Fixed/.test(exports.markdown), 'Markdown carries the status');
   check(exports.rich.includes('Nit, Won&#39;t fix') || exports.rich.includes("Nit, Won't fix"), 'rich text copy carries the status');
   check(exports.imported === 'fixed,open,open,wontfix', `review file keeps statuses (${exports.imported})`);
+  check(exports.images === 4, `review file carries the images of every comment, read back from their own keys (${exports.images} of 4)`);
   check(/\[Major, Fixed\] Audit button/.test(exports.text), 'Docs text carries the status');
   check(exports.docs.includes(">Won't fix</td>") && exports.docs.includes('>Fixed</td>'), 'Docs and Word table carries the status');
   check(exports.html.includes('data-status="fixed"') && exports.html.includes('data-status-filter="wontfix"'), 'HTML file carries status and its filter');

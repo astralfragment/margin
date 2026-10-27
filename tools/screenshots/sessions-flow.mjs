@@ -536,7 +536,7 @@ try {
   await size(344, 600);
   await click('.pop-row.undo button');
   await until(`window.__bag.issues.length === 8 && !document.querySelector('.pop-row.undo')`);
-  check((await evaluate(`window.__bag.issues[2].id`)) === 'c3' && Boolean(await evaluate(`window.__bag['raw:c3']`)), 'Undo puts the comment and its screenshot back in place');
+  check((await evaluate(`window.__bag.issues[2].id`)) === 'c3' && Boolean(await evaluate(`window.__bag['raw:c3'] && window.__bag['img:c3']?.shot`)), 'Undo puts the comment, its images and its screenshot back in place');
 
   await click('[data-edit-links]');
   await until(`document.querySelector('[data-session-name]')`);
@@ -617,17 +617,19 @@ try {
   const trip = await evaluate(`(async () => {
     const file = await import('../../extension/lib/review-file.js');
     const group = { ...window.__bag.groups[0], figma: { ...window.__bag.groups[0].figma, url: 'javascript:alert(1)', frames: Array.from({ length: 400 }, (_, i) => ({ id: '1:' + i, name: 'F' + i, page: 'P' })) } };
-    const text = file.buildReviewFile(group, window.__bag.issues, {});
+    const store = await import('../../extension/lib/store.js');
+    const text = file.buildReviewFile(group, await store.hydrate(window.__bag.issues), {});
     const back = file.parseReviewFile(text);
     const res = await chrome.runtime.sendMessage({ type: 'importReview', contents: text });
     const imported = window.__bag.groups.find((g) => g.id === res.group.id);
     const active = await chrome.runtime.sendMessage({ type: 'activeReview' });
-    return { back: { jira: back.jira, figma: { ...back.figma, frames: back.figma.frames.length } }, imported: { jira: imported.jira?.key, summary: imported.jira?.summary, frames: imported.figma?.frames.length, url: imported.figma?.url }, active };
+    return { back: { jira: back.jira, figma: { ...back.figma, frames: back.figma.frames.length } }, imported: { jira: imported.jira?.key, summary: imported.jira?.summary, frames: imported.figma?.frames.length, url: imported.figma?.url }, active, opened: { count: window.__bag.issues.filter((i) => i.groupId === res.group.id).length, images: window.__bag.issues.filter((i) => i.groupId === res.group.id && window.__bag['img:' + i.id]?.shot && window.__bag['img:' + i.id]?.detail).length, inline: window.__bag.issues.filter((i) => 'shot' in i || 'detail' in i).length } };
   })()`);
   check(trip.back.jira.key === 'SS-112' && trip.back.jira.summary === 'Homepage rebuild QA' && trip.back.jira.url === `${JIRA_SITE}/browse/SS-112`, 'review file keeps the ticket');
   check(trip.back.figma.fileKey === 'AbCdEf123' && trip.back.figma.frames === 300 && trip.back.figma.url === '', 'review file keeps the file, caps frames at 300 and drops a non web link');
   check(trip.imported.jira === 'SS-112' && trip.imported.summary === 'Homepage rebuild QA' && trip.imported.frames === 300 && trip.imported.url === '', 'importing a review file restores its links');
   check(trip.active.id === 'g1' && trip.active.jira?.key === 'SS-112' && trip.active.name === 'Smart Spaces homepage QA', 'activeReview returns the raw active group');
+  check(trip.opened.count > 0 && trip.opened.images === trip.opened.count && trip.opened.inline === 0, `opening a review file writes each comment's images to its own key, none inline (${trip.opened.images} of ${trip.opened.count})`);
 } finally {
   await browser?.send('Browser.close').catch(() => {});
   const exited = new Promise((resolve) => (chrome.exitCode === null ? chrome.once('exit', resolve) : resolve()));

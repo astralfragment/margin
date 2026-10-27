@@ -286,8 +286,8 @@ async function start(seed, capture) {
   await sleep(400);
 }
 
-/** The stored issues, without their images. */
-const issues = () => evaluate(`window.__bag.issues.map(({ shot, detail, ...rest }) => ({ ...rest, hasShot: Boolean(shot) }))`);
+/** The stored issues, with whether each has a screenshot under its own image key and whether any image was left in the list. */
+const issues = () => evaluate(`window.__bag.issues.map((issue) => ({ ...issue, hasShot: Boolean(window.__bag['img:' + issue.id]?.shot), inline: 'shot' in issue || 'detail' in issue }))`);
 
 mkdirSync(WORK, { recursive: true });
 rmSync(OUT, { recursive: true, force: true });
@@ -450,7 +450,7 @@ try {
   check(saved?.marks.length === 2 && saved.marks.every((m) => m.note), `two markers with notes saved (${saved?.marks.length})`);
   check(saved?.figmaFrame?.nodeId === '12:1' && saved.figmaFrame.fileKey === 'mwtApSfmf8FTZP8MSwWc05' && saved.figmaFrame.name === 'Hero, desktop 1440', 'figmaFrame stored');
   check(saved?.links.includes('https://www.figma.com/design/mwtApSfmf8FTZP8MSwWc05/?node-id=12-1'), 'frame URL added to links');
-  check(saved?.hasShot === true, 'screenshot stored');
+  check(saved?.hasShot === true && saved.inline === false, 'screenshot stored under its own image key, not in the list');
   const figma = await evaluate(`import('/__margin/extension/lib/figma.js').then((m) => m.figmaTargets(window.__bag.issues.find((i) => i.title === 'Hero thumbnails look like decoration')))`);
   check(figma.targets[0]?.nodeId === '12:1', 'Post to Figma reads the frame from the links');
   check((await evaluate(`${sh('[data-count]')}.textContent`)) === '4 comments', 'count goes up after save');

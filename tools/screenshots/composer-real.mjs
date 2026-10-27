@@ -161,14 +161,14 @@ try {
     const issue = (b.issues ?? [])[0];
     if (!issue) return null;
     return { title: issue.title, severity: issue.severity, marks: issue.marks?.length, markNote: issue.marks?.[0]?.note,
-      shot: /^data:image\\/jpeg;base64,/.test(issue.shot ?? ''), detail: /^data:image\\/jpeg;base64,/.test(issue.detail ?? ''),
+      shot: /^data:image\\/jpeg;base64,/.test(b['img:' + issue.id]?.shot ?? ''), detail: /^data:image\\/jpeg;base64,/.test(b['img:' + issue.id]?.detail ?? ''), inline: 'shot' in issue || 'detail' in issue,
       raw: Boolean(b['raw:' + issue.id]), groupId: issue.groupId, page: issue.page?.url };
   })`);
   console.log(`  stored ${JSON.stringify(saved)}`);
   check(saved?.title === 'Hero thumbnails look like decoration', 'title saved');
   check(saved?.severity === 'major', 'key 2 saved Major');
   check(saved?.marks === 1 && saved.markNote === 'No arrow hints at more projects', 'marker with its note saved');
-  check(saved?.shot && saved.detail && saved.raw, 'screenshots and the clean capture stored');
+  check(saved?.shot && saved.detail && saved.raw && !saved.inline, 'screenshots stored under their own image key, and the clean capture stored');
   const { data: after } = await send('Page.captureScreenshot', { format: 'png' }, tab);
   writeFileSync(join(OUT, '16-real-extension-saved.png'), Buffer.from(after, 'base64'));
   console.log('  15-real-extension-card.png, 16-real-extension-saved.png');
