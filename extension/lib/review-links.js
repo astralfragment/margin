@@ -15,7 +15,15 @@ const FRAME_TYPES = new Set(['FRAME', 'COMPONENT', 'COMPONENT_SET', 'SECTION']);
 const STALE_AFTER = 5 * 60_000;
 
 /**
- * Reads a Jira key out of a bare key or an issue link.
+ * Adds https:// to a link pasted without it, such as smartspaces.atlassian.net/browse/SS-112.
+ * @param {string} text What was pasted, already trimmed.
+ */
+function withProtocol(text) {
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)+\//i.test(text) ? `https://${text}` : text;
+}
+
+/**
+ * Reads a Jira key out of a bare key, an issue link, or text that holds a key, such as "[SS-112] Homepage rebuild QA".
  * @param {string} text What was typed or pasted.
  * @returns {{ key: string, site: string | null } | null} The key, and the site origin when a link named one.
  */
@@ -25,12 +33,14 @@ export function parseJiraInput(text) {
   if (JIRA_KEY.test(raw.toUpperCase())) return { key: raw.toUpperCase(), site: null };
   let url;
   try {
-    url = new URL(raw);
+    url = new URL(withProtocol(raw));
   } catch {
-    return null;
+    const key = raw.match(/(?:^|[^A-Za-z0-9_-])([A-Z][A-Z0-9_]*-\d+)(?![\w-])/)?.[1];
+    return key ? { key, site: null } : null;
   }
   if (!['http:', 'https:'].includes(url.protocol)) return null;
-  const key = (url.pathname.match(/\/browse\/([A-Za-z][A-Za-z0-9_]*-\d+)/)?.[1] ?? url.searchParams.get('selectedIssue') ?? '').toUpperCase();
+  const inPath = url.pathname.match(/\/(?:browse|issues)\/([A-Za-z][A-Za-z0-9_]*-\d+)/)?.[1];
+  const key = (inPath ?? url.searchParams.get('selectedIssue') ?? '').toUpperCase();
   return JIRA_KEY.test(key) ? { key, site: url.origin } : null;
 }
 
@@ -40,7 +50,7 @@ export function parseJiraInput(text) {
  * @returns {{ fileKey: string, url: string, name: string } | null} The file, or null when it is not a Figma file link.
  */
 export function parseFigmaInput(text) {
-  const parsed = parseFigmaLink(String(text ?? '').trim());
+  const parsed = parseFigmaLink(withProtocol(String(text ?? '').trim()));
   if (!parsed) return null;
   const url = new URL(parsed.url);
   const parts = url.pathname.split('/').filter(Boolean);
@@ -135,18 +145,20 @@ function sameOrigin(a, b) {
  * Looks up a pasted Jira key or link. Without a Jira connection it keeps what the text gives,
  * with a link built from the site in the text or the site used last for Send to Jira.
  * @param {string} text What was typed or pasted.
- * @returns {Promise<{ state: 'ok' | 'notConnected' | 'notFound' | 'noAccess' | 'invalid' | 'error', jira?: object, message?: string }>} The outcome.
+ * A link to a site that is not connected comes back as otherSite. The site in a pasted link is remembered for bare keys.
+ * @returns {Promise<{ state: 'ok' | 'notConnected' | 'notFound' | 'noAccess' | 'otherSite' | 'invalid' | 'error', jira?: object, site?: string, message?: string }>} The outcome.
  */
 export async function lookUpJira(text) {
   const parsed = parseJiraInput(text);
   if (!parsed) return { state: 'invalid' };
   const current = await connection('jira');
+  if (parsed.site) await chrome.storage.local.set({ [SITE_KEY]: parsed.site });
   const stored = (await chrome.storage.local.get(SITE_KEY))[SITE_KEY];
   const site = parsed.site ?? current?.sites?.[0]?.url ?? stored ?? null;
   const plain = { key: parsed.key, url: site ? `${site}/browse/${parsed.key}` : '' };
   if (!current?.sites?.length) return { state: 'notConnected', jira: plain };
   const sites = parsed.site ? current.sites.filter((s) => sameOrigin(s.url, parsed.site)) : current.sites;
-  if (!sites.length) return { state: 'noAccess', jira: plain };
+  if (!sites.length) return { state: 'otherSite', jira: plain, site: new URL(parsed.site).host };
   let denied = false;
   for (const candidate of sites) {
     let res;
