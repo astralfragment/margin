@@ -29,7 +29,7 @@ export const PROVIDERS = {
     name: 'Figma',
     clientId: 'sUWE6I43tQ1EEtbX7W5QRe',
     origins: ['https://api.figma.com/*'],
-    scopes: ['file_comments:write', 'current_user:read'],
+    scopes: ['file_comments:write', 'current_user:read', 'file_content:read'],
     authorize: (p) =>
       `https://www.figma.com/oauth?${new URLSearchParams({
         client_id: p.clientId,

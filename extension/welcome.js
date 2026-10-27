@@ -2,12 +2,14 @@ import { applyTheme } from './lib/theme.js';
 
 applyTheme();
 const command = (await chrome.commands.getAll()).find((c) => c.name === 'toggle-annotate');
-const shortcut = command?.shortcut || 'the shortcut you set in Chrome';
+const shortcut = command?.shortcut
+  ? `After that, ${command.shortcut} starts and stops annotating.`
+  : 'You can set a shortcut for starting and stopping in Help and settings.';
 
 const STEPS = [
   {
-    title: 'Start annotating',
-    body: `Open the page you are reviewing, then click the Margin icon or press ${shortcut}. A sheet covers the page and the bar at the top shows you are reviewing. Esc stops.`,
+    title: 'Start a review',
+    body: `Open the page you are reviewing and click the Margin icon. Name the review, link the Jira ticket or Figma file if you have them, and start. A sheet covers the page and the bar at the top shows you are reviewing. Esc stops. ${shortcut}`,
   },
   {
     title: 'Drag over what looks wrong',
@@ -27,7 +29,7 @@ const STEPS = [
   },
   {
     title: 'Hand it over',
-    body: 'Copy the review for Docs, or download a Word or HTML file. Numbered notes come out as a numbered list. Recheck a comment after the fix to show it before and after.',
+    body: 'Copy the review for Docs, or download a Word or HTML file. Numbered notes come out as a numbered list. Once the fixes land, click Recheck in the popup to show each comment before and after.',
   },
 ];
 

@@ -5,6 +5,7 @@
 (() => {
   const clone = (value) => (value === undefined ? undefined : JSON.parse(JSON.stringify(value)));
   const bag = clone(window.__SEED) ?? {};
+  const session = {};
   const changeListeners = [];
   const messageListeners = [];
   const noopEvent = { addListener() {} };
@@ -33,6 +34,14 @@
           return JSON.stringify(bag).length;
         },
       },
+      session: {
+        async get(keys) {
+          return Object.fromEntries([].concat(keys).filter((k) => k in session).map((k) => [k, clone(session[k])]));
+        },
+        async set(values) {
+          Object.assign(session, clone(values));
+        },
+      },
       onChanged: { addListener: (fn) => changeListeners.push(fn) },
     },
     runtime: {
@@ -57,6 +66,9 @@
       async create() {},
       async update() {},
       captureVisibleTab: async () => window.__CAPTURE ?? blankCapture(),
+      onZoomChange: noopEvent,
+      onUpdated: noopEvent,
+      onRemoved: noopEvent,
     },
     scripting: {
       executeScript: async ({ func, args = [] }) => (func ? [{ result: await func(...args) }] : [{ result: undefined }]),

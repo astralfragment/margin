@@ -6,45 +6,38 @@
   <link rel="stylesheet" href="ui.css" />
 </head>
 <body class="app">
+  <a class="skip-link" href="#comments" data-skip>Skip to comments</a>
   <header class="topbar">
     <span class="brand">Margin</span>
     <select data-group aria-label="Review"></select>
-    <button class="icon-btn" type="button" data-rename-group title="Rename this review" aria-label="Rename this review">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L20 8l-4-4L4 16v4Z" /><path d="M14 6l4 4" /></svg>
-    </button>
-    <button class="icon-btn" type="button" data-new-group title="Start a new review" aria-label="Start a new review">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
-    </button>
+    <details class="menu review-menu">
+      <summary class="icon-btn" title="Review menu" aria-label="Review menu" data-review-menu-icon></summary>
+      <div class="menu-body" role="menu">
+        <button class="menu-item" type="button" role="menuitem" data-new-group>New review</button>
+        <button class="menu-item" type="button" role="menuitem" data-edit-links>Edit name and links</button>
+        <div class="menu-sep" data-delete-sep></div>
+        <button class="menu-item danger" type="button" role="menuitem" data-delete-group>Delete review</button>
+      </div>
+    </details>
+    <span class="link-chips" data-link-chips></span>
 
     <span class="spacer"></span>
-    <button class="btn" type="button" data-verify title="Recheck every comment on the page you last opened Margin on">Verify this page</button>
-    <button class="btn" type="button" data-edit>Edit comments</button>
+    <button class="btn wide-only" type="button" data-verify title="Recheck every comment on the page you last opened Margin on">Recheck this page</button>
+    <button class="btn wide-only" type="button" data-edit>Edit comments</button>
     <button class="btn action" type="button" data-copy>Copy for Docs</button>
 
     <details class="menu">
       <summary class="btn" aria-label="More actions">More</summary>
       <div class="menu-body">
+        <button class="menu-item narrow-only" type="button" data-proxy="[data-verify]">Recheck this page</button>
+        <button class="menu-item narrow-only" type="button" data-proxy="[data-edit]">Edit comments</button>
+        <div class="menu-sep narrow-only"></div>
         <span class="menu-label">Export</span>
-        <label class="menu-field">
-          Screenshots
-          <select data-shots aria-label="Screenshots to include">
-            <option value="both">Both images</option>
-            <option value="detail">Marked region only</option>
-            <option value="viewport">Full viewport only</option>
-          </select>
-        </label>
-        <label class="menu-field">
-          Mobile, tablet and desktop
-          <select data-widths aria-label="Mobile, tablet and desktop screenshots">
-            <option value="show">Include</option>
-            <option value="hide">Leave out</option>
-          </select>
-        </label>
-        <button class="menu-item" type="button" data-fields>Fields shown</button>
-        <button class="menu-item" type="button" data-doc>Word file</button>
+        <button class="menu-item" type="button" data-doc>Word compatible file (.doc)</button>
         <button class="menu-item" type="button" data-download>HTML file</button>
         <button class="menu-item" type="button" data-print>Print</button>
         <button class="menu-item" type="button" data-markdown>Copy as Markdown</button>
+        <button class="menu-item" type="button" data-fields>Export settings</button>
         <div class="menu-sep"></div>
         <span class="menu-label">Share</span>
         <button class="menu-item" type="button" data-save-review>Save review file</button>
@@ -52,8 +45,8 @@
         <input type="file" accept=".json,application/json" data-review-input hidden />
         <div class="menu-sep"></div>
         <span class="menu-label">Send</span>
-        <button class="menu-item" type="button" data-send-jira>Jira issues</button>
-        <button class="menu-item" type="button" data-send-figma>Figma comments</button>
+        <button class="menu-item" type="button" data-send-jira>Send to Jira</button>
+        <button class="menu-item" type="button" data-send-figma>Send to Figma</button>
         <div class="menu-sep"></div>
         <span class="menu-label">Images</span>
         <button class="menu-item" type="button" data-recrop>Redo crops</button>
@@ -69,10 +62,14 @@
     <aside class="sidebar">
       <div class="sidebar-head">
         <input type="search" data-find placeholder="Search comments" aria-label="Search comments" />
+        <div class="seg sort" role="group" aria-label="Sort comments">
+          <button class="seg-btn" type="button" data-sort="severity" aria-pressed="true">By severity</button>
+          <button class="seg-btn" type="button" data-sort="number" aria-pressed="false">By number</button>
+        </div>
       </div>
       <div class="sidebar-filters" data-filters></div>
       <div class="sidebar-filters" data-status-filters></div>
-      <nav class="index" data-index aria-label="Comments"></nav>
+      <nav class="index" id="comments" data-index aria-label="Comments" tabindex="-1"></nav>
       <div class="sidebar-foot" data-index-foot></div>
     </aside>
 
@@ -96,24 +93,52 @@
 
   <dialog class="sheet wide verify" data-verify-dialog aria-labelledby="verify-title">
     <header>
-      <h1 id="verify-title">Verify fixes</h1>
+      <h1 id="verify-title">Recheck fixes</h1>
       <span class="state" data-verify-state></span>
     </header>
     <div class="sheet-body" data-verify-body></div>
     <footer data-verify-foot></footer>
   </dialog>
 
-  <dialog class="sheet" data-fields-dialog>
+  <dialog class="sheet" data-fields-dialog aria-labelledby="fields-title">
     <header>
-      <h1>Fields shown</h1>
-      <span class="state">Applies to the report, the copy and both exports</span>
+      <h1 id="fields-title">Export settings</h1>
+      <span class="state">Applies to the report, the copies and every export</span>
     </header>
-    <div class="sheet-body" data-fields-body></div>
+    <div class="sheet-body">
+      <div class="grid-2">
+        <div class="field"><label for="set-shots">Screenshots</label>
+          <select id="set-shots" data-shots>
+            <option value="both">Both images</option>
+            <option value="detail">Marked region only</option>
+            <option value="viewport">Full viewport only</option>
+          </select>
+        </div>
+        <div class="field"><label for="set-widths">Mobile, tablet and desktop</label>
+          <select id="set-widths" data-widths>
+            <option value="show">Include</option>
+            <option value="hide">Leave out</option>
+          </select>
+        </div>
+      </div>
+      <span class="menu-label">Details under each comment</span>
+      <div class="fields-grid" data-fields-body></div>
+    </div>
     <footer>
       <button class="btn" type="button" data-fields-cancel>Cancel</button>
       <button class="btn primary" type="button" data-fields-save>Save</button>
     </footer>
   </dialog>
+
+  <dialog class="sheet session-dialog" data-session-dialog aria-label="Review"></dialog>
+
+  <dialog class="sheet confirm" data-confirm-dialog aria-labelledby="confirm-title">
+    <header><h1 id="confirm-title" data-confirm-title></h1></header>
+    <div class="sheet-body"><p class="hint" data-confirm-body></p></div>
+    <footer data-confirm-foot></footer>
+  </dialog>
+
+  <div class="toast" data-toast role="status" aria-live="polite" hidden></div>
 
   <dialog class="sheet" data-jira-dialog>
     <header>
@@ -150,27 +175,31 @@
         <button class="seg-btn" type="button" data-tool="box" aria-pressed="false" title="Box (B)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="1.5" /></svg><span>Box</span></button>
         <button class="seg-btn" type="button" data-tool="arrow" aria-pressed="false" title="Arrow (A)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19L19 5M10 5h9v9" /></svg><span>Arrow</span></button>
       </div>
+      <div class="seg" role="group" aria-label="History">
+        <button class="seg-btn" type="button" data-history="undo" title="Undo (Ctrl+Z)" aria-label="Undo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 0 12h-3" /></svg><span>Undo</span></button>
+        <button class="seg-btn" type="button" data-history="redo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5" /><path d="M20 9H10a6 6 0 0 0 0 12h3" /></svg><span>Redo</span></button>
+      </div>
       <div class="seg" role="group" aria-label="Zoom">
         <button class="seg-btn" type="button" data-zoom="out" title="Zoom out (-)" aria-label="Zoom out">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 12h12" /></svg>
         </button>
+        <span class="seg-readout" data-editor-zoom aria-live="polite"></span>
         <button class="seg-btn" type="button" data-zoom="fit" aria-pressed="true" title="Fit to window (0)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg><span>Fit</span></button>
         <button class="seg-btn" type="button" data-zoom="actual" aria-pressed="false" title="Actual size (1)">100%</button>
         <button class="seg-btn" type="button" data-zoom="in" title="Zoom in (+)" aria-label="Zoom in">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 6v12M6 12h12" /></svg>
         </button>
       </div>
-      <span class="state" data-editor-zoom></span>
     </header>
     <div class="editor-body">
-      <div class="editor-canvas" data-editor-canvas data-tool="select">
+      <div class="editor-canvas" data-editor-canvas data-tool="select" tabindex="-1">
         <div class="editor-stage" data-editor-stage>
           <img data-editor-img alt="Screenshot being annotated" draggable="false" />
           <svg data-editor-svg aria-label="Annotations"></svg>
         </div>
       </div>
       <aside class="editor-side">
-        <p class="hint">Right-click a number to remove it. Right-click a box, an arrow, the region or empty space for more actions. Double-click an item to write its note.</p>
+        <p class="hint">Right-click a number, a box, an arrow, the region or empty space for its actions. Double-click an item to write its note. Delete removes the selected item.</p>
         <p class="hint" data-editor-empty>Pick Marker, Box or Arrow, then click or drag on the image. Each one gets a number and a note, and the notes export as a numbered list.</p>
         <ol class="editor-list" data-editor-list></ol>
       </aside>

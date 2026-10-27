@@ -12,7 +12,11 @@ import {
   issuesInGroup,
   readRaw,
   writeRaw,
+  readImages,
+  writeImages,
   writeIssues,
+  hydrate,
+  migrateImages,
 } from './lib/store.js';
 import { parseReviewFile } from './lib/review-file.js';
 import { WIDTHS, widthShots } from './lib/widths.js';
@@ -35,8 +39,157 @@ async function toggleTab(tab) {
   const res = await chrome.tabs.sendMessage(tab.id, {
     type: 'toggle',
     groupName: (await activeGroup()).name,
+    zoom: await chrome.tabs.getZoom(tab.id).catch(() => 1),
   });
   return res?.active === true;
+}
+
+chrome.tabs.onZoomChange.addListener(({ tabId, newZoomFactor }) => {
+  chrome.tabs.sendMessage(tabId, { type: 'zoom', zoom: newZoomFactor }).catch(() => {});
+});
+
+const LIVE_KEY = 'annotatingTabs';
+const NOTICE_KEY = 'annotatingNotices';
+let liveChain = Promise.resolve();
+
+/**
+ * Changes the session record of tabs that are annotating, one change at a time.
+ * @param {(bag: {tabs: number[], notices: object}) => void} change Edits the tab ids and the notices in place.
+ */
+function editLive(change) {
+  liveChain = liveChain
+    .then(async () => {
+      const bag = await chrome.storage.session.get([LIVE_KEY, NOTICE_KEY]);
+      const next = { tabs: bag[LIVE_KEY] ?? [], notices: bag[NOTICE_KEY] ?? {} };
+      change(next);
+      await chrome.storage.session.set({ [LIVE_KEY]: [...new Set(next.tabs)], [NOTICE_KEY]: next.notices });
+    })
+    .catch(() => {});
+  return liveChain;
+}
+
+/**
+ * Remembers whether a tab is annotating, so annotation comes back on after the tab loads a new page.
+ * @param {number} tabId The tab.
+ * @param {boolean} on Whether the reviewer has annotation on in it.
+ */
+function markTab(tabId, on) {
+  return editLive((bag) => {
+    bag.tabs = on ? [...bag.tabs, tabId] : bag.tabs.filter((id) => id !== tabId);
+    if (!on) delete bag.notices[tabId];
+  });
+}
+
+/**
+ * Turns annotation back on in a tab that just loaded a page while the reviewer had it on, with any note about a
+ * comment kept from the page before. A page Margin cannot reach ends the run for that tab.
+ * @param {number} tabId The tab.
+ * @param {chrome.tabs.TabChangeInfo} info What changed.
+ * @param {chrome.tabs.Tab} tab The tab.
+ */
+async function resumeTab(tabId, info, tab) {
+  if (info.status !== 'complete') return;
+  const bag = await chrome.storage.session.get([LIVE_KEY, NOTICE_KEY]).catch(() => ({}));
+  if (!(bag[LIVE_KEY] ?? []).includes(tabId)) return;
+  const notice = bag[NOTICE_KEY]?.[tabId] ?? '';
+  try {
+    await ensureContent(tab);
+    await chrome.tabs.sendMessage(tabId, {
+      type: 'start',
+      groupName: (await activeGroup()).name,
+      zoom: await chrome.tabs.getZoom(tabId).catch(() => 1),
+      notice,
+    });
+    if (notice) await editLive((next) => delete next.notices[tabId]);
+  } catch {
+    await markTab(tabId, false);
+  }
+}
+
+chrome.tabs.onUpdated.addListener(resumeTab);
+chrome.tabs.onRemoved.addListener((tabId) => markTab(tabId, false));
+
+const DRAFTS_KEY = 'drafts';
+const DRAFT_AGE = 24 * 60 * 60_000;
+let draftChain = Promise.resolve();
+
+/**
+ * Reads, changes and writes the open drafts, one change at a time. A draft is a capture whose card has not been
+ * saved yet. It lives outside the issue list, so the report, the counts and the exports never see it, while its
+ * images already sit under its own `img:<id>` and `raw:<id>` keys.
+ * @template T
+ * @param {(drafts: Record<string, object>) => T} change Edits the drafts by id in place and returns a result.
+ * @returns {Promise<T>}
+ */
+function editDrafts(change) {
+  const run = draftChain.then(async () => {
+    const drafts = (await chrome.storage.local.get(DRAFTS_KEY))[DRAFTS_KEY] ?? {};
+    const result = await change(drafts);
+    await chrome.storage.local.set({ [DRAFTS_KEY]: drafts });
+    return result;
+  });
+  draftChain = run.catch(() => {});
+  return run;
+}
+
+/**
+ * Clears out drafts older than `age`. Every draft counts as old when `age` is 0, as after a browser restart, when no
+ * card can still be open. A draft that already has a title, a note or markers is kept as a comment, so typed work is
+ * never lost. Only an empty draft is removed, with its images.
+ * @param {number} age The oldest a draft may be, in milliseconds.
+ */
+async function sweepDrafts(age) {
+  const stale = await editDrafts(async (drafts) => {
+    const removed = [];
+    for (const id of Object.keys(drafts).filter((key) => !age || Date.now() - Date.parse(drafts[key].createdAt) > age)) {
+      const draft = drafts[id];
+      if (draft.title?.trim() || draft.note?.trim() || draft.marks?.length) await addIssue({ ...draft, groupId: await liveGroupId(draft.groupId) });
+      else removed.push(id);
+      delete drafts[id];
+    }
+    return removed;
+  });
+  if (stale.length) await chrome.storage.local.remove(stale.flatMap((id) => [`img:${id}`, `raw:${id}`]));
+}
+
+/**
+ * The review a draft should be saved into: its own, or the active review when its own was deleted while the card was open.
+ * @param {string} groupId The draft's review id.
+ */
+async function liveGroupId(groupId) {
+  return (await readGroups()).some((group) => group.id === groupId) ? groupId : (await activeGroup()).id;
+}
+
+/**
+ * Moves a draft into the issue list with the card's fields, which makes it a comment. Returns false when there is no
+ * such draft, as for a comment that is already saved.
+ * @param {string} id The comment id.
+ * @param {object} patch The fields the card saved.
+ */
+async function promoteDraft(id, patch) {
+  return editDrafts(async (drafts) => {
+    if (!drafts[id]) return false;
+    await addIssue({ ...drafts[id], ...patch, groupId: await liveGroupId(drafts[id].groupId) });
+    delete drafts[id];
+    return true;
+  });
+}
+
+/**
+ * Changes a comment or an open draft. Width shots go to the comment's image key either way.
+ * @param {string} id The comment id.
+ * @param {object} patch Fields to change.
+ */
+async function patchAny(id, patch) {
+  const saved = await patchIssue(id, patch);
+  if (saved) return saved;
+  const { shots, ...fields } = patch;
+  if (shots !== undefined) await writeImages(id, { shots });
+  return editDrafts((drafts) => {
+    if (!drafts[id]) return null;
+    Object.assign(drafts[id], fields);
+    return { ...drafts[id], shots };
+  });
 }
 
 /**
@@ -44,7 +197,7 @@ async function toggleTab(tab) {
  * @param {chrome.tabs.Tab} tab The tab to prepare.
  */
 async function ensureContent(tab) {
-  if (/^(chrome|edge|about|devtools):|^https:\/\/chrome\.google\.com\/webstore/.test(tab.url ?? '')) {
+  if (/^(chrome|edge|about|devtools):|^https:\/\/chrome\.google\.com\/webstore|^https:\/\/chromewebstore\.google\.com/.test(tab.url ?? '')) {
     throw new Error('This page does not allow extensions to run.');
   }
   let ready = false;
@@ -75,7 +228,11 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     else if (info.menuItemId === 'margin-report') await handlers.openReport();
     else if (info.menuItemId === 'margin-viewport' && tab?.id) {
       await ensureContent(tab);
-      await chrome.tabs.sendMessage(tab.id, { type: 'captureViewport', groupName: (await activeGroup()).name });
+      await chrome.tabs.sendMessage(tab.id, {
+        type: 'captureViewport',
+        groupName: (await activeGroup()).name,
+        zoom: await chrome.tabs.getZoom(tab.id).catch(() => 1),
+      });
     } else if (info.menuItemId === 'margin-widths' && tab?.id) {
       const res = await handlers.captureWidths({ page: true }, { tab }).catch((err) => ({ error: String(err.message ?? err) }));
       await chrome.tabs.sendMessage(tab.id, { type: 'toast', text: res.error ?? res.message });
@@ -266,8 +423,10 @@ function cropAround(bitmap, rect, scale) {
  */
 async function baseFor(issue) {
   const stored = await readRaw(issue.id);
-  if (stored || !issue.shot) return stored;
-  const raw = { src: issue.shot, hasBox: true };
+  if (stored) return stored;
+  const [{ shot }] = await hydrate([issue]);
+  if (!shot) return null;
+  const raw = { src: shot, hasBox: true };
   await writeRaw(issue.id, raw);
   return raw;
 }
@@ -632,8 +791,12 @@ const handlers = {
     return { active: await toggleTab(tab) };
   },
 
+  /**
+   * Stores a draft for a marked region, with its screenshots unless `skipShot` asks to save it without one.
+   * The draft becomes a comment when its card is saved.
+   */
   async capture(msg, sender) {
-    const { raw, shot, detail } = await captureShots(sender.tab, msg);
+    const { raw, shot, detail } = msg.skipShot ? { raw: null, shot: null, detail: null } : await captureShots(sender.tab, msg);
     const issue = {
       id: crypto.randomUUID(),
       groupId: (await activeGroup()).id,
@@ -648,24 +811,56 @@ const handlers = {
       element: msg.element,
       anchor: msg.anchor ?? null,
       rect: msg.rect,
-      shot,
-      detail,
     };
-    await writeRaw(issue.id, { src: raw, hasBox: false });
-    await addIssue(issue);
-    await refreshBadge();
+    if (raw) await writeRaw(issue.id, { src: raw, hasBox: false });
+    if (shot || detail) await writeImages(issue.id, { shot, detail });
+    await editDrafts((drafts) => {
+      drafts[issue.id] = issue;
+    });
+    sweepDrafts(DRAFT_AGE).catch(() => {});
     return { id: issue.id };
   },
 
+  /** Saves a card's fields. A draft becomes a comment here, at the end of the list. */
   async update(msg) {
-    await patchIssue(msg.id, msg.patch);
+    if (!(await promoteDraft(msg.id, msg.patch))) await patchIssue(msg.id, msg.patch);
     return { ok: true };
   },
 
+  /**
+   * Saves a card that was still open when its page went away: its fields, then its markers drawn into the images.
+   * The tab is told on its next page which comment was kept.
+   */
+  async keep(msg, sender) {
+    await handlers.update(msg);
+    if (msg.marks) await handlers.annotate({ id: msg.id, marks: msg.marks });
+    const tabId = sender.tab?.id;
+    if (tabId && msg.notice) await editLive((bag) => (bag.notices[tabId] = msg.notice));
+    return { ok: true };
+  },
+
+  /** Drops a draft or a comment, with its images. */
   async discard(msg) {
+    await editDrafts((drafts) => {
+      delete drafts[msg.id];
+    });
     await removeIssue(msg.id);
     await refreshBadge();
     return { ok: true };
+  },
+
+  /** Records that annotation went on or off in the sender's tab. */
+  async annotating(msg, sender) {
+    if (sender.tab?.id) await markTab(sender.tab.id, msg.active === true);
+    return { ok: true };
+  },
+
+  /** One saved comment's fields for editing on the page, without images, and whether it has a screenshot. */
+  async comment(msg) {
+    const issue = (await readIssues()).find((i) => i.id === msg.id);
+    if (!issue) return { error: 'Comment not found' };
+    const images = await readImages(issue.id);
+    return { ...issue, hasShot: Boolean(images.shot || (await readRaw(issue.id))) };
   },
 
   async openReport() {
@@ -713,7 +908,8 @@ const handlers = {
     if (widthsBusy) return { error: 'Already capturing at three widths' };
     if (verifyRun) return { error: 'Wait for the check that is running to finish' };
     const group = await activeGroup();
-    const issues = (await readIssues()).filter((issue) =>
+    const drafts = msg.page ? [] : Object.values((await chrome.storage.local.get(DRAFTS_KEY))[DRAFTS_KEY] ?? {});
+    const issues = [...(await readIssues()), ...drafts].filter((issue) =>
       msg.page ? issue.groupId === group.id && samePage(tab.url, issue.page?.url) : msg.ids?.includes(issue.id),
     );
     if (!issues.length) return { error: msg.page ? 'No comments on this page in the current review' : 'Comment not found' };
@@ -723,7 +919,7 @@ const handlers = {
       const shots = await captureWidths(tab, issues);
       const takenAt = new Date().toISOString();
       const saved = [];
-      for (const issue of issues) saved.push(await patchIssue(issue.id, { shots: shots[issue.id], shotsAt: takenAt }));
+      for (const issue of issues) saved.push(await patchAny(issue.id, { shots: shots[issue.id], shotsAt: takenAt }));
       return { message: widthsMessage(saved) };
     } catch (err) {
       return { error: `Capture at three widths stopped, and the window was put back. ${String(err.message ?? err)}` };
@@ -738,12 +934,18 @@ const handlers = {
     if (parsed.error) return { error: parsed.error };
     const previous = await activeGroup();
     const group = await addGroup(`${parsed.name} (imported)`);
+    if (parsed.jira || parsed.figma) await patchGroup(group.id, { jira: parsed.jira, figma: parsed.figma });
     await setActiveGroup(previous.id);
     const added = parsed.issues.map(({ raw, ...issue }) => ({ ...issue, id: crypto.randomUUID(), groupId: group.id, raw }));
     for (const { id, raw } of added) if (raw) await writeRaw(id, raw);
     await writeIssues([...(await readIssues()), ...added.map(({ raw, ...issue }) => issue)]);
     await refreshBadge();
     return { group, count: added.length };
+  },
+
+  /** The review new comments go to, as stored, with its linked ticket and file. */
+  async activeReview() {
+    return activeGroup();
   },
 
   /** The base screenshot the image editor draws on, and whether its region can still move. */
@@ -757,8 +959,9 @@ const handlers = {
 
   /**
    * Saves the image editor's annotations and region, then redraws both images.
-   * The region stays put on comments whose base screenshot already shows it.
-   * Moving the region drops the recheck image and the width shots, which were cut at the old region, and moves the anchor with it.
+   * The region stays put on comments whose base screenshot already shows it, and the anchor moves with the region.
+   * The recheck image and the width shots were cut at the old region. They are kept while the editor is open, so Undo
+   * can still put the region back, and are dropped only when the editor closes with the region moved and sends `drop`.
    */
   async annotate(msg) {
     const issue = (await readIssues()).find((i) => i.id === msg.id);
@@ -770,11 +973,9 @@ const handlers = {
     const bitmap = await decode(raw.src);
     const images = await renderImages(bitmap, { ...issue, rect, marks });
     bitmap.close();
-    const regionMoved = JSON.stringify(rect) !== JSON.stringify(issue.rect);
-    const moved = regionMoved
-      ? { after: null, checkedAt: null, change: null, shots: null, shotsAt: null, anchor: rebaseAnchor(issue.anchor, issue.rect, rect) }
-      : {};
-    await patchIssue(issue.id, { rect, marks, ...images, ...moved });
+    const moved = JSON.stringify(rect) !== JSON.stringify(issue.rect) ? { anchor: rebaseAnchor(issue.anchor, issue.rect, rect) } : {};
+    const dropped = msg.drop && !raw.hasBox ? { after: null, checkedAt: null, change: null, shots: null, shotsAt: null } : {};
+    await patchIssue(issue.id, { rect, marks, ...images, ...moved, ...dropped });
     return images;
   },
 
@@ -869,12 +1070,14 @@ const handlers = {
   /**
    * Starts rechecking every comment in a group whose page is open. From the popup that is the active tab.
    * From the report it is the most recent tab in the window that Margin may capture, since Chrome only
-   * shows the address of tabs Margin was opened on. Replies at once, and the run reports through storage.
+   * shows the address of tabs Margin was opened on. `ids` limits the run to some comments, as when checking the
+   * ones a stopped run did not reach. Replies at once, and the run reports through storage.
+   * With `width`, only comments captured at that width are rechecked, since others would be cut from the wrong layout.
    */
   async verifyStart(msg, sender) {
     if (verifyRun) return { error: 'A check is already running' };
     if (widthsBusy) return { error: 'Wait for the capture at three widths to finish' };
-    const issues = await issuesInGroup(msg.groupId);
+    const issues = (await issuesInGroup(msg.groupId)).filter((issue) => !msg.width || !issue.viewport?.width || issue.viewport.width === msg.width);
     const report = sender.tab?.url?.startsWith(chrome.runtime.getURL('')) ? sender.tab : null;
     const candidates = report
       ? (await chrome.tabs.query({ windowId: report.windowId })).filter((t) => t.id !== report.id)
@@ -883,7 +1086,8 @@ const handlers = {
       .filter((t) => t.id && issues.some((issue) => samePage(t.url, issue.page?.url)))
       .sort((a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0))[0];
     if (!tab) return { error: 'noTab' };
-    const targets = issues.filter((issue) => samePage(tab.url, issue.page?.url));
+    const targets = issues.filter((issue) => samePage(tab.url, issue.page?.url) && (!msg.ids?.length || msg.ids.includes(issue.id)));
+    if (!targets.length) return { error: 'Nothing left to check on this page' };
     verifyRun = { cancelled: false };
     runVerify(verifyRun, tab, targets, msg.groupId, report);
     return { started: true, total: targets.length };
@@ -893,6 +1097,34 @@ const handlers = {
   async verifyCancel() {
     if (verifyRun) verifyRun.cancelled = true;
     return { ok: true };
+  },
+
+  /**
+   * The active review's comments made on one page, without their images, numbered in the order they were made,
+   * plus how many comments the review holds. The overlay draws these as flags.
+   */
+  async pageComments(msg, sender) {
+    const group = await activeGroup();
+    const issues = await issuesInGroup(group.id);
+    const url = msg.url ?? sender.tab?.url;
+    return {
+      total: issues.length,
+      comments: issues
+        .map((issue, index) => ({ issue, n: index + 1 }))
+        .filter(({ issue }) => samePage(url, issue.page?.url))
+        .map(({ issue, n }) => ({
+          id: issue.id,
+          n,
+          title: issue.title,
+          note: (issue.note ?? '').trim().split('\n')[0].slice(0, 160),
+          severity: issue.severity,
+          status: issue.status,
+          rect: issue.rect,
+          anchor: issue.anchor ?? null,
+          viewport: issue.viewport,
+          frame: issue.figmaFrame?.name ?? '',
+        })),
+    };
   },
 };
 
@@ -1095,10 +1327,29 @@ async function migrateOrphans() {
 /** Storage keys left by the Fragment integration, which has been removed. */
 const RETIRED_KEYS = ['fragment', 'fragmentOutbox', 'fragmentStatus'];
 
+let migration = null;
+
+/**
+ * Moves images out of the comment list, once per worker start. It runs when the worker starts for any reason,
+ * so a migration cut short by a stopped worker carries on at the next start, and returns at once when there is nothing to move.
+ */
+function migrateOnce() {
+  migration ??= migrateImages().catch((err) => {
+    console.error('Margin: image migration stopped, it will run again on the next start', err);
+    migration = null;
+    return false;
+  });
+  return migration;
+}
+
+migrateOnce();
+
 async function boot() {
+  await migrateOnce();
   await createMenus();
   await chrome.storage.local.remove(RETIRED_KEYS);
   await migrateOrphans();
+  await sweepDrafts(0);
   await refreshBadge();
 }
 

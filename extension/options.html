@@ -58,26 +58,33 @@
         <b>Stored on this computer</b>
         <span class="hint" data-storage>Checking</span>
       </span>
-      <button class="btn" type="button" data-report>Open the report</button>
+      <button class="btn" type="button" data-report>See reviews</button>
     </div>
   </section>
 
   <section class="card" aria-labelledby="connections-title">
     <h2 id="connections-title">Connections</h2>
     <p class="hint">Connect once to send a review to Jira or Figma. Margin only asks for access to a service when you connect it, and Disconnect takes that access back and forgets the sign-in.</p>
-    <div class="setting" data-connection="jira">
+    <p class="note" role="status" data-return hidden></p>
+    <div class="setting" id="connect-jira" data-connection="jira">
       <span>
         <b>Jira</b>
         <span class="hint" data-connection-state>Checking</span>
       </span>
-      <button class="btn" type="button" data-connection-toggle>Connect</button>
+      <span class="row">
+        <button class="btn ghost" type="button" data-connection-cancel hidden>Cancel</button>
+        <button class="btn" type="button" data-connection-toggle>Connect</button>
+      </span>
     </div>
-    <div class="setting" data-connection="figma">
+    <div class="setting" id="connect-figma" data-connection="figma">
       <span>
         <b>Figma</b>
         <span class="hint" data-connection-state>Checking</span>
       </span>
-      <button class="btn" type="button" data-connection-toggle>Connect</button>
+      <span class="row">
+        <button class="btn ghost" type="button" data-connection-cancel hidden>Cancel</button>
+        <button class="btn" type="button" data-connection-toggle>Connect</button>
+      </span>
     </div>
   </section>
 

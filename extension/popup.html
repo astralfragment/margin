@@ -6,40 +6,76 @@
   <link rel="stylesheet" href="ui.css" />
 </head>
 <body class="popup">
-  <header>
-    <h1>Margin</h1>
-    <span class="count" data-count>0 comments</span>
-  </header>
+  <main class="pop-main" data-home hidden>
+    <header class="pop-head">
+      <span class="brand-mark" data-mark></span>
+      <details class="menu pop-picker" data-group>
+        <summary><b data-review-name></b><span data-picker-chevron></span></summary>
+        <div class="menu-body" role="menu" data-picker-list></div>
+      </details>
+      <span class="spacer"></span>
+      <details class="menu" data-more>
+        <summary class="icon-btn" title="Review menu" aria-label="Review menu" data-more-icon></summary>
+        <div class="menu-body" role="menu">
+          <button class="menu-item" type="button" role="menuitem" data-settings>Help and settings</button>
+          <button class="menu-item" type="button" role="menuitem" data-all>All reviews</button>
+          <button class="menu-item" type="button" role="menuitem" data-new-group>New review</button>
+          <button class="menu-item" type="button" role="menuitem" data-rename-group hidden>Rename review</button>
+          <button class="menu-item" type="button" role="menuitem" data-edit-links hidden>Edit links</button>
+          <div class="menu-sep" data-clear-sep hidden></div>
+          <button class="menu-item danger" type="button" role="menuitem" data-clear hidden>Delete review</button>
+        </div>
+      </details>
+    </header>
 
-  <label class="picker-label" for="review-picker">Review</label>
-  <div class="group">
-    <select id="review-picker" data-group></select>
-    <button class="icon-btn" type="button" data-rename-group title="Rename this review" aria-label="Rename this review">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L20 8l-4-4L4 16v4Z" /><path d="M14 6l4 4" /></svg>
-    </button>
-    <button class="icon-btn" type="button" data-new-group title="Start a new review" aria-label="Start a new review">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
-    </button>
-  </div>
+    <div class="pop-confirm" role="alertdialog" aria-labelledby="confirm-text" data-confirm hidden>
+      <p id="confirm-text" data-confirm-text></p>
+      <div class="row">
+        <button class="btn ghost sm" type="button" data-confirm-cancel>Cancel</button>
+        <button class="btn danger sm" type="button" data-confirm-delete>Delete review</button>
+      </div>
+    </div>
 
-  <button class="btn action" type="button" data-toggle>Start annotating</button>
+    <section class="pop-links" data-links hidden></section>
 
-  <div class="row" data-verify-row hidden>
-    <button class="btn grow" type="button" data-verify>Verify this page</button>
-    <button class="btn ghost" type="button" data-verify-cancel hidden>Cancel</button>
-  </div>
+    <div class="pop-empty" data-no-review hidden>
+      <div class="scene" aria-hidden="true">
+        <i class="scene-page"></i><i class="scene-logo"></i><i class="scene-nav n1"></i><i class="scene-nav n2"></i><i class="scene-nav n3"></i>
+        <i class="scene-h h1"></i><i class="scene-h h2"></i><i class="scene-line"></i><i class="scene-cta"></i><i class="scene-ghost"></i>
+        <i class="scene-img"></i><i class="scene-ink"></i><b class="scene-pin">1</b>
+      </div>
+      <p>No review on this site yet. Start one, then drag over anything that looks wrong.</p>
+      <p class="muted" data-active-elsewhere hidden></p>
+    </div>
 
-  <ul class="list" data-list></ul>
+    <div class="pop-start" data-start>
+      <button class="btn primary start" type="button" data-toggle><span data-toggle-label>Start annotating</span><span class="key-hint" data-shortcut></span></button>
+    </div>
 
-  <div class="row">
-    <button class="btn grow" type="button" data-report>Open report</button>
-    <button class="btn ghost danger" type="button" data-clear>Delete review</button>
-  </div>
+    <div class="link-error pop-alert" role="alert" data-restricted hidden>
+      <span data-alert-icon></span>
+      <span><b data-alert-title></b><span data-alert-text></span></span>
+    </div>
 
-  <p class="foot">
-    <span data-shortcut>Alt+Shift+A toggles annotation</span>
-    <button class="btn ghost sm" type="button" data-options>Help and settings</button>
-  </p>
+    <section class="pop-page" data-page hidden>
+      <div class="pop-bar" data-verify-row>
+        <b data-page-name></b><span class="muted" data-page-count></span>
+        <span class="spacer"></span>
+        <button class="btn ghost sm" type="button" data-verify-cancel hidden>Cancel</button>
+        <button class="btn sm" type="button" data-verify hidden></button>
+      </div>
+      <p class="pop-hint" data-width-hint hidden></p>
+      <ul class="pop-rows" data-list></ul>
+      <div data-folds></div>
+    </section>
+
+    <footer class="pop-foot">
+      <button class="btn grow" type="button" data-report>Open report</button>
+      <button class="icon-btn lg" type="button" data-options title="Help and settings" aria-label="Help and settings"></button>
+    </footer>
+  </main>
+
+  <div data-sheet hidden></div>
 
   <script type="module" src="popup.js"></script>
 </body>

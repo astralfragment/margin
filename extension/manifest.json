@@ -18,6 +18,12 @@
     "https://*.atlassian.net/*"
   ],
   "options_page": "options.html",
+  "web_accessible_resources": [
+    {
+      "resources": ["fonts/*.woff2", "icons/ui/*.svg"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"
