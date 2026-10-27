@@ -579,6 +579,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { border-color
 .link-line span { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .link-sub { display: flex; gap: 6px; min-width: 0; font-size: 12px; line-height: 16px; color: var(--muted-foreground); white-space: nowrap; }
 .link-sub.wrap { white-space: normal; color: var(--foreground); }
+.link-sub.wrap .text-link { color: inherit; text-align: left; }
 .link-sub > span { overflow: hidden; text-overflow: ellipsis; }
 .link-row .btn.ghost { color: var(--foreground); }
 .link-row.is-error { background: var(--destructive-tint); border-color: transparent; border-left: 3px solid var(--destructive); }

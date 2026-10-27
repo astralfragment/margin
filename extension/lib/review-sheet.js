@@ -236,7 +236,7 @@ export async function mountReviewSheet(host, { mode = 'new', group = null, name 
     }
     if (field.status === 'noAccess' || field.status === 'otherSite') {
       const message = field.status === 'noAccess' ? esc(copy.noAccess(v)) : `${esc(copy.otherSite(v, field.site))} <button class="text-link" type="button" data-connect>Connect it in Help and settings</button>`;
-      return `<div class="link-row is-error" role="alert">${icon('alert')}<div class="link-text"><div class="link-line">${title(copy.title(v))}</div><div class="link-sub wrap">${message}</div></div><button class="btn ghost" type="button" data-remove>Remove link</button></div>`;
+      return `<div class="link-row is-error" role="alert">${icon('alert')}<div class="link-text"><div class="link-line">${title(copy.title(v))}</div><div class="link-sub wrap"><span>${message}</span></div></div><button class="btn ghost" type="button" data-remove>Remove link</button></div>`;
     }
     if (field.status === 'notConnected') {
       return `<div class="link-row">${mark}<div class="link-text"><div class="link-line">${title(copy.title(v))}</div><div class="link-sub"><button class="text-link" type="button" data-connect>Connect to bring in details</button></div></div><button class="icon-btn" type="button" data-remove title="Remove link" aria-label="Remove link">${icon('close')}</button></div>`;
