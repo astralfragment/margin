@@ -22,6 +22,7 @@ export async function tourOnce(name, steps) {
  * @property {string | (() => DOMRect | null)} target A selector, or a function that measures the spot to point at.
  * @property {string} title A short heading.
  * @property {string} body One or two sentences.
+ * @property {string} [over] A selector for the area the tip should sit over, so it leaves the controls beside the target clear.
  */
 
 /**
@@ -82,6 +83,8 @@ export function startTour(name, steps) {
       left = r.right + GAP;
       top = r.top;
     }
+    const area = live[index].over && document.querySelector(live[index].over)?.getBoundingClientRect();
+    if (area) left = Math.max(left, area.left + GAP);
     tip.style.left = `${Math.min(Math.max(EDGE, left), innerWidth - w - EDGE)}px`;
     tip.style.top = `${Math.min(Math.max(EDGE, top), innerHeight - h - EDGE)}px`;
   };

@@ -123,7 +123,7 @@ function commentBlocks(issue) {
     ...noteParagraphs(issue.note),
     ...markerBlocks(issue),
     ...(page ? para(text('Page '), text(issue.page.title || page, page)) : []),
-    ...(issue.links ?? []).flatMap((url, i) => para(text(`Figma link ${i + 1} `), text(url, url))),
+    ...(issue.links ?? []).flatMap((url, i) => para(text(`Link ${i + 1} `), text(url, url))),
     ...(issue.element?.selector ? para(text(`Selector ${issue.element.selector}`)) : []),
   ];
 }
@@ -186,13 +186,17 @@ async function attach(cloudId, key, files) {
   if (!res.ok) throw new Error(`The issue ${key} was created, but its screenshots did not upload (${res.status}).`);
 }
 
+/** Numbers comments by their place in the list, for callers that do not pass the report's numbers. */
+const byPlace = (issue, i) => i + 1;
+
 /**
  * Every comment of a review as a numbered section, with its severity, note, markers and links.
  * @param {object[]} issues The comments, in report order.
+ * @param {(issue: object, i: number) => number} numberOf Each comment's number in the report.
  */
-const reviewSections = (issues) =>
+const reviewSections = (issues, numberOf) =>
   issues.flatMap((issue, i) => [
-    { type: 'heading', attrs: { level: 3 }, content: [text(`${pad(i + 1)} ${issue.title || 'Untitled comment'}`)] },
+    { type: 'heading', attrs: { level: 3 }, content: [text(`${pad(numberOf(issue, i))} ${issue.title || 'Untitled comment'}`)] },
     ...para(text(`Severity ${severityOf(issue.severity).label}`)),
     ...commentBlocks(issue),
   ]);
@@ -219,12 +223,13 @@ async function relate(cloudId, from, to) {
  * @param {object[]} options.issues The comments, in report order.
  * @param {'both' | 'detail' | 'viewport'} options.shots Which screenshots to attach.
  * @param {string} options.reviewTitle The review's name.
+ * @param {(issue: object, i: number) => number} [options.numberOf] Each comment's number in the report.
  * @returns {Promise<{ key: string, url: string, warning?: string }>} The ticket, with a warning when the screenshots did not upload.
  */
-export async function commentOnTicket({ site, key, issues, shots, reviewTitle }) {
+export async function commentOnTicket({ site, key, issues, shots, reviewTitle, numberOf = byPlace }) {
   const body = doc([
     ...para(text(`${reviewTitle || 'UI review'}. ${issues.length} ${issues.length === 1 ? 'comment' : 'comments'} from a Margin review. Screenshots are attached to this issue, numbered as below.`)),
-    ...reviewSections(issues),
+    ...reviewSections(issues, numberOf),
   ]);
   await authedJson('jira', api(site.id, `/issue/${encodeURIComponent(key)}/comment`), {
     method: 'POST',
@@ -233,7 +238,7 @@ export async function commentOnTicket({ site, key, issues, shots, reviewTitle })
   });
   const result = { key, url: `${site.url}/browse/${key}` };
   try {
-    await attach(site.id, key, (await Promise.all(issues.map((issue, i) => imagesFor(issue, shots, `${pad(i + 1)}-`)))).flat());
+    await attach(site.id, key, (await Promise.all(issues.map((issue, i) => imagesFor(issue, shots, `${pad(numberOf(issue, i))}-`)))).flat());
   } catch (err) {
     result.warning = err.message;
   }
@@ -253,8 +258,9 @@ export async function commentOnTicket({ site, key, issues, shots, reviewTitle })
  * @param {string} options.reviewTitle The summary for a whole-review issue.
  * @param {(done: number, total: number) => void} [options.onProgress] Called after each issue.
  * @param {string} [options.linkTo] The review's ticket key, which each new issue is linked to.
+ * @param {(issue: object, i: number) => number} [options.numberOf] Each comment's number in the report.
  */
-export async function createIssues({ site, projectId, issueTypeId, issues, mode, shots, reviewTitle, onProgress, linkTo }) {
+export async function createIssues({ site, projectId, issueTypeId, issues, mode, shots, reviewTitle, onProgress, linkTo, numberOf = byPlace }) {
   const priorities = await authedJson('jira', api(site.id, '/priority')).catch(() => []);
   const base = { project: { id: projectId }, issuetype: { id: issueTypeId } };
   const browse = (key) => `${site.url}/browse/${key}`;
@@ -268,11 +274,11 @@ export async function createIssues({ site, projectId, issueTypeId, issues, mode,
               summary: (reviewTitle || 'UI review').slice(0, 250),
               description: doc([
                 ...para(text(`${issues.length} ${issues.length === 1 ? 'comment' : 'comments'} from a Margin review. Screenshots are attached, numbered as below.`)),
-                ...reviewSections(issues),
+                ...reviewSections(issues, numberOf),
               ]),
               ...withPriority(priorities, worstSeverity(issues)),
             },
-            files: async () => (await Promise.all(issues.map((issue, i) => imagesFor(issue, shots, `${pad(i + 1)}-`)))).flat(),
+            files: async () => (await Promise.all(issues.map((issue, i) => imagesFor(issue, shots, `${pad(numberOf(issue, i))}-`)))).flat(),
           },
         ]
       : issues.map((issue) => ({
@@ -340,7 +346,7 @@ function commentText(issue) {
     issue.note?.trim(),
     markList(issue).map((item) => `${item.n}. ${item.note.replace(/\n/g, ' ')}`).join('\n'),
     issue.page?.url && `Page ${issue.page.url}`,
-    ...(issue.links ?? []).map((url, i) => `Figma link ${i + 1} ${url}`),
+    ...(issue.links ?? []).map((url, i) => `Link ${i + 1} ${url}`),
     `Severity ${severityOf(issue.severity).label}. Captured with Margin. The screenshots are in the Margin report.`,
   ]
     .filter(Boolean)
@@ -351,12 +357,13 @@ function commentText(issue) {
  * The summary and description for a create link, for one comment or a whole review.
  * @param {object[]} issues The comments, in report order.
  * @param {string} reviewTitle The summary when there is more than one comment.
+ * @param {(issue: object, i: number) => number} [numberOf] Each comment's number in the report.
  */
-export function linkFields(issues, reviewTitle) {
+export function linkFields(issues, reviewTitle, numberOf = byPlace) {
   if (issues.length === 1) return { summary: issues[0].title || 'Untitled comment', description: commentText(issues[0]) };
   return {
     summary: reviewTitle || 'UI review',
-    description: issues.map((issue, i) => `${pad(i + 1)} ${issue.title || 'Untitled comment'}\n${commentText(issue)}`).join('\n\n'),
+    description: issues.map((issue, i) => `${pad(numberOf(issue, i))} ${issue.title || 'Untitled comment'}\n${commentText(issue)}`).join('\n\n'),
   };
 }
 

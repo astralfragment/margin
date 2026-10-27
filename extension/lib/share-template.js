@@ -1,6 +1,6 @@
 import { severityOf } from './severity.js';
 import { statusOf } from './status.js';
-import { environmentText, escapeHtml as esc, recheckCaption, routeOf } from './report-template.js';
+import { environmentText, escapeHtml as esc, linksLabel, numbering, recheckCaption, routeOf } from './report-template.js';
 import { groupByPage } from './docs-template.js';
 import { DEFAULT_FIELDS, withDefaults } from './fields.js';
 import { markList } from './marks.js';
@@ -17,8 +17,8 @@ function factPairs(issue, fields) {
   const el = issue.element;
   return [
     fields.page && issue.page?.url ? ['Page', issue.page.url] : null,
-    fields.figma && issue.links?.length ? ['Figma', issue.links.join(' ')] : null,
-    fields.jira && issue.jira?.key ? ['Jira', `${issue.jira.key} ${issue.jira.url ?? ''}`.trim()] : null,
+    fields.figma && issue.links?.length ? [linksLabel(issue.links), issue.links.join(' ')] : null,
+    fields.jira && issue.jira?.key ? ['Jira', `${issue.jira.key}${issue.jira.status ? ` ${issue.jira.status}` : ''} ${issue.jira.url ?? ''}`.trim()] : null,
     fields.selector && el?.selector ? ['Selector', `\`${el.selector}\``] : null,
     fields.text && el?.text ? ['Text', el.text] : null,
     fields.position
@@ -49,18 +49,19 @@ export function commentMarkdown(issue, { heading = '###', fields = DEFAULT_FIELD
 }
 
 /**
- * A whole review as Markdown, one section per page with its comments numbered C1, C2 and on.
+ * A whole review as Markdown, one section per page, each comment under the number it has in the report.
  * Screenshots stay out, since Markdown cannot carry them inline. The Docs, Word and HTML exports keep them.
  * @param {object[]} issues The comments in the review.
  * @param {{ title?: string, fields?: Record<string, boolean>, widths?: boolean }} [options] The review title, which detail rows to include, and whether to name the widths captured.
  */
 export function buildMarkdown(issues, { title = 'UI review comments', fields = DEFAULT_FIELDS, widths = true } = {}) {
+  const numberOf = numbering(issues);
   const sections = groupByPage(issues).map((group, index) =>
     [
       `## COMM${index + 1}: ${routeOf(group.page)}`,
       '',
       group.page.url,
-      ...group.issues.map((issue, i) => `\n${commentMarkdown({ ...issue, title: `C${i + 1}. ${oneLine(issue.title) || 'Untitled comment'}` }, { fields: { ...withDefaults(fields), page: false }, widths })}`),
+      ...group.issues.map((issue) => `\n${commentMarkdown({ ...issue, title: `${String(numberOf(issue)).padStart(2, '0')}. ${oneLine(issue.title) || 'Untitled comment'}` }, { fields: { ...withDefaults(fields), page: false }, widths })}`),
     ].join('\n'),
   );
   return [`# ${title}`, '', `${issues.length} ${issues.length === 1 ? 'comment' : 'comments'}`, '', ...sections].join('\n').trim() + '\n';

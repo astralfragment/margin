@@ -292,7 +292,7 @@ try {
   console.log('Report and exports');
   const done = await evaluate('window.__bag');
   await open(`http://127.0.0.1:${WEB_PORT}/dist/.verify/report.html`, boot(done));
-  await until(`document.querySelector('[data-preview]').contentDocument?.querySelector('#c-1 .chip.status')`);
+  await until(`document.querySelector('[data-preview]').contentDocument?.querySelector('#c-1 .status')`);
   const filters = await evaluate(`[...document.querySelectorAll('[data-status-filter]')].map((b) => b.textContent)`);
   check(filters.join('|') === "Any status|Open 2|Fixed 1|Won't fix 1", `sidebar status filter ${filters.join(', ')}`);
   await evaluate(`document.querySelector('[data-status-filter="fixed"]').click()`);
