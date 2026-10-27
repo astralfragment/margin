@@ -12,6 +12,8 @@ import {
   issuesInGroup,
   readRaw,
   writeRaw,
+  readImages,
+  writeImages,
   writeIssues,
   hydrate,
   migrateImages,
@@ -45,6 +47,147 @@ async function toggleTab(tab) {
 chrome.tabs.onZoomChange.addListener(({ tabId, newZoomFactor }) => {
   chrome.tabs.sendMessage(tabId, { type: 'zoom', zoom: newZoomFactor }).catch(() => {});
 });
+
+const LIVE_KEY = 'annotatingTabs';
+const NOTICE_KEY = 'annotatingNotices';
+let liveChain = Promise.resolve();
+
+/**
+ * Changes the session record of tabs that are annotating, one change at a time.
+ * @param {(bag: {tabs: number[], notices: object}) => void} change Edits the tab ids and the notices in place.
+ */
+function editLive(change) {
+  liveChain = liveChain
+    .then(async () => {
+      const bag = await chrome.storage.session.get([LIVE_KEY, NOTICE_KEY]);
+      const next = { tabs: bag[LIVE_KEY] ?? [], notices: bag[NOTICE_KEY] ?? {} };
+      change(next);
+      await chrome.storage.session.set({ [LIVE_KEY]: [...new Set(next.tabs)], [NOTICE_KEY]: next.notices });
+    })
+    .catch(() => {});
+  return liveChain;
+}
+
+/**
+ * Remembers whether a tab is annotating, so annotation comes back on after the tab loads a new page.
+ * @param {number} tabId The tab.
+ * @param {boolean} on Whether the reviewer has annotation on in it.
+ */
+function markTab(tabId, on) {
+  return editLive((bag) => {
+    bag.tabs = on ? [...bag.tabs, tabId] : bag.tabs.filter((id) => id !== tabId);
+    if (!on) delete bag.notices[tabId];
+  });
+}
+
+/**
+ * Turns annotation back on in a tab that just loaded a page while the reviewer had it on, with any note about a
+ * comment kept from the page before. A page Margin cannot reach ends the run for that tab.
+ * @param {number} tabId The tab.
+ * @param {chrome.tabs.TabChangeInfo} info What changed.
+ * @param {chrome.tabs.Tab} tab The tab.
+ */
+async function resumeTab(tabId, info, tab) {
+  if (info.status !== 'complete') return;
+  const bag = await chrome.storage.session.get([LIVE_KEY, NOTICE_KEY]).catch(() => ({}));
+  if (!(bag[LIVE_KEY] ?? []).includes(tabId)) return;
+  const notice = bag[NOTICE_KEY]?.[tabId] ?? '';
+  try {
+    await ensureContent(tab);
+    await chrome.tabs.sendMessage(tabId, {
+      type: 'start',
+      groupName: (await activeGroup()).name,
+      zoom: await chrome.tabs.getZoom(tabId).catch(() => 1),
+      notice,
+    });
+    if (notice) await editLive((next) => delete next.notices[tabId]);
+  } catch {
+    await markTab(tabId, false);
+  }
+}
+
+chrome.tabs.onUpdated.addListener(resumeTab);
+chrome.tabs.onRemoved.addListener((tabId) => markTab(tabId, false));
+
+const DRAFTS_KEY = 'drafts';
+const DRAFT_AGE = 24 * 60 * 60_000;
+let draftChain = Promise.resolve();
+
+/**
+ * Reads, changes and writes the open drafts, one change at a time. A draft is a capture whose card has not been
+ * saved yet. It lives outside the issue list, so the report, the counts and the exports never see it, while its
+ * images already sit under its own `img:<id>` and `raw:<id>` keys.
+ * @template T
+ * @param {(drafts: Record<string, object>) => T} change Edits the drafts by id in place and returns a result.
+ * @returns {Promise<T>}
+ */
+function editDrafts(change) {
+  const run = draftChain.then(async () => {
+    const drafts = (await chrome.storage.local.get(DRAFTS_KEY))[DRAFTS_KEY] ?? {};
+    const result = await change(drafts);
+    await chrome.storage.local.set({ [DRAFTS_KEY]: drafts });
+    return result;
+  });
+  draftChain = run.catch(() => {});
+  return run;
+}
+
+/**
+ * Removes drafts older than `age`, with their images. Every draft goes when `age` is 0, as after a browser restart,
+ * when no card can still be open.
+ * @param {number} age The oldest a draft may be, in milliseconds.
+ */
+async function sweepDrafts(age) {
+  const stale = await editDrafts((drafts) => {
+    const ids = Object.keys(drafts).filter((id) => !age || Date.now() - Date.parse(drafts[id].createdAt) > age);
+    for (const id of ids) delete drafts[id];
+    return ids;
+  });
+  if (stale.length) await chrome.storage.local.remove(stale.flatMap((id) => [`img:${id}`, `raw:${id}`]));
+}
+
+/**
+ * Moves a draft into the issue list with the card's fields, which makes it a comment. Returns false when there is no
+ * such draft, as for a comment that is already saved.
+ * @param {string} id The comment id.
+ * @param {object} patch The fields the card saved.
+ */
+async function promoteDraft(id, patch) {
+  return editDrafts(async (drafts) => {
+    if (!drafts[id]) return false;
+    await addIssue({ ...drafts[id], ...patch });
+    delete drafts[id];
+    return true;
+  });
+}
+
+/**
+ * Changes a comment or an open draft. Width shots go to the comment's image key either way.
+ * @param {string} id The comment id.
+ * @param {object} patch Fields to change.
+ */
+async function patchAny(id, patch) {
+  const saved = await patchIssue(id, patch);
+  if (saved) return saved;
+  const { shots, ...fields } = patch;
+  if (shots !== undefined) await writeImages(id, { shots });
+  return editDrafts((drafts) => {
+    if (!drafts[id]) return null;
+    Object.assign(drafts[id], fields);
+    return { ...drafts[id], shots };
+  });
+}
+
+/**
+ * Removes comments that were left untitled by cards closed before drafts were kept apart: no title, no note, no
+ * markers, never sent anywhere.
+ */
+async function dropUntitled() {
+  const left = (await readIssues()).filter(
+    (issue) => !issue.title?.trim() && !issue.note?.trim() && !issue.marks?.length && !issue.jira && !issue.figmaPosts?.length && !issue.links?.length,
+  );
+  for (const issue of left) await removeIssue(issue.id);
+}
 
 /**
  * Injects the content script into a tab unless it is already there.
@@ -645,7 +788,10 @@ const handlers = {
     return { active: await toggleTab(tab) };
   },
 
-  /** Stores a new comment for a marked region, with its screenshots unless `skipShot` asks to save it without one. */
+  /**
+   * Stores a draft for a marked region, with its screenshots unless `skipShot` asks to save it without one.
+   * The draft becomes a comment when its card is saved.
+   */
   async capture(msg, sender) {
     const { raw, shot, detail } = msg.skipShot ? { raw: null, shot: null, detail: null } : await captureShots(sender.tab, msg);
     const issue = {
@@ -662,24 +808,56 @@ const handlers = {
       element: msg.element,
       anchor: msg.anchor ?? null,
       rect: msg.rect,
-      shot,
-      detail,
     };
     if (raw) await writeRaw(issue.id, { src: raw, hasBox: false });
-    await addIssue(issue);
-    await refreshBadge();
+    if (shot || detail) await writeImages(issue.id, { shot, detail });
+    await editDrafts((drafts) => {
+      drafts[issue.id] = issue;
+    });
+    sweepDrafts(DRAFT_AGE).catch(() => {});
     return { id: issue.id };
   },
 
+  /** Saves a card's fields. A draft becomes a comment here, at the end of the list. */
   async update(msg) {
-    await patchIssue(msg.id, msg.patch);
+    if (!(await promoteDraft(msg.id, msg.patch))) await patchIssue(msg.id, msg.patch);
     return { ok: true };
   },
 
+  /**
+   * Saves a card that was still open when its page went away: its fields, then its markers drawn into the images.
+   * The tab is told on its next page which comment was kept.
+   */
+  async keep(msg, sender) {
+    await handlers.update(msg);
+    if (msg.marks) await handlers.annotate({ id: msg.id, marks: msg.marks });
+    const tabId = sender.tab?.id;
+    if (tabId && msg.notice) await editLive((bag) => (bag.notices[tabId] = msg.notice));
+    return { ok: true };
+  },
+
+  /** Drops a draft or a comment, with its images. */
   async discard(msg) {
+    await editDrafts((drafts) => {
+      delete drafts[msg.id];
+    });
     await removeIssue(msg.id);
     await refreshBadge();
     return { ok: true };
+  },
+
+  /** Records that annotation went on or off in the sender's tab. */
+  async annotating(msg, sender) {
+    if (sender.tab?.id) await markTab(sender.tab.id, msg.active === true);
+    return { ok: true };
+  },
+
+  /** One saved comment's fields for editing on the page, without images, and whether it has a screenshot. */
+  async comment(msg) {
+    const issue = (await readIssues()).find((i) => i.id === msg.id);
+    if (!issue) return { error: 'Comment not found' };
+    const images = await readImages(issue.id);
+    return { ...issue, hasShot: Boolean(images.shot || (await readRaw(issue.id))) };
   },
 
   async openReport() {
@@ -727,7 +905,8 @@ const handlers = {
     if (widthsBusy) return { error: 'Already capturing at three widths' };
     if (verifyRun) return { error: 'Wait for the check that is running to finish' };
     const group = await activeGroup();
-    const issues = (await readIssues()).filter((issue) =>
+    const drafts = msg.page ? [] : Object.values((await chrome.storage.local.get(DRAFTS_KEY))[DRAFTS_KEY] ?? {});
+    const issues = [...(await readIssues()), ...drafts].filter((issue) =>
       msg.page ? issue.groupId === group.id && samePage(tab.url, issue.page?.url) : msg.ids?.includes(issue.id),
     );
     if (!issues.length) return { error: msg.page ? 'No comments on this page in the current review' : 'Comment not found' };
@@ -737,7 +916,7 @@ const handlers = {
       const shots = await captureWidths(tab, issues);
       const takenAt = new Date().toISOString();
       const saved = [];
-      for (const issue of issues) saved.push(await patchIssue(issue.id, { shots: shots[issue.id], shotsAt: takenAt }));
+      for (const issue of issues) saved.push(await patchAny(issue.id, { shots: shots[issue.id], shotsAt: takenAt }));
       return { message: widthsMessage(saved) };
     } catch (err) {
       return { error: `Capture at three widths stopped, and the window was put back. ${String(err.message ?? err)}` };
@@ -932,6 +1111,7 @@ const handlers = {
           id: issue.id,
           n,
           title: issue.title,
+          note: (issue.note ?? '').trim().split('\n')[0].slice(0, 160),
           severity: issue.severity,
           status: issue.status,
           rect: issue.rect,
@@ -1164,6 +1344,8 @@ async function boot() {
   await createMenus();
   await chrome.storage.local.remove(RETIRED_KEYS);
   await migrateOrphans();
+  await sweepDrafts(0);
+  await dropUntitled();
   await refreshBadge();
 }
 

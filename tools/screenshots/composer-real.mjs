@@ -134,8 +134,8 @@ try {
   for (let i = 1; i <= 10; i++) await mouse('mouseMoved', strip.x + (strip.w * i) / 10, strip.y + (strip.h * i) / 10, { button: 'left', buttons: 1 });
   await mouse('mouseReleased', strip.x + strip.w, strip.y + strip.h, { button: 'left', buttons: 0, clickCount: 1 });
   await sleep(2500);
-  const drafts = await evaluate(sw, `chrome.storage.local.get('issues').then((b) => (b.issues ?? []).length)`);
-  check(drafts === 1, 'a real capture stored a draft comment');
+  const drafts = await evaluate(sw, `chrome.storage.local.get(['issues', 'drafts']).then((b) => [(b.issues ?? []).length, Object.keys(b.drafts ?? {}).length])`);
+  check(drafts[0] === 0 && drafts[1] === 1, `a real capture stored a draft outside the comment list (${drafts})`);
 
   await send('Input.insertText', { text: 'Hero thumbnails look like decoration' }, tab);
   const key = (k, code, vk, text) => [

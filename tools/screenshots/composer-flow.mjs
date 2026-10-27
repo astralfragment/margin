@@ -517,14 +517,16 @@ try {
   await drag({ x: 40, y: 330, w: 560, h: 80 });
   await until(`${sh('.panel [data-title]')}`);
   await type('Heading weight');
-  const first = (await issues()).at(-1).id;
+  const drafts = () => evaluate(`Object.keys(window.__bag.drafts ?? {})`);
+  const first = (await drafts()).at(-1);
+  check(Boolean(first) && !(await issues()).some((i) => i.id === first), 'an open draft stays out of the comment list');
   await tap('[data-redraw]');
   check(await evaluate(`!${sh('.panel')}`), 'Redraw closes the card');
   await drag({ x: 30, y: 420, w: 560, h: 100 });
   await until(`${sh('.panel [data-title]')}`);
   check((await evaluate(`${sh('[data-title]')}.value`)) === 'Heading weight', 'Redraw keeps the draft');
   await sleep(300);
-  check(!(await issues()).some((i) => i.id === first), 'Redraw drops the old capture');
+  check(!(await drafts()).includes(first) && !(await issues()).some((i) => i.id === first), 'Redraw drops the old capture');
   await tap('[data-cancel]');
   await tap('[data-confirm]');
   await until(`!${sh('.panel')}`);
