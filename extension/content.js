@@ -12,6 +12,7 @@
   const GAP = 12;
   const EDGE = 8;
   const HINT_SPACE = 64;
+  const SHOT_TIMEOUT = 10000;
   const FONT = 'Margin Manrope';
   const THEME_KEY = 'theme';
   const SELECTORS_KEY = 'selectorMode';
@@ -20,6 +21,7 @@
   const pad = (n) => String(n).padStart(2, '0');
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
   const isField = (el) => el?.localName === 'input' || el?.localName === 'textarea';
+  const isEditable = (el) => Boolean(el && (el.isContentEditable || ['input', 'textarea', 'select'].includes(el.localName)));
 
   const STYLE = `
     :host { all: initial; }
@@ -41,7 +43,7 @@
       position: fixed; inset: 0; z-index: 2147483647;
       cursor: crosshair; color: var(--fg);
       background: rgba(13, 10, 23, 0.12); box-shadow: inset 0 0 0 2px var(--ink);
-      font-size: 13px; line-height: 20px; font-weight: 500; font-variant-numeric: tabular-nums;
+      font-size: 14px; line-height: 20px; font-weight: 500; font-variant-numeric: tabular-nums;
       -webkit-font-smoothing: antialiased;
     }
     .root[data-theme="dark"] {
@@ -59,6 +61,8 @@
     .root[hidden] { display: none; }
     .root.capturing { background: transparent; box-shadow: none; }
     .root.capturing > * { visibility: hidden; }
+    .root.capturing { pointer-events: none; }
+    .root.busy { cursor: progress; }
     [data-sev="blocker"] { --sev: var(--sev-blocker); --tint: var(--tint-blocker); --glyph: ${asset('icons/ui/glyph-blocker.svg')}; }
     [data-sev="major"] { --sev: var(--sev-major); --tint: var(--tint-major); --glyph: ${asset('icons/ui/glyph-major.svg')}; }
     [data-sev="minor"] { --sev: var(--sev-minor); --tint: var(--tint-minor); --glyph: ${asset('icons/ui/glyph-minor.svg')}; }
@@ -75,13 +79,13 @@
 
     kbd {
       display: inline-flex; align-items: center; justify-content: center; height: 18px; min-width: 18px; padding: 0 4px;
-      font-size: 12px; line-height: 16px; font-weight: 600; color: var(--muted-fg);
+      font-size: 13px; line-height: 16px; font-weight: 600; color: var(--muted-fg);
       background: var(--surface-3); border: 1px solid var(--divider); border-radius: 4px;
     }
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: none;
       height: 32px; padding: 0 8px; border-radius: 6px; white-space: nowrap;
-      font-size: 13px; line-height: 18px; font-weight: 600; color: var(--fg);
+      font-size: 14px; line-height: 20px; font-weight: 600; color: var(--fg);
     }
     .btn:hover { background: var(--surface-3); }
     .btn.primary { padding: 0 12px; color: var(--primary-fg); background: var(--primary); }
@@ -95,13 +99,17 @@
       position: fixed; pointer-events: none;
       border: 1.5px solid var(--ink); border-radius: 6px;
     }
+    .hover.full::after {
+      content: "Fills the whole view"; position: absolute; left: 8px; top: 8px; padding: 1px 8px; border-radius: 4px;
+      font-size: 13px; line-height: 18px; font-weight: 600; color: var(--on-ink); background: var(--ink);
+    }
     .band {
       position: fixed; pointer-events: none;
       border: 2px solid var(--ink); border-radius: 6px; box-shadow: inset 0 0 0 3px var(--on-ink);
     }
     .flag {
       position: fixed; display: inline-flex; align-items: center; height: 20px; padding: 0 6px;
-      font-size: 12px; line-height: 16px; font-weight: 800; white-space: nowrap;
+      font-size: 13px; line-height: 16px; font-weight: 800; white-space: nowrap;
       color: var(--on-ink); background: var(--ink); border: 2px solid var(--on-ink);
       border-radius: 4px 4px 4px 0; cursor: default;
     }
@@ -117,7 +125,7 @@
     .saved .flag { position: absolute; left: 0; pointer-events: auto; }
     .pin {
       display: grid; place-items: center; flex: none; width: 22px; height: 22px;
-      font-size: 12px; line-height: 16px; font-weight: 800; color: var(--on-ink);
+      font-size: 13px; line-height: 16px; font-weight: 800; color: var(--on-ink);
       background: var(--ink); border: 2px solid var(--on-ink); border-radius: 11px 11px 11px 3px;
     }
     .root > .pin { position: fixed; transform: translateY(-100%); cursor: context-menu; }
@@ -127,27 +135,27 @@
       position: fixed; display: grid; gap: 4px; max-width: 320px; padding: 8px 12px; pointer-events: none;
       background: var(--float); border: 1px solid var(--float-border); border-radius: 6px; box-shadow: var(--shadow);
     }
-    .tip b { font-size: 13px; line-height: 18px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .tip .meta { display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; }
+    .tip b { font-size: 14px; line-height: 20px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tip .meta { display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 18px; }
     .tip .meta .status { margin-left: 2px; color: var(--muted-fg); }
     .tip .meta .status[data-status="fixed"] { color: var(--fixed); }
-    .tip .where { font-size: 12px; line-height: 16px; color: var(--muted-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tip .where { font-size: 13px; line-height: 18px; color: var(--muted-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .hint {
       position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
-      display: flex; align-items: center; gap: 12px; height: 40px; max-width: calc(100vw - 32px);
+      display: flex; align-items: center; gap: 12px; height: 40px; max-width: calc(var(--vw, 100vw) - 32px);
       padding: 4px 4px 4px 12px; overflow: hidden; white-space: nowrap; cursor: default;
       background: var(--float); border: 1px solid var(--float-border); border-radius: 10px; box-shadow: var(--shadow);
     }
     .review { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .review .mark { flex: none; width: 16.7px; height: 14.4px; background: var(--ink); mask: ${asset('icons/ui/mark.svg')} center / contain no-repeat; }
-    .review b { font-size: 13px; line-height: 18px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
-    .review .count { font-size: 12px; line-height: 16px; color: var(--muted-fg); }
+    .review b { font-size: 14px; line-height: 20px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+    .review .count { font-size: 13px; line-height: 18px; color: var(--muted-fg); }
     .hint .divider { flex: none; width: 1px; height: 20px; background: var(--divider); }
     .hint .gap { flex: none; width: 4px; }
     .toggle {
       display: flex; align-items: center; gap: 8px; flex: none; height: 32px; padding: 0 4px; border-radius: 6px;
-      font-size: 12px; line-height: 16px; font-weight: 500;
+      font-size: 13px; line-height: 18px; font-weight: 500;
     }
     .toggle:hover { background: var(--surface-3); }
     .switch {
@@ -160,13 +168,18 @@
     .toggle[aria-pressed="true"] .switch { background: var(--ink); box-shadow: none; }
     .toggle[aria-pressed="true"] .switch::after { left: 14px; background: var(--on-ink); }
     .stop { gap: 4px; }
+    .pass { display: flex; align-items: center; gap: 6px; flex: none; font-size: 13px; line-height: 18px; color: var(--muted-fg); }
+    .root.passing .pass { color: var(--ink); }
+    @media (max-width: 1023px) {
+      .hint .pass, .hint .pass-divider { display: none; }
+    }
     @media (max-width: 640px) {
       .hint { gap: 8px; }
-      .review b, .review .count, .hint kbd, .hint .gap, .hint .divider, .hint [data-report] { display: none; }
+      .review b, .review .count, .hint kbd, .hint .gap, .hint .divider, .hint [data-report], .hint .pass { display: none; }
     }
 
     .panel {
-      position: fixed; width: 340px; max-width: calc(100vw - 16px); display: flex; flex-direction: column;
+      position: fixed; width: 360px; max-width: calc(var(--vw, 100vw) - 16px); display: flex; flex-direction: column;
       background: var(--float); border: 1px solid var(--float-border); border-radius: 10px; box-shadow: var(--shadow);
       overflow: hidden; cursor: default;
     }
@@ -174,11 +187,11 @@
       display: flex; align-items: center; gap: 8px; flex: none; min-height: 45px; padding: 8px 12px;
       border-bottom: 1px solid var(--divider);
     }
-    .panel-head h2 { font-size: 15px; line-height: 20px; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; }
+    .panel-head h2 { font-size: 16px; line-height: 22px; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; }
     .panel-head .spacer { flex: 1; }
     .chip {
       display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px; border-radius: 6px;
-      font-size: 12px; line-height: 16px; font-weight: 600; white-space: nowrap;
+      font-size: 13px; line-height: 18px; font-weight: 600; white-space: nowrap;
     }
     .chip:hover { background: var(--surface-3); }
     .square { width: 28px; padding: 0; justify-content: center; }
@@ -186,24 +199,25 @@
       display: grid; gap: 8px; flex: none; padding: 12px 12px 12px 13px;
       background: var(--destructive-tint); border-left: 3px solid var(--destructive);
     }
-    .error p { font-size: 12px; line-height: 16px; color: var(--muted-fg); }
-    .error .head { display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--fg); }
+    .error p { font-size: 13px; line-height: 18px; color: var(--muted-fg); }
+    .error .head { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; font-weight: 600; color: var(--fg); }
     .error .btn { justify-self: start; }
     .panel-body { display: flex; flex-direction: column; gap: 12px; min-height: 0; padding: 16px 12px; overflow: auto; }
     .field { display: grid; gap: 6px; }
-    .field-hint { font-size: 12px; line-height: 16px; color: var(--muted-fg); }
+    .field-hint { font-size: 13px; line-height: 18px; color: var(--muted-fg); }
     input[type="text"], textarea {
       display: block; width: 100%; min-width: 0; height: 32px; padding: 0 12px;
-      font-size: 13px; line-height: 20px; font-weight: 500; color: var(--fg);
+      font-size: 14px; line-height: 20px; font-weight: 500; color: var(--fg);
       background: var(--surface-1); border: 1px solid var(--input-border); border-radius: 6px; outline: none;
     }
+    input[data-title] { font-size: 15px; }
     textarea { height: 76px; min-height: 76px; max-height: 200px; padding: 7px 11px; resize: none; }
     input[type="text"]:focus, textarea:focus { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
     ::placeholder { color: var(--muted-fg); opacity: 1; }
     .seg { display: flex; gap: 2px; padding: 2px; background: var(--surface-3); border-radius: 6px; }
     .seg button {
       display: flex; align-items: center; justify-content: center; gap: 4px; flex: 1; min-width: 0; height: 28px; border-radius: 4px;
-      font-size: 12px; line-height: 16px; font-weight: 600;
+      font-size: 13px; line-height: 18px; font-weight: 600;
     }
     .seg button:hover { background: var(--float); }
     .seg button .icon { display: none; width: 12px; height: 12px; }
@@ -214,27 +228,27 @@
     .mrow, .place-hint, .frame-row, .link-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .remove { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 6px; }
     .remove:hover { background: var(--surface-3); }
-    .place-hint { font-size: 12px; line-height: 16px; color: var(--muted-fg); }
+    .place-hint { font-size: 13px; line-height: 18px; color: var(--muted-fg); }
     .frame-row .text { display: grid; flex: 1; min-width: 0; }
     .frame-row .text span, .frame-row .text b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .frame-row .label { font-size: 12px; line-height: 16px; font-weight: 600; color: var(--muted-fg); }
-    .frame-row b { font-size: 13px; line-height: 18px; font-weight: 600; }
-    .frame-row .meta { font-size: 12px; line-height: 16px; color: var(--muted-fg); }
+    .frame-row .label { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--muted-fg); }
+    .frame-row b { font-size: 14px; line-height: 20px; font-weight: 600; }
+    .frame-row .meta { font-size: 13px; line-height: 18px; color: var(--muted-fg); }
     .picker { display: grid; gap: 4px; padding: 8px; background: var(--surface-2); border-radius: 6px; }
     .picker-list { display: grid; gap: 4px; max-height: 232px; overflow: auto; }
-    .picker-page { padding-top: 2px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--muted-fg); }
+    .picker-page { padding-top: 2px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--muted-fg); }
     .picker-row {
       display: flex; align-items: center; gap: 8px; width: 100%; padding: 4px 8px; border-radius: 6px; text-align: left;
-      font-size: 13px; line-height: 20px; font-weight: 500;
+      font-size: 14px; line-height: 20px; font-weight: 500;
     }
     .picker-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .picker-row:hover, .picker-row.active { background: var(--surface-3); }
     .picker-row[aria-selected="true"] { background: var(--ink-tint); }
     .picker-row .icon { display: none; color: var(--ink); }
     .picker-row[aria-selected="true"] .icon { display: block; }
-    .picker-more { justify-self: start; font-size: 12px; line-height: 16px; color: var(--muted-fg); }
+    .picker-more { justify-self: start; font-size: 13px; line-height: 18px; color: var(--muted-fg); }
     .picker-more:hover { color: var(--fg); text-decoration: underline; }
-    .picker-empty { padding: 4px; font-size: 12px; line-height: 16px; color: var(--muted-fg); }
+    .picker-empty { padding: 4px; font-size: 13px; line-height: 18px; color: var(--muted-fg); }
     .quiet { display: flex; align-items: center; gap: 2px; margin-left: -4px; }
     .quiet .chip { padding: 0 4px; }
     .quiet .chip[aria-expanded="true"] { color: var(--ink); background: var(--ink-tint); }
@@ -242,9 +256,9 @@
       display: flex; align-items: center; gap: 8px; flex: none; padding: 12px; border-top: 1px solid var(--divider);
     }
     .panel-foot .spacer { flex: 1; }
-    .save-hint { font-size: 12px; line-height: 16px; color: var(--muted-fg); white-space: nowrap; }
+    .save-hint { font-size: 13px; line-height: 18px; color: var(--muted-fg); white-space: nowrap; }
     .panel-foot.ask { flex-direction: column; align-items: stretch; }
-    .ask-q { font-size: 13px; line-height: 18px; font-weight: 600; }
+    .ask-q { font-size: 14px; line-height: 20px; font-weight: 600; }
     .ask-row { display: flex; align-items: center; gap: 8px; }
     .tail { position: fixed; width: 8px; height: 14px; pointer-events: none; background: var(--tail) center / contain no-repeat; }
     .more-menu {
@@ -253,13 +267,13 @@
     }
 
     .ctx {
-      position: fixed; width: 340px; max-width: calc(100vw - 16px); padding: 4px; display: grid;
+      position: fixed; width: 340px; max-width: calc(var(--vw, 100vw) - 16px); padding: 4px; display: grid;
       background: var(--float); border: 1px solid var(--float-border); border-radius: 10px;
       box-shadow: var(--shadow); cursor: default;
     }
     .ctx button, .more-menu button {
       height: 32px; padding: 0 10px; text-align: left; white-space: nowrap;
-      font-size: 13px; line-height: 20px; font-weight: 500; color: var(--fg);
+      font-size: 14px; line-height: 20px; font-weight: 500; color: var(--fg);
       border: 2px solid transparent; border-radius: 6px;
     }
     .ctx button:hover, .more-menu button:hover { background: var(--surface-3); }
@@ -269,10 +283,10 @@
 
     .toast {
       position: fixed; display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 4px 12px;
-      font-size: 13px; line-height: 18px; font-weight: 600; white-space: nowrap; cursor: default;
+      font-size: 14px; line-height: 20px; font-weight: 600; white-space: nowrap; cursor: default;
       color: var(--primary-fg); background: var(--primary); border-radius: 10px; box-shadow: var(--shadow);
     }
-    .toast.plain { left: 50%; bottom: ${HINT_SPACE}px; transform: translateX(-50%); max-width: calc(100vw - 32px); white-space: normal; }
+    .toast.plain { left: 50%; bottom: ${HINT_SPACE}px; transform: translateX(-50%); max-width: calc(var(--vw, 100vw) - 32px); white-space: normal; }
     .toast.saved-toast { padding-right: 4px; }
     .toast .actions { display: flex; }
     .toast .btn { color: var(--primary-fg); }
@@ -289,11 +303,14 @@
       <div class="layer" data-layer></div>
       <div class="hover" hidden></div>
       <div class="band" hidden></div>
+      <b class="flag draft" data-saving hidden>Saving</b>
       <div class="hint">
         <span class="review"><i class="mark"></i><b data-group>Margin</b><span class="count" data-count></span></span>
         <span class="divider"></span>
         <button type="button" class="toggle" data-selectors aria-pressed="false"><span class="switch"></span><span>Selectors</span><kbd>S</kbd></button>
         <button type="button" class="toggle" data-markers aria-pressed="true"><span class="switch"></span><span>Markers</span><kbd>M</kbd></button>
+        <span class="divider pass-divider"></span>
+        <span class="pass">Hold <kbd>Alt</kbd> to use the page</span>
         <span class="gap"></span>
         <button type="button" class="btn" data-report>Open report</button>
         <button type="button" class="btn stop" data-stop><span>Stop</span><kbd>Esc</kbd></button>
@@ -304,6 +321,7 @@
   const layer = shadow.querySelector('[data-layer]');
   const hoverBox = shadow.querySelector('.hover');
   const band = shadow.querySelector('.band');
+  const savingFlag = shadow.querySelector('[data-saving]');
   const hint = shadow.querySelector('.hint');
   const selectorsBtn = shadow.querySelector('[data-selectors]');
   const markersBtn = shadow.querySelector('[data-markers]');
@@ -327,26 +345,230 @@
   };
 
   const SHIELDED = ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'dblclick', 'auxclick', 'contextmenu', 'touchstart', 'touchend'];
+  const LAYERED = ['toggle', 'close', 'fullscreenchange', 'focusin'];
   const COPIED = ['clientX', 'clientY', 'screenX', 'screenY', 'button', 'buttons', 'detail', 'ctrlKey', 'shiftKey', 'altKey', 'metaKey', 'pointerId', 'pointerType', 'isPrimary'];
 
   /**
    * Keeps presses on the overlay away from the page, so its click-outside and blur handlers never fire.
    * The press is stopped at the window, then a copy that cannot leave the shadow root is replayed on the element under the pointer,
-   * or on the focused element when the click came from the keyboard.
+   * or on the focused element when the click came from the keyboard. A real press that reached the page instead went
+   * through the overlay, so it is cancelled, the overlay is raised again, and the copy goes to the overlay root.
    * @param {Event} e A press event caught at the window during the capture phase.
    */
   function shield(e) {
-    if (e.target !== host) return;
+    if (passing) return;
+    if (e.target !== host) {
+      if (!e.isTrusted || (e instanceof MouseEvent && (e.clientX >= root.clientWidth * scale || e.clientY >= root.clientHeight * scale))) return;
+      e.stopImmediatePropagation();
+      if (e.cancelable && !/^(pointer|touch)/.test(e.type)) e.preventDefault();
+      raise();
+      if (e instanceof MouseEvent) replay(e, root);
+      return;
+    }
     e.stopImmediatePropagation();
     if (!(e instanceof MouseEvent)) return;
     const fromKeyboard = e.type === 'click' && e.detail === 0 && shadow.activeElement;
     const inner = fromKeyboard ? shadow.activeElement : shadow.elementFromPoint(e.clientX, e.clientY);
-    if (!inner) return;
+    if (inner && shadow.contains(inner)) replay(e, inner);
+  }
+
+  /**
+   * Dispatches a copy of a mouse event inside the shadow root, where it cannot reach the page.
+   * @param {MouseEvent} e The original event.
+   * @param {Element} inner The overlay element that receives the copy.
+   */
+  function replay(e, inner) {
     const init = { bubbles: e.bubbles, cancelable: e.cancelable, composed: false };
     for (const key of COPIED) if (key in e) init[key] = e[key];
     const copy = new e.constructor(e.type, init);
     inner.dispatchEvent(copy);
     if (copy.defaultPrevented) e.preventDefault();
+  }
+
+  let rescues = 0;
+  const hostWatch = new MutationObserver(() => {
+    if (!state.active || host.isConnected || rescues > 2) return;
+    if (!rescues) requestAnimationFrame(() => (rescues = 0));
+    rescues++;
+    raise();
+  });
+
+  /**
+   * Puts the overlay back above everything on the page. It goes back into the document if the page removed it, and into
+   * the open modal dialog when there is one, because a modal dialog makes everything outside it inert and presses would
+   * pass through. Hiding and showing the popover again makes it the newest top layer entry, above later popovers,
+   * dialogs and fullscreen elements. Focus inside the overlay is kept.
+   */
+  function raise() {
+    const focused = shadow.activeElement;
+    const modal = deepAll('dialog:modal').at(-1) ?? null;
+    const parent = modal ?? document.documentElement;
+    if (host.parentNode !== parent) parent.append(host);
+    if (holder !== modal) {
+      holder?.removeEventListener('close', raiseAgain);
+      modal?.addEventListener('close', raiseAgain);
+      holder = modal;
+    }
+    if (host.matches(':popover-open')) host.hidePopover();
+    host.showPopover?.();
+    hostWatch.disconnect();
+    for (let node = host.parentNode; node; node = node.parentNode ?? node.host) hostWatch.observe(node, { childList: true });
+    if (focused && shadow.activeElement !== focused) focused.focus({ preventScroll: true });
+    fitZoom();
+  }
+
+  let holder = null;
+
+  /** Raises the overlay again once the dialog holding it closes, since a closed dialog hides everything inside it. */
+  const raiseAgain = () => state.active && raise();
+
+  /**
+   * Finds elements matching a selector in the document and in every open shadow root, where components such as the MDN
+   * search keep their dialogs.
+   * @param {string} selector A CSS selector.
+   */
+  function deepAll(selector) {
+    const found = [];
+    const search = (scope) => {
+      found.push(...scope.querySelectorAll(selector));
+      for (const el of scope.querySelectorAll('*')) if (el.shadowRoot && el !== host) search(el.shadowRoot);
+    };
+    search(document);
+    return found;
+  }
+
+  let tabZoom = 1;
+  let scale = 1;
+
+  /**
+   * Cancels the CSS zoom the overlay inherits from the page and the tab's browser zoom, so the overlay keeps the same
+   * physical size on every page. While browser zoom is countered, one overlay pixel is `scale` page pixels.
+   */
+  function fitZoom() {
+    const parent = host.parentElement ?? document.documentElement;
+    const zoom = parent.currentCSSZoom ?? (Number(getComputedStyle(parent).zoom) || 1);
+    scale = tabZoom > 0 ? 1 / tabZoom : 1;
+    const own = scale / (zoom > 0 ? zoom : 1);
+    host.style.zoom = own !== 1 ? String(own) : '';
+    root.style.setProperty('--vw', `${innerWidth / scale}px`);
+  }
+
+  /** Applies a new browser zoom, then moves the saved regions, the open card and its band, flag and pins to match. */
+  function refit() {
+    fitZoom();
+    closeMenu();
+    hideTip();
+    placeSaved();
+    const p = state.panel;
+    if (!p) return;
+    p.node.style.top = '';
+    p.node.style.bottom = '';
+    place(band, p.rect);
+    placeFlag(p.flag, p.rect);
+    paintMarks();
+    placePanel();
+  }
+
+  /**
+   * Turns a length in page pixels into a CSS length in the overlay's own pixels.
+   * @param {number} value Page pixels, as event coordinates and page element boxes are measured.
+   */
+  const px = (value) => `${value / scale}px`;
+
+  /**
+   * The size of an overlay element in page pixels.
+   * @param {HTMLElement} el The overlay element.
+   */
+  const sizeOf = (el) => ({ w: el.offsetWidth * scale, h: el.offsetHeight * scale });
+
+  const openWatch = new MutationObserver((records) => {
+    if (records.some((r) => r.target !== host && r.target.hasAttribute('open'))) raise();
+  });
+
+  /**
+   * Raises the overlay again when the page opens a popover or dialog of its own, changes fullscreen, closes the dialog
+   * the overlay sits in, or hides the overlay. Focus moving into a modal dialog inside a component's shadow root, whose
+   * own toggle events never leave it, raises it too. A re-raise of another overlay shows as open to open and is
+   * ignored, so two overlays never take turns forever.
+   * @param {Event} e A toggle, close, fullscreenchange or focusin event caught at the window.
+   */
+  function onLayer(e) {
+    if (e.target === host) {
+      if (e.newState === 'closed' && state.active) raise();
+      return;
+    }
+    if (e.type === 'focusin') {
+      const modal = deepAll('dialog:modal').at(-1);
+      if (modal && host.parentNode !== modal) raise();
+      return;
+    }
+    const opened = e.type === 'toggle' && e.oldState === 'closed' && e.newState === 'open';
+    const holding = e.target instanceof Element && e.target.contains(host);
+    if (opened || holding || e.type === 'fullscreenchange') raise();
+  }
+
+  /**
+   * Feeds pointer moves that land on the page, over or around the overlay, to the hover outline and the drag band.
+   * @param {MouseEvent} e A mousemove caught at the window.
+   */
+  function onStrayMove(e) {
+    if (e.target !== host && e.isTrusted && !passing) onMove(e);
+  }
+
+  let passing = false;
+
+  /**
+   * Hands the pointer to the page while Alt is held, so hover states, menus and inner scrolling work, and takes it back
+   * when Alt is let go or the window loses focus.
+   * @param {boolean} next Whether the page gets the pointer.
+   */
+  function passThrough(next) {
+    if (passing === next) return;
+    passing = next;
+    host.style.pointerEvents = next ? 'none' : '';
+    root.classList.toggle('passing', next);
+    if (!next) return;
+    state.drag = null;
+    band.hidden = !state.panel;
+    hoverBox.hidden = true;
+  }
+
+  /**
+   * Ends the Alt hold on release. The release is cancelled so Chrome does not move focus to its menu.
+   * @param {KeyboardEvent} e A keyup caught at the window.
+   */
+  function onKeyUp(e) {
+    if (e.key !== 'Alt') return;
+    e.preventDefault();
+    passThrough(false);
+  }
+
+  /** Ends the Alt hold when the window loses focus, since the release then never arrives. */
+  const endPass = () => passThrough(false);
+
+  /**
+   * Scrolls the scrollable page element under the pointer. The overlay covers the page, so without this every wheel
+   * scrolls the document and inner panels never move.
+   * @param {WheelEvent} e A wheel event on the overlay.
+   */
+  function onWheel(e) {
+    if (e.ctrlKey) return;
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1;
+    const dx = e.deltaX * unit;
+    const dy = e.deltaY * unit;
+    const top = document.scrollingElement;
+    for (let el = elementAt(e.clientX, e.clientY); el && el !== top && el !== document.body; el = el.parentElement) {
+      const style = getComputedStyle(el);
+      const room = (overflow, pos, size, full, delta) =>
+        delta !== 0 && /auto|scroll|overlay/.test(overflow) && (delta > 0 ? pos + size < full - 1 : pos > 0);
+      const canY = room(style.overflowY, el.scrollTop, el.clientHeight, el.scrollHeight, dy);
+      const canX = room(style.overflowX, el.scrollLeft, el.clientWidth, el.scrollWidth, dx);
+      if (canY || canX) {
+        e.preventDefault();
+        el.scrollBy({ left: canX ? dx : 0, top: canY ? dy : 0 });
+        return;
+      }
+    }
   }
 
   /**
@@ -424,18 +646,22 @@
 
   let fontsAdded = false;
 
-  /** Registers Margin's bundled Manrope with the page under its own family name, so the shadow root can use it. */
+  /**
+   * Registers Margin's bundled Manrope with the page under its own family name, so the shadow root can use it.
+   * Text shows at once in the fallback font and swaps to Manrope when it arrives, so the overlay never waits on it.
+   */
   function loadFont() {
     if (fontsAdded || !document.fonts || typeof FontFace !== 'function') return;
     fontsAdded = true;
     for (const weight of [500, 600, 800]) {
       try {
-        const face = new FontFace(FONT, asset(`fonts/manrope-latin-${weight}-normal.woff2`), { weight: String(weight) });
+        const face = new FontFace(FONT, asset(`fonts/manrope-latin-${weight}-normal.woff2`), { weight: String(weight), display: 'swap' });
         document.fonts.add(face);
         face.load().catch(() => {});
       } catch {}
     }
   }
+  loadFont();
 
   /** Reads the active review and the comments saved on this page, then redraws the hint bar and the flags. */
   async function refreshReview() {
@@ -490,16 +716,18 @@
   }
 
   /**
-   * Puts a flag above a region, or below it when there is no room above.
+   * Puts a flag above a region, below it when there is no room above, or inside its top edge when the region fills the view.
    * @param {HTMLElement} flag The flag.
    * @param {{x:number,y:number,w:number,h:number}} rect The region in viewport pixels.
    * @param {boolean} [inside] True when the flag is placed relative to the region box rather than the viewport.
    */
   function placeFlag(flag, rect, inside = false) {
-    const above = rect.y >= 24;
-    const top = above ? -22 : rect.h + 2;
-    flag.style.left = inside ? '0px' : `${Math.max(2, rect.x)}px`;
-    flag.style.top = inside ? `${top}px` : `${rect.y + top}px`;
+    const lift = 22 * scale;
+    let top = Math.max(0, -rect.y) + 2 * scale;
+    if (rect.y >= lift + 2 * scale) top = -lift;
+    else if (rect.y + rect.h + lift <= innerHeight) top = rect.h + 2 * scale;
+    flag.style.left = inside ? '0px' : px(Math.max(2 * scale, rect.x));
+    flag.style.top = px(inside ? top : rect.y + top);
   }
 
   /** Draws the dashed regions and numbered flags of the comments saved on this page. */
@@ -530,7 +758,7 @@
       const box = regionOf(node.comment);
       node.hidden = !box;
       if (!box) continue;
-      Object.assign(node.style, { left: `${box.x}px`, top: `${box.y}px`, width: `${box.w}px`, height: `${box.h}px` });
+      place(node, box);
       placeFlag(node.querySelector('.flag'), box, true);
     }
   }
@@ -567,9 +795,11 @@
     `;
     root.append(tip);
     const f = flag.getBoundingClientRect();
-    const right = f.right + 8;
-    tip.style.left = `${right + tip.offsetWidth > innerWidth - EDGE ? Math.max(EDGE, f.left - 8 - tip.offsetWidth) : right}px`;
-    tip.style.top = `${Math.min(Math.max(EDGE, f.top), innerHeight - tip.offsetHeight - EDGE)}px`;
+    const size = sizeOf(tip);
+    const edge = EDGE * scale;
+    const right = f.right + 8 * scale;
+    tip.style.left = px(right + size.w > innerWidth - edge ? Math.max(edge, f.left - 8 * scale - size.w) : right);
+    tip.style.top = px(Math.min(Math.max(edge, f.top), innerHeight - size.h - edge));
     state.tip = { tip, node };
   }
 
@@ -628,12 +858,85 @@
     }
   }
 
-  /** Returns the page element under a viewport point, ignoring our own overlay. */
+  /**
+   * Returns the page element under a viewport point, skipping our own overlay without hiding it.
+   * @param {number} x Viewport x of the point.
+   * @param {number} y Viewport y of the point.
+   */
   function elementAt(x, y) {
-    host.style.display = 'none';
-    const el = document.elementFromPoint(x, y);
-    host.style.display = '';
-    return el;
+    return pickAt(x, y)?.el ?? null;
+  }
+
+  /**
+   * Finds the page element a person points at. Hit testing skips layers with pointer-events: none, so on many sites the
+   * hit is a canvas, video, gradient or full-bleed background in front of or behind the text. When the hit fills most of
+   * the view, or is a large empty surface, the page is searched by element boxes and text instead, so the smallest
+   * visible element holding the point wins. `full` is true when even that pick fills the view.
+   * @param {number} x Viewport x of the point.
+   * @param {number} y Viewport y of the point.
+   */
+  function pickAt(x, y) {
+    const hits = document.elementsFromPoint(x, y).filter((el) => el !== host);
+    if (!hits.length) return null;
+    const view = innerWidth * innerHeight;
+    const area = (box) => box.width * box.height;
+    let el = hits[0];
+    let r = el.getBoundingClientRect();
+    const surface = area(r) >= view * 0.2 && !el.childElementCount && !el.textContent.trim();
+    if ((area(r) >= view * 0.6 || surface) && document.body) {
+      const found = smallestAt(document.body, x, y);
+      const box = found?.getBoundingClientRect();
+      if (box && area(box) < area(r) * 0.8) {
+        el = found;
+        r = box;
+      }
+    }
+    const full = r.width >= innerWidth * 0.95 && r.height >= innerHeight * 0.95;
+    return { el, full, rect: { x: r.left, y: r.top, w: r.width, h: r.height } };
+  }
+
+  /**
+   * Searches below an element for the smallest visible element whose box, or whose own text, holds a point, whatever its
+   * pointer-events. Only branches whose box holds the point are walked, within a fixed budget.
+   * @param {Element} start Where the search begins.
+   * @param {number} x Viewport x of the point.
+   * @param {number} y Viewport y of the point.
+   */
+  function smallestAt(start, x, y) {
+    const holds = (r) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    let best = null;
+    let bestArea = Infinity;
+    let budget = 1500;
+    const consider = (el, area) => {
+      if (area > bestArea || el.checkVisibility?.({ opacityProperty: true, visibilityProperty: true }) === false) return;
+      best = el;
+      bestArea = area;
+    };
+    const visit = (el) => {
+      for (const node of el.childNodes) {
+        if (--budget < 0) return;
+        if (node.nodeType === Node.TEXT_NODE) {
+          if (!node.data.trim()) continue;
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          const line = [...range.getClientRects()].find(holds);
+          const own = el.getBoundingClientRect();
+          if (line) consider(el, Math.min(line.width * line.height, own.width * own.height));
+          continue;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE || node === host) continue;
+        const r = node.getBoundingClientRect();
+        if (!r.width && !r.height) {
+          if (node.checkVisibility?.() !== false) visit(node);
+        }
+        else if (holds(r)) {
+          consider(node, r.width * r.height);
+          visit(node);
+        }
+      }
+    };
+    visit(start);
+    return best;
   }
 
   /** Builds a short, readable CSS path for an element. */
@@ -685,10 +988,10 @@
    * @param {{x:number,y:number,w:number,h:number}} rect The region in viewport pixels.
    */
   function place(el, rect) {
-    el.style.left = `${rect.x}px`;
-    el.style.top = `${rect.y}px`;
-    el.style.width = `${rect.w}px`;
-    el.style.height = `${rect.h}px`;
+    el.style.left = px(rect.x);
+    el.style.top = px(rect.y);
+    el.style.width = px(rect.w);
+    el.style.height = px(rect.h);
     el.hidden = false;
   }
 
@@ -734,13 +1037,15 @@
       chrome.runtime.sendMessage({ type: 'openReport' }).catch(() => {});
     });
     root.append(node);
-    const left = Math.min(Math.max(EDGE, saved.box.left + 12), innerWidth - node.offsetWidth - EDGE);
-    node.style.left = `${left}px`;
-    node.style.top = `${Math.min(saved.box.bottom, innerHeight - HINT_SPACE) - node.offsetHeight}px`;
+    const size = sizeOf(node);
+    const left = Math.min(Math.max(EDGE * scale, saved.box.left + 12 * scale), innerWidth - size.w - EDGE * scale);
+    node.style.left = px(left);
+    node.style.top = px(Math.min(saved.box.bottom, innerHeight - HINT_SPACE * scale) - size.h);
     state.toast = { node, timer: setTimeout(clearToast, 5000) };
   }
 
   const nextFrame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
   /** Splits pasted reference links on whitespace or commas, keeping real URLs. */
   function parseLinks(value) {
@@ -822,8 +1127,9 @@
    */
   function openMenu(x, y) {
     closeMenu();
-    const target = elementAt(x, y)?.getBoundingClientRect();
-    if (target) place(hoverBox, { x: target.left, y: target.top, w: target.width, h: target.height });
+    const pick = pickAt(x, y);
+    const target = pick?.el.getBoundingClientRect();
+    if (pick) outline(pick);
     const items = [
       ['Comment on this element', () => captureElementAt(x, y)],
       ['Comment on the whole visible area', captureViewport],
@@ -857,11 +1163,13 @@
       e.stopPropagation();
     });
     root.append(menu);
-    let top = y + 8;
-    const fitsBelow = target && target.height < innerHeight / 3 && target.bottom + 6 + menu.offsetHeight <= innerHeight - EDGE;
-    if (fitsBelow) top = target.bottom + 6;
-    menu.style.left = `${Math.max(EDGE, Math.min(x + 6, window.innerWidth - menu.offsetWidth - EDGE))}px`;
-    menu.style.top = `${Math.max(EDGE, Math.min(top, window.innerHeight - menu.offsetHeight - EDGE))}px`;
+    const size = sizeOf(menu);
+    const edge = EDGE * scale;
+    let top = y + 8 * scale;
+    const fitsBelow = target && target.height < innerHeight / 3 && target.bottom + 6 * scale + size.h <= innerHeight - edge;
+    if (fitsBelow) top = target.bottom + 6 * scale;
+    menu.style.left = px(Math.max(edge, Math.min(x + 6 * scale, window.innerWidth - size.w - edge)));
+    menu.style.top = px(Math.max(edge, Math.min(top, window.innerHeight - size.h - edge)));
     state.menu = menu;
     menu.querySelector('button').focus();
   }
@@ -893,15 +1201,22 @@
     hoverBox.hidden = true;
     hideTip();
     root.classList.add('capturing');
-    await nextFrame();
-    await new Promise((r) => setTimeout(r, 60));
+    host.style.cursor = 'progress';
+    await Promise.race([nextFrame(), wait(1000)]);
+    await wait(60);
     let res;
-    try {
-      res = await chrome.runtime.sendMessage(msg);
-    } catch (err) {
-      res = { error: String(err.message ?? err) };
+    if (document.visibilityState !== 'visible') {
+      res = { error: 'The tab was in the background, so Margin did not take the screenshot' };
+    } else {
+      const sent = chrome.runtime.sendMessage(msg).then((answer) => answer ?? {}, (err) => ({ error: String(err.message ?? err) }));
+      res = await Promise.race([sent, wait(SHOT_TIMEOUT)]);
+      if (!res) {
+        res = { error: 'Margin waited too long for the screenshot' };
+        sent.then((late) => late?.id && chrome.runtime.sendMessage({ type: 'discard', id: late.id }).catch(() => {}));
+      }
     }
     root.classList.remove('capturing');
+    host.style.cursor = '';
     return res?.id ? res : { error: res?.error ?? 'Screenshot failed' };
   }
 
@@ -925,11 +1240,26 @@
       },
     };
     const res = await takeShot(msg);
+    showSaving(rect);
     const pending = state.pending;
     state.pending = null;
     if (pending?.old.id && res.id) chrome.runtime.sendMessage({ type: 'discard', id: pending.old.id }).catch(() => {});
     if (res.id) await refreshReview();
+    showSaving(null);
     openPanel({ id: res.id ?? null, rect, element, msg, error: res.error, draft: pending?.draft });
+  }
+
+  /**
+   * Marks a region as saving, with its band, a Saving flag and a busy cursor, until the card opens.
+   * It is only shown after the screenshot is back, so it never appears in the shot.
+   * @param {{x:number,y:number,w:number,h:number} | null} rect The region, or null to clear the state.
+   */
+  function showSaving(rect) {
+    root.classList.toggle('busy', Boolean(rect));
+    savingFlag.hidden = !rect;
+    if (!rect) return;
+    place(band, rect);
+    placeFlag(savingFlag, rect);
   }
 
   /**
@@ -1259,41 +1589,42 @@
     const { node, rect: r } = p;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const floor = vh - HINT_SPACE;
-    const w = node.offsetWidth;
-    const h = node.offsetHeight;
-    const clampX = (x) => Math.min(Math.max(EDGE, x), vw - w - EDGE);
-    const right = r.x + r.w + GAP;
-    const left = r.x - GAP - w;
+    const edge = EDGE * scale;
+    const gap = GAP * scale;
+    const floor = vh - HINT_SPACE * scale;
+    const { w, h } = sizeOf(node);
+    const clampX = (x) => Math.min(Math.max(edge, x), vw - w - edge);
+    const right = r.x + r.w + gap;
+    const left = r.x - gap - w;
     let side;
-    if (right + w <= vw - EDGE) side = 'right';
-    else if (left >= EDGE) side = 'left';
-    else if (r.y + r.h + GAP + h <= floor) side = 'below';
-    else if (r.y - GAP - h >= EDGE) side = 'above';
+    if (right + w <= vw - edge) side = 'right';
+    else if (left >= edge) side = 'left';
+    else if (r.y + r.h + gap + h <= floor) side = 'below';
+    else if (r.y - gap - h >= edge) side = 'above';
     else side = 'inside';
     p.side = side;
     const anchorTop = (top) => {
-      const at = Math.min(Math.max(EDGE, top), Math.max(EDGE, floor - h));
-      node.style.top = `${at}px`;
-      node.style.maxHeight = `${floor - at}px`;
+      const at = Math.min(Math.max(edge, top), Math.max(edge, floor - h));
+      node.style.top = px(at);
+      node.style.maxHeight = px(floor - at);
     };
     const anchorBottom = (bottom) => {
-      const at = Math.min(floor, Math.max(bottom, h + EDGE));
-      node.style.bottom = `${vh - at}px`;
-      node.style.maxHeight = `${at - EDGE}px`;
+      const at = Math.min(floor, Math.max(bottom, h + edge));
+      node.style.bottom = px(vh - at);
+      node.style.maxHeight = px(at - edge);
     };
     if (side === 'right' || side === 'left') {
-      node.style.left = `${side === 'right' ? right : left}px`;
+      node.style.left = px(side === 'right' ? right : left);
       if (r.y + r.h / 2 < vh / 2) anchorTop(r.y);
       else anchorBottom(Math.min(r.y + r.h, floor));
     } else if (side === 'below') {
-      node.style.left = `${clampX(r.x)}px`;
-      anchorTop(r.y + r.h + GAP);
+      node.style.left = px(clampX(r.x));
+      anchorTop(r.y + r.h + gap);
     } else if (side === 'above') {
-      node.style.left = `${clampX(r.x)}px`;
-      anchorBottom(r.y - GAP);
+      node.style.left = px(clampX(r.x));
+      anchorBottom(r.y - gap);
     } else {
-      node.style.left = `${vw - w - 16}px`;
+      node.style.left = px(vw - w - 16 * scale);
       anchorBottom(floor);
     }
     placeTail();
@@ -1308,17 +1639,18 @@
     const { tail } = p;
     tail.hidden = p.side === 'inside';
     if (tail.hidden) return;
-    const cy = Math.min(Math.max(r.y + r.h / 2, box.top + 16), box.bottom - 16);
-    const cx = Math.min(Math.max(r.x + r.w / 2, box.left + 16), box.right - 16);
+    const k = scale;
+    const cy = Math.min(Math.max(r.y + r.h / 2, box.top + 16 * k), box.bottom - 16 * k);
+    const cx = Math.min(Math.max(r.x + r.w / 2, box.left + 16 * k), box.right - 16 * k);
     const spots = {
-      left: { left: box.right, top: cy - 7, turn: 'none' },
-      right: { left: box.left - 8, top: cy - 7, turn: 'scaleX(-1)' },
-      below: { left: cx - 4, top: box.top - 11, turn: 'rotate(-90deg)' },
-      above: { left: cx - 4, top: box.bottom - 3, turn: 'rotate(90deg)' },
+      left: { left: box.right, top: cy - 7 * k, turn: 'none' },
+      right: { left: box.left - 8 * k, top: cy - 7 * k, turn: 'scaleX(-1)' },
+      below: { left: cx - 4 * k, top: box.top - 11 * k, turn: 'rotate(-90deg)' },
+      above: { left: cx - 4 * k, top: box.bottom - 3 * k, turn: 'rotate(90deg)' },
     };
     const spot = spots[p.side];
-    tail.style.left = `${spot.left}px`;
-    tail.style.top = `${spot.top}px`;
+    tail.style.left = px(spot.left);
+    tail.style.top = px(spot.top);
     tail.style.transform = spot.turn;
   }
 
@@ -1328,8 +1660,8 @@
     root.querySelectorAll(':scope > .pin').forEach((pin) => pin.remove());
     p.marks.forEach((m, i) => {
       const pin = Object.assign(document.createElement('b'), { className: 'pin', textContent: String(i + 1) });
-      pin.style.left = `${m.x}px`;
-      pin.style.top = `${m.y}px`;
+      pin.style.left = px(m.x);
+      pin.style.top = px(m.y);
       pin.title = 'Right-click to remove';
       pin.addEventListener('mousedown', (e) => e.stopPropagation());
       pin.addEventListener('contextmenu', (e) => {
@@ -1508,8 +1840,8 @@
     });
     root.append(menu);
     const at = p.node.querySelector('[data-more]').getBoundingClientRect();
-    menu.style.left = `${Math.max(EDGE, at.right - menu.offsetWidth)}px`;
-    menu.style.top = `${at.bottom + 4}px`;
+    menu.style.left = px(Math.max(EDGE * scale, at.right - sizeOf(menu).w));
+    menu.style.top = px(at.bottom + 4 * scale);
     p.more = menu;
     widths.focus();
   }
@@ -1670,13 +2002,20 @@
       return;
     }
     if (state.panel || state.menu || !state.selectors) return;
-    const el = elementAt(e.clientX, e.clientY);
-    if (!el) {
+    outline(pickAt(e.clientX, e.clientY));
+  }
+
+  /**
+   * Outlines a picked element, saying so when it fills the whole view, or hides the outline when nothing was picked.
+   * @param {{rect: object, full: boolean} | null} pick The pick from pickAt.
+   */
+  function outline(pick) {
+    if (!pick) {
       hoverBox.hidden = true;
       return;
     }
-    const r = el.getBoundingClientRect();
-    place(hoverBox, { x: r.left, y: r.top, w: r.width, h: r.height });
+    hoverBox.classList.toggle('full', pick.full);
+    place(hoverBox, pick.rect);
   }
 
   /** Starts a drag, or drops a marker when a card is open and the press lands inside its area. */
@@ -1729,9 +2068,20 @@
     capture(rect);
   }
 
-  /** Keyboard shortcuts while annotating: S and M toggle modes, 1 to 4 and R act on the open card, arrows walk menus, Esc steps back. */
+  /**
+   * Keyboard shortcuts while annotating: S and M toggle modes, 1 to 4 and R act on the open card, arrows walk menus,
+   * Esc steps back and holding Alt hands the pointer to the page. Letters and digits typed into a page field stay there,
+   * and an Esc meant for the page, with a page dialog or field open or handled by the page, never stops annotating.
+   * @param {KeyboardEvent} e A keydown caught at the window.
+   */
   function onKey(e) {
-    const plain = !e.ctrlKey && !e.metaKey && !e.altKey;
+    if (e.key === 'Alt') {
+      e.preventDefault();
+      passThrough(true);
+      return;
+    }
+    const pageField = isEditable(document.activeElement) || isEditable(e.composedPath()[0]);
+    const plain = !e.ctrlKey && !e.metaKey && !e.altKey && !pageField;
     const key = e.key?.toLowerCase();
     const menu = state.menu ?? state.panel?.more;
     if (menu && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
@@ -1767,12 +2117,21 @@
       return;
     }
     if (e.key !== 'Escape') return;
+    if (!state.menu && !state.panel && !state.pending) {
+      if (pageField || pageLayerOpen()) return;
+      window.addEventListener('keydown', (after) => after === e && !e.defaultPrevented && setActive(false), { once: true });
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     if (state.menu) closeMenu();
     else if (state.panel) escapePanel();
-    else if (state.pending) cancelRedraw();
-    else setActive(false);
+    else cancelRedraw();
+  }
+
+  /** True when the page has its own modal dialog, popover or fullscreen element open, which Esc should close first. */
+  function pageLayerOpen() {
+    return Boolean(document.fullscreenElement) || deepAll('dialog:modal, :popover-open').some((el) => el !== host);
   }
 
   /**
@@ -1784,10 +2143,14 @@
     state.active = next;
     root.hidden = !next;
     if (next) {
-      if (!host.isConnected) document.documentElement.append(host);
-      if (!host.matches(':popover-open')) host.showPopover?.();
-      loadFont();
+      raise();
       SHIELDED.forEach((type) => window.addEventListener(type, shield, true));
+      LAYERED.forEach((type) => window.addEventListener(type, onLayer, true));
+      window.addEventListener('mousemove', onStrayMove, true);
+      window.addEventListener('keyup', onKeyUp, true);
+      window.addEventListener('blur', endPass);
+      root.addEventListener('wheel', onWheel, { passive: false });
+      openWatch.observe(document, { subtree: true, attributes: true, attributeFilter: ['open'] });
       root.addEventListener('mousemove', onMove);
       root.addEventListener('mousedown', onDown);
       root.addEventListener('mouseup', onUp);
@@ -1795,6 +2158,7 @@
       window.addEventListener('keydown', onKey, true);
       window.addEventListener('scroll', onScroll, { passive: true, capture: true });
       window.addEventListener('resize', onScroll);
+      window.addEventListener('resize', fitZoom);
       refreshReview();
     } else {
       closeMenu();
@@ -1805,10 +2169,21 @@
       clearToast();
       hideTip();
       state.drag = null;
+      showSaving(null);
       band.hidden = true;
       hoverBox.hidden = true;
       layer.replaceChildren();
       SHIELDED.forEach((type) => window.removeEventListener(type, shield, true));
+      LAYERED.forEach((type) => window.removeEventListener(type, onLayer, true));
+      window.removeEventListener('mousemove', onStrayMove, true);
+      window.removeEventListener('keyup', onKeyUp, true);
+      window.removeEventListener('blur', endPass);
+      root.removeEventListener('wheel', onWheel);
+      openWatch.disconnect();
+      passThrough(false);
+      holder?.removeEventListener('close', raiseAgain);
+      holder = null;
+      hostWatch.disconnect();
       root.removeEventListener('mousemove', onMove);
       root.removeEventListener('mousedown', onDown);
       root.removeEventListener('mouseup', onUp);
@@ -1816,6 +2191,7 @@
       window.removeEventListener('keydown', onKey, true);
       window.removeEventListener('scroll', onScroll, { capture: true });
       window.removeEventListener('resize', onScroll);
+      window.removeEventListener('resize', fitZoom);
       host.remove();
     }
     return state.active;
@@ -1825,7 +2201,13 @@
     if (msg?.type === 'ping') sendResponse({ ok: true });
     else if (msg?.type === 'toggle') {
       if (msg.groupName) groupLabel.textContent = msg.groupName;
+      if (msg.zoom) tabZoom = msg.zoom;
       sendResponse({ active: setActive(!state.active) });
+    }
+    else if (msg?.type === 'zoom') {
+      tabZoom = msg.zoom || 1;
+      if (state.active) refit();
+      sendResponse({ ok: true });
     }
     else if (msg?.type === 'stop') sendResponse({ active: setActive(false) });
     else if (msg?.type === 'toast') {
@@ -1834,7 +2216,9 @@
     }
     else if (msg?.type === 'captureViewport') {
       if (msg.groupName) groupLabel.textContent = msg.groupName;
+      if (msg.zoom) tabZoom = msg.zoom;
       setActive(true);
+      fitZoom();
       captureViewport();
       sendResponse({ active: true });
     }

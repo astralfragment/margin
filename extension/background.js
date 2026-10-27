@@ -37,9 +37,14 @@ async function toggleTab(tab) {
   const res = await chrome.tabs.sendMessage(tab.id, {
     type: 'toggle',
     groupName: (await activeGroup()).name,
+    zoom: await chrome.tabs.getZoom(tab.id).catch(() => 1),
   });
   return res?.active === true;
 }
+
+chrome.tabs.onZoomChange.addListener(({ tabId, newZoomFactor }) => {
+  chrome.tabs.sendMessage(tabId, { type: 'zoom', zoom: newZoomFactor }).catch(() => {});
+});
 
 /**
  * Injects the content script into a tab unless it is already there.
@@ -77,7 +82,11 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     else if (info.menuItemId === 'margin-report') await handlers.openReport();
     else if (info.menuItemId === 'margin-viewport' && tab?.id) {
       await ensureContent(tab);
-      await chrome.tabs.sendMessage(tab.id, { type: 'captureViewport', groupName: (await activeGroup()).name });
+      await chrome.tabs.sendMessage(tab.id, {
+        type: 'captureViewport',
+        groupName: (await activeGroup()).name,
+        zoom: await chrome.tabs.getZoom(tab.id).catch(() => 1),
+      });
     } else if (info.menuItemId === 'margin-widths' && tab?.id) {
       const res = await handlers.captureWidths({ page: true }, { tab }).catch((err) => ({ error: String(err.message ?? err) }));
       await chrome.tabs.sendMessage(tab.id, { type: 'toast', text: res.error ?? res.message });
