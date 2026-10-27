@@ -642,6 +642,9 @@ kbd {
 }
 .card h2 + .setting { padding-top: 0; border-top: 0; }
 .options .row { flex-wrap: wrap; }
+.options [hidden] { display: none; }
+.options .note { margin: 0; padding: var(--s2) var(--s3); font-size: 12px; line-height: 16px; background: var(--secondary); border-radius: var(--radius-sm); }
+.setting > .row { justify-content: flex-end; }
 .setting b { display: block; font-size: 13px; font-weight: 600; }
 .setting .hint { margin-top: 2px; }
 .setting input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var(--brand-deep); cursor: pointer; }

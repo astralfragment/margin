@@ -10,6 +10,8 @@ themeEl.value = (await chrome.storage.local.get(THEME_KEY))[THEME_KEY] ?? 'light
 themeEl.addEventListener('change', () => chrome.storage.local.set({ [THEME_KEY]: themeEl.value }));
 
 const SELECTORS_KEY = 'selectorMode';
+const SIGN_IN_WAIT = 2 * 60_000;
+const SETTLE_MS = 800;
 
 document.querySelector('[data-version]').textContent = `Version ${chrome.runtime.getManifest().version}`;
 const selectorsEl = document.querySelector('[data-selectors]');
@@ -40,57 +42,130 @@ function size(bytes) {
 
 const [issues, bytes] = await Promise.all([readIssues(), chrome.storage.local.getBytesInUse(null)]);
 document.querySelector('[data-storage]').textContent =
-  `${issues.length} ${issues.length === 1 ? 'comment' : 'comments'} with their screenshots, ${size(bytes)}. Delete a review from the popup to free space.`;
+  `${issues.length} ${issues.length === 1 ? 'comment' : 'comments'} with their screenshots, ${size(bytes)}. Delete a review you no longer need to free space.`;
 
 const CONNECTION_HINTS = {
   jira: 'Not connected. Connect to create Jira issues with the screenshots attached.',
   figma: 'Not connected. Connect to post comments on the Figma frames your links point at.',
 };
 
-/** Shows each service's signed-in account, or what connecting it does. */
+const rows = new Map();
+const returnNote = document.querySelector('[data-return]');
+
+/** Shows each service's signed-in account, or what connecting it does, unless the row is busy asking or waiting. */
 async function paintConnections() {
   const all = await readConnections();
-  for (const row of document.querySelectorAll('[data-connection]')) {
-    const current = all[row.dataset.connection];
+  for (const [provider, row] of rows) {
+    if (row.busy) continue;
+    const current = all[provider];
     const who = [current?.account?.name, current?.account?.email].filter(Boolean).join(', ') || 'your account';
     const sites = current?.sites?.map((site) => site.name).join(', ');
-    row.dataset.connected = String(Boolean(current));
-    row.querySelector('[data-connection-state]').textContent = current
-      ? `Connected as ${who}.${sites ? ` Jira sites ${sites}.` : ''}`
-      : CONNECTION_HINTS[row.dataset.connection];
-    const button = row.querySelector('[data-connection-toggle]');
-    button.textContent = current ? 'Disconnect' : 'Connect';
-    button.classList.toggle('action', !current);
+    row.el.dataset.connected = String(Boolean(current));
+    row.state.textContent = current ? `Connected as ${who}.${sites ? ` Jira sites ${sites}.` : ''}` : CONNECTION_HINTS[provider];
+    row.button.textContent = current ? 'Disconnect' : 'Connect';
+    row.button.classList.toggle('action', !current);
+    row.button.classList.remove('danger');
+    row.cancel.hidden = true;
   }
 }
 
-for (const row of document.querySelectorAll('[data-connection]')) {
-  const provider = row.dataset.connection;
-  const button = row.querySelector('[data-connection-toggle]');
-  const state = row.querySelector('[data-connection-state]');
-  button.addEventListener('click', async () => {
-    if (row.dataset.connected === 'true') {
+/**
+ * Turns the button off for a moment after the row changes under the pointer, so a double click does not undo it.
+ * @param {HTMLButtonElement} button The button.
+ */
+function settle(button) {
+  button.disabled = true;
+  setTimeout(() => (button.disabled = false), SETTLE_MS);
+}
+
+/** Says how to get back to a review sheet that was left to connect a service. */
+async function showReturn() {
+  const { reviewDraft } = await chrome.storage.local.get('reviewDraft');
+  returnNote.hidden = !reviewDraft;
+  returnNote.textContent = 'Your review sheet is kept. Once connected, click Margin in the toolbar to finish it.';
+}
+
+for (const el of document.querySelectorAll('[data-connection]')) {
+  const provider = el.dataset.connection;
+  const name = PROVIDERS[provider].name;
+  const row = { el, busy: null, attempt: 0, button: el.querySelector('[data-connection-toggle]'), cancel: el.querySelector('[data-connection-cancel]'), state: el.querySelector('[data-connection-state]') };
+  rows.set(provider, row);
+
+  /** Leaves the question or the wait and shows the row as it is stored. */
+  const reset = async () => {
+    row.busy = null;
+    row.attempt += 1;
+    await paintConnections();
+  };
+
+  row.cancel.addEventListener('click', async () => {
+    await reset();
+    row.button.focus();
+  });
+
+  row.button.addEventListener('click', async () => {
+    if (row.busy === 'waiting') {
+      await reset();
+      row.state.textContent = `${name} sign-in stopped. Connect to try again.`;
+      return;
+    }
+    if (el.dataset.connected === 'true') {
+      if (row.busy !== 'asking') {
+        row.busy = 'asking';
+        row.state.textContent = `Disconnect ${name}? Connecting again needs a full sign-in.`;
+        row.button.classList.add('danger');
+        row.cancel.hidden = false;
+        return;
+      }
+      row.busy = null;
       await disconnect(provider);
-      return paintConnections();
+      await paintConnections();
+      settle(row.button);
+      return;
     }
     const access = requestAccess(provider);
-    button.disabled = true;
-    state.textContent = `Waiting for ${PROVIDERS[provider].name} sign-in`;
+    const attempt = ++row.attempt;
+    row.busy = 'waiting';
+    row.button.textContent = 'Cancel';
+    row.button.classList.remove('action');
+    row.state.textContent = `Waiting for ${name} sign-in`;
+    const timer = setTimeout(async () => {
+      if (attempt !== row.attempt) return;
+      await reset();
+      row.state.textContent = `${name} sign-in did not finish. Connect to try again.`;
+    }, SIGN_IN_WAIT);
     try {
-      if (!(await access)) throw new Error(`Margin needs permission to reach ${PROVIDERS[provider].name}. Choose Allow to connect.`);
+      if (!(await access)) throw new Error(`Margin needs permission to reach ${name}. Choose Allow to connect.`);
       await connect(provider);
+      if (attempt !== row.attempt) return;
+      row.busy = null;
       await paintConnections();
+      settle(row.button);
+      if (!returnNote.hidden) returnNote.textContent = `${name} is connected. Click Margin in the toolbar to finish your review.`;
     } catch (err) {
-      state.textContent = err.message;
+      if (attempt !== row.attempt) return;
+      row.busy = null;
+      await paintConnections();
+      row.state.textContent = err.message;
     } finally {
-      button.disabled = false;
+      clearTimeout(timer);
     }
   });
 }
 
-paintConnections();
+await paintConnections();
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.connections) paintConnections();
+});
 
-document.querySelector('[data-report]').addEventListener('click', () => chrome.runtime.sendMessage({ type: 'openReport' }));
+const target = document.getElementById(location.hash.slice(1));
+if (target?.matches('[data-connection]')) {
+  await showReturn();
+  target.scrollIntoView({ block: 'center' });
+  target.querySelector('[data-connection-toggle]').focus();
+}
+
+document.querySelector('[data-report]').addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('report.html?group=all') }));
 document.querySelector('[data-welcome]').addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') }));
 document.querySelector('[data-replay]').addEventListener('click', async () => {
   await resetTours();
