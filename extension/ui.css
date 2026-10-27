@@ -113,7 +113,7 @@ h1 { font-size: 14px; }
   cursor: pointer; transition: background-color 120ms ease-out, border-color 120ms ease-out;
 }
 .btn:hover { background: var(--secondary); }
-.btn:disabled, .btn:disabled:hover { opacity: 0.45; cursor: not-allowed; }
+.btn.btn:disabled, .btn.btn:disabled:hover { opacity: 0.45; cursor: not-allowed; }
 .btn.primary { color: var(--primary-foreground); background: var(--primary); border-color: var(--primary); }
 .btn.primary:hover { opacity: 0.9; }
 .btn.action { color: var(--action-foreground); background: var(--action); border-color: var(--action); font-weight: 800; }
@@ -221,6 +221,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { border-color
 .filter-btn[aria-pressed="true"] {
   color: var(--primary-foreground); background: var(--primary); border-color: var(--primary);
 }
+.sidebar .index { grid-row: 4; }
+.sidebar .sidebar-foot { grid-row: 5; }
 .index { overflow: auto; padding: 0 var(--s2) var(--s2); display: grid; gap: 1px; align-content: start; }
 .index-row {
   display: grid; grid-template-columns: 20px 6px minmax(0, 1fr); gap: var(--s2); align-items: center;
@@ -343,7 +345,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { border-color
   display: grid; grid-template-columns: 24px 116px minmax(0, 1fr) auto; gap: var(--s2);
   padding: var(--s3) 0; border-top: 1px solid var(--border); align-items: start;
 }
-.edit-row.removing { opacity: 0.45; }
+.edit-row.removing > :not([data-remove]) { opacity: 0.45; }
 .edit-row.removing .stack { text-decoration: line-through; }
 .edit-row:first-child { border-top: 0; padding-top: 0; }
 .edit-row .n { font-size: 12px; font-weight: 600; color: var(--muted-foreground); padding-top: 9px; }

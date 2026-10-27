@@ -9,7 +9,6 @@ import {
   numbering,
   routeOf,
   recheckCaption,
-  severityBadge,
   REPORT_CSS,
   PREVIEW_DARK_CSS,
 } from './lib/report-template.js';
@@ -558,7 +557,8 @@ indexEl.addEventListener('click', async (event) => {
   markCurrent(row);
   if (editorOpen()) {
     if (!(await closeEditor())) return;
-    pendingJump = row.dataset.jump;
+    if (previewLoading) pendingJump = row.dataset.jump;
+    else jumpTo(row.dataset.jump, 'instant');
     if (issue?.shot) editImage(issue);
     return;
   }
@@ -576,10 +576,12 @@ function spy() {
 
 let previewScroll = 0;
 let pendingJump = null;
+let previewLoading = true;
 
 /** Redraws the preview from the comments in memory, keeping its scroll position. */
 function refreshPreview() {
-  previewScroll = frame.contentWindow?.scrollY ?? 0;
+  if (!previewLoading) previewScroll = frame.contentWindow?.scrollY ?? 0;
+  previewLoading = true;
   frame.srcdoc = previewDoc();
 }
 
@@ -869,6 +871,7 @@ function onPreviewClick(event) {
 frame.addEventListener('load', () => {
   const doc = frame.contentDocument;
   const win = frame.contentWindow;
+  previewLoading = false;
   doc.documentElement.dataset.theme = document.documentElement.dataset.theme ?? 'light';
   addCardTools(doc);
   wireNoteList(doc);
@@ -1262,7 +1265,7 @@ editSave.addEventListener('click', async () => {
     const error = row.querySelector('[data-links-error]');
     const { bad } = parseLinks(row.querySelector('[data-field="links"]').value);
     error.hidden = !bad.length || row.dataset.remove === 'true';
-    error.textContent = `Not a link: ${bad.join(', ')}. Paste the full address, starting with https://`;
+    error.textContent = `${bad.join(' and ')} ${bad.length === 1 ? 'is not a link' : 'are not links'}. Paste the full address, starting with https://`;
     if (!error.hidden) invalid ??= row;
   }
   if (invalid) {
@@ -1479,7 +1482,7 @@ function paintWalk() {
       <div class="row">
         <span class="n">${pad(n)}</span>
         <span class="title">${escapeText(issue.title || 'Untitled comment')}</span>
-        ${severityBadge(severityOf(issue.severity))}
+        <span class="chip" data-sev="${severityOf(issue.severity).key}"><i></i>${severityOf(issue.severity).label}</span>
         <span class="tag">${escapeText(statusOf(issue.status).label)}</span>
       </div>
       ${issue.note ? `<p class="hint note">${escapeText(issue.note)}</p>` : ''}
