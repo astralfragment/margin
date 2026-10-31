@@ -11,6 +11,7 @@ export const STATUSES = [
 /**
  * Returns the status descriptor for a key, falling back to Open.
  * @param {string} [key] The stored status.
+ * @returns {{ key: string, label: string }}
  */
 export function statusOf(key) {
   return STATUSES.find((s) => s.key === key) ?? STATUSES[0];

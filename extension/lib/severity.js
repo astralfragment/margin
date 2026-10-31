@@ -12,7 +12,11 @@ export const SEVERITIES = [
 
 export const SEVERITY_ORDER = SEVERITIES.map((s) => s.key);
 
-/** Returns the severity descriptor for a key, falling back to Major. */
+/**
+ * Returns the severity descriptor for a key, falling back to Major.
+ * @param {string} [key] The stored severity.
+ * @returns {{ key: string, label: string, token: string }}
+ */
 export function severityOf(key) {
   return SEVERITIES.find((s) => s.key === key) ?? SEVERITIES[1];
 }
