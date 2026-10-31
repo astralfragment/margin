@@ -1,6 +1,7 @@
 import { SEVERITIES, SEVERITY_ORDER, severityOf } from './severity.js';
 import { STATUSES, statusOf } from './status.js';
 import { DEFAULT_FIELDS, FACT_FIELDS, withDefaults } from './fields.js';
+import { exportOptions } from './export-config.js';
 import { markList } from './marks.js';
 import { widthCaption, widthShots } from './widths.js';
 
@@ -18,6 +19,9 @@ const momentOf = (value) => {
 };
 
 const pad = (n) => String(n).padStart(2, '0');
+
+/** Each severity's shape as a text character, for formats that cannot draw: square, triangle, circle and hollow circle. */
+export const SEVERITY_SHAPES = { blocker: '■', major: '▲', minor: '●', nit: '○' };
 
 /**
  * Numbers comments in the order they were made, counting within each review, so a comment keeps one number
@@ -49,7 +53,7 @@ const screenWord = (part) => {
  * The site name in a tab title. "Page | Site" and "Page - Site" put it last, "Site: tagline" puts it first.
  * @param {string} [title] The tab title.
  */
-function appOf(title) {
+export function appOf(title) {
   const text = title?.trim() ?? '';
   const parts = text.split(/\s[|-]\s/);
   if (parts.length > 1) return parts.at(-1).trim();
@@ -229,34 +233,66 @@ function detailRows(issue, fields) {
   return FACT_FIELDS.filter((f) => fields[f.key]).map((f) => rows[f.key]()).filter(Boolean);
 }
 
+
 /**
  * One comment as every format reads it.
  * @param {object} issue The stored comment.
  * @param {number} number Its comment number.
- * @param {{ shots?: string, fields?: Record<string, boolean>, widths?: boolean }} [options] Which images, detail rows and width shots to include.
+ * @param {{ shots?: 'both' | 'detail' | 'viewport' | 'none', fields?: Record<string, boolean>, widths?: boolean }} [options] Which images, detail rows and width shots to include.
  */
 export function reviewComment(issue, number, { shots = 'both', fields = DEFAULT_FIELDS, widths = true } = {}) {
-  const regionShown = shots !== 'viewport';
+  const regionShown = shots === 'both' || shots === 'detail';
+  const fullShown = shots === 'both' || shots === 'viewport';
+  const severity = severityOf(issue.severity);
   return {
     issue,
     id: issue.id,
     number,
     label: pad(number),
-    severity: severityOf(issue.severity),
+    severity,
+    shape: SEVERITY_SHAPES[severity.key],
     status: statusOf(issue.status),
     title: String(issue.title ?? '').trim() || 'Untitled comment',
     note: String(issue.note ?? '').trim(),
     marks: markList(issue),
     route: issue.page?.url ? routeOf(issue.page) : '',
     url: issue.page?.url ?? '',
+    jira: issue.jira?.key ? { key: issue.jira.key, url: issue.jira.url ?? '', status: issue.jira.status ?? '' } : null,
+    dpr: issue.viewport?.dpr || 1,
     images: {
       region: regionShown ? issue.detail ?? '' : '',
       after: regionShown ? issue.after ?? '' : '',
-      afterCaption: issue.after ? recheckCaption(issue) : '',
-      full: shots === 'detail' ? '' : issue.shot ?? '',
-      widths: widths ? widthShots(issue).map((shot) => ({ ...shot, caption: widthCaption(shot) })) : [],
+      afterCaption: regionShown && issue.after ? recheckCaption(issue) : '',
+      full: fullShown ? issue.shot ?? '' : '',
+      widths: widths && shots !== 'none' ? widthShots(issue).map((shot) => ({ ...shot, caption: widthCaption(shot) })) : [],
     },
     rows: detailRows(issue, withDefaults(fields)),
+  };
+}
+
+/**
+ * The hosts the comments were made on, in the order first seen.
+ * @param {object[]} issues The comments.
+ */
+function sitesOf(issues) {
+  const hosts = issues.map((issue) => {
+    try {
+      return new URL(issue.page?.url).host.replace(/^www\./, '');
+    } catch {
+      return '';
+    }
+  });
+  return [...new Set(hosts.filter(Boolean))];
+}
+
+/**
+ * The review's own links: its Jira ticket and Figma file, when it has them.
+ * @param {{ jira?: object, figma?: object } | null} [group] The stored review.
+ */
+function reviewLinks(group) {
+  return {
+    jira: group?.jira?.key ? { key: group.jira.key, url: group.jira.url ?? '', status: group.jira.status ?? '' } : null,
+    figma: group?.figma?.fileKey || group?.figma?.url ? { name: group.figma.name || 'Figma file', url: group.figma.url ?? '' } : null,
   };
 }
 
@@ -267,36 +303,82 @@ const bySeverity = (a, b) =>
 /**
  * The one review every format draws from: the header, the counts, and the comments grouped by page in report order.
  * Pages come in the order they were first commented on, and comments inside a page by severity, then capture time.
+ * Comments left out by the statuses option keep their numbers, and pages keep their COMM numbers.
  * @param {object[]} issues The comments, in the order they were made.
- * @param {{ title?: string, generatedAt?: Date, shots?: string, fields?: Record<string, boolean>, widths?: boolean, order?: 'severity' | 'number' }} [options]
- *   The review title and date, which images and detail rows to include, and the order of the flat comment list.
+ * @param {object} [options] The review title, date and stored review (`group`), the export configuration from export-config.js,
+ *   the order of the flat list, and `preview`, which keeps every status since the report screen filters on its own.
  */
-export function buildReviewModel(issues, { title = 'UI review', generatedAt = new Date(), shots = 'both', fields = DEFAULT_FIELDS, widths = true, order = 'severity' } = {}) {
+export function buildReviewModel(issues, options = {}) {
+  const { title = 'UI review', generatedAt = new Date(), order = 'severity', group = null, preview = false, ...config } = exportOptions(options);
   const numberOf = numbering(issues);
-  const byNumber = issues.map((issue) => reviewComment(issue, numberOf(issue), { shots, fields, widths }));
   const pages = new Map();
-  for (const comment of byNumber) {
-    if (!pages.has(comment.url)) pages.set(comment.url, { page: comment.issue.page ?? { url: comment.url }, comments: [] });
-    pages.get(comment.url).comments.push(comment);
+  for (const issue of issues) {
+    const url = issue.page?.url ?? '';
+    if (!pages.has(url)) pages.set(url, { page: issue.page ?? { url }, number: pages.size + 1, comments: [] });
   }
-  const sections = [...pages.values()].map(({ page, comments }, i) => ({
-    number: i + 1,
-    label: `COMM${i + 1}`,
-    route: page.url ? routeOf(page) : 'No page',
-    url: page.url ?? '',
-    comments: comments.sort(bySeverity),
-  }));
-  const total = issues.length;
+  const included = preview ? issues : issues.filter((issue) => config.statuses.includes(statusOf(issue.status).key));
+  const byNumber = included.map((issue) => reviewComment(issue, numberOf(issue), config));
+  for (const comment of byNumber) pages.get(comment.url).comments.push(comment);
+  const sections = [...pages.values()]
+    .filter((p) => p.comments.length)
+    .map(({ page, number, comments }) => ({
+      number,
+      label: `COMM${number}`,
+      route: page.url ? routeOf(page) : 'No page',
+      url: page.url ?? '',
+      comments: comments.sort(bySeverity),
+    }));
+  const total = byNumber.length;
   const pageCount = sections.length;
+  const statuses = STATUSES.map((s) => ({ ...s, count: byNumber.filter((c) => c.status.key === s.key).length }));
+  const fixed = statuses.find((s) => s.key === 'fixed').count;
   return {
     title,
     date: DAY.format(generatedAt),
+    sites: sitesOf(included.length ? included : issues),
+    links: reviewLinks(group),
+    config,
     total,
     pageCount,
     summary: `${total} ${total === 1 ? 'comment' : 'comments'} on ${pageCount} ${pageCount === 1 ? 'page' : 'pages'}`,
-    severities: SEVERITIES.map((s) => ({ ...s, count: byNumber.filter((c) => c.severity.key === s.key).length })),
-    statuses: STATUSES.map((s) => ({ ...s, count: byNumber.filter((c) => c.status.key === s.key).length })),
+    progress: { fixed, total, text: `${fixed} of ${total} fixed` },
+    severities: SEVERITIES.map((s) => ({
+      ...s,
+      shape: SEVERITY_SHAPES[s.key],
+      count: byNumber.filter((c) => c.severity.key === s.key).length,
+      byStatus: Object.fromEntries(STATUSES.map((st) => [st.key, byNumber.filter((c) => c.severity.key === s.key && c.status.key === st.key).length])),
+    })),
+    statuses,
     sections,
-    comments: order === 'number' ? byNumber : sections.flatMap((section) => section.comments),
+    comments: order === 'number' ? [...byNumber].sort((a, b) => a.number - b.number) : sections.flatMap((section) => section.comments),
   };
+}
+
+/**
+ * The pixel size of a PNG or JPEG data URL, read from its header, or null for anything else.
+ * Exports size each image to the size it had on screen, which Docs and Word also need as a width and height.
+ * @param {string} src The data URL.
+ */
+export function imageSize(src) {
+  const match = /^data:image\/(png|jpe?g);base64,(.*)$/i.exec(src ?? '');
+  if (!match) return null;
+  let bytes;
+  try {
+    bytes = Uint8Array.from(atob(match[2].slice(0, 40000).replace(/[^A-Za-z0-9+/=]/g, '').slice(0, 39996)), (c) => c.charCodeAt(0));
+  } catch {
+    return null;
+  }
+  const u16 = (i) => (bytes[i] << 8) | bytes[i + 1];
+  if (match[1].toLowerCase() === 'png') {
+    if (bytes.length < 24) return null;
+    const u32 = (i) => ((bytes[i] << 24) >>> 0) + (bytes[i + 1] << 16) + (bytes[i + 2] << 8) + bytes[i + 3];
+    return { width: u32(16), height: u32(20) };
+  }
+  for (let i = 2; i + 9 < bytes.length; ) {
+    if (bytes[i] !== 0xff) return null;
+    const marker = bytes[i + 1];
+    if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) return { width: u16(i + 7), height: u16(i + 5) };
+    i += 2 + u16(i + 2);
+  }
+  return null;
 }
