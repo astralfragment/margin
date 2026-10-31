@@ -185,7 +185,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { border-color
 .topbar .brand { font-size: 13px; font-weight: 800; padding-right: var(--s1); }
 .topbar select { width: auto; field-sizing: content; min-width: 150px; max-width: 340px; flex: 0 1 auto; }
 .topbar .link-chips { flex: 0 1 auto; overflow: hidden; }
-.topbar .spacer { margin-left: auto; }
+.topbar .spacer { flex: 1 1 0; min-width: 0; }
 .topbar .menu:not(.review-menu) > .menu-body { max-height: calc(100vh - 68px); overflow: auto; }
 .narrow-only, .menu-item.narrow-only, .menu-sep.narrow-only { display: none; }
 .skip-link {
@@ -194,6 +194,10 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { border-color
   transform: translateY(-200%);
 }
 .skip-link:focus { transform: none; }
+@media (max-width: 1320px) {
+  .topbar .btn.wide-only { width: 32px; padding: 0; font-size: 0; gap: 0; }
+  .topbar .btn.wide-only .ico { width: 16px; height: 16px; }
+}
 @media (max-width: 1180px) {
   .topbar .brand, .link-chip .tone-todo, .link-chip .tone-progress, .link-chip .tone-done { display: none; }
   .link-chip:has(.ico-figma) .label { display: none; }
@@ -207,8 +211,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { border-color
   .link-chip .label { display: none; }
 }
 .workspace { display: grid; grid-template-columns: 288px 1fr; min-height: 0; }
-.canvas { min-width: 0; background: var(--background); }
-.canvas iframe { width: 100%; height: 100%; border: 0; display: block; }
+.canvas { position: relative; min-width: 0; background: var(--background); }
+.canvas iframe { width: 100%; height: 100%; border: 0; display: block; transition: opacity 180ms ease-out; }
 
 /* Sidebar */
 .sidebar {
@@ -262,24 +266,32 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { border-color
 .menu > summary { list-style: none; user-select: none; }
 .menu > summary::-webkit-details-marker { display: none; }
 .menu-body {
-  position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: 232px;
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: 248px;
   display: grid; gap: var(--s1); padding: var(--s1);
   background: var(--popover); border: 1px solid var(--border);
   border-radius: var(--radius); box-shadow: var(--shadow-lg);
 }
 .menu-label {
-  padding: 6px var(--s2) 2px; font-size: 12px; font-weight: 800;
-  color: var(--foreground);
+  padding: 8px var(--s2) 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+  color: var(--muted-foreground);
 }
 .menu-item {
-  display: block; width: 100%; text-align: left; padding: 6px var(--s2);
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 32px; text-align: left; padding: 6px var(--s2);
   font: inherit; font-size: 12px; color: var(--foreground);
   background: none; border: 0; border-radius: var(--radius-sm); cursor: pointer;
 }
+.menu-item > .ico { width: 16px; height: 16px; color: var(--muted-foreground); }
+.menu-item:hover > .ico, .menu-item:focus-visible > .ico { color: var(--foreground); }
+.menu-item.danger > .ico { color: var(--destructive); }
 .menu-item:hover, .menu-item:focus-visible, .ctx-menu .menu-item:focus { background: var(--secondary); }
 .menu-item:focus-visible, .ctx-menu .menu-item:focus { outline: 2px solid var(--ring); outline-offset: -2px; }
 .menu-field { display: grid; gap: 4px; padding: 4px var(--s2) 6px; font-size: 12px; color: var(--muted-foreground); }
-.menu-sep { height: 1px; margin: var(--s1) 0; background: var(--border); }
+.menu-sep { height: 1px; margin: 2px var(--s1); background: var(--border); }
+.menu[open] > summary.btn { background: var(--secondary); }
+.more-menu > summary .ico { width: 14px; height: 14px; transition: transform 150ms ease-out; }
+.more-menu[open] > summary .ico { transform: rotate(180deg); }
+.more-menu > .menu-body { animation: menu-in 120ms ease-out; transform-origin: top right; }
+@keyframes menu-in { from { opacity: 0; transform: translateY(-4px) scale(0.98); } }
 
 /* Dialog */
 .sheet {
@@ -518,7 +530,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { border-color
 .pop-picker .menu-body { left: -29px; right: auto; width: 312px; max-height: 320px; overflow: hidden auto; grid-template-columns: minmax(0, 1fr); }
 .pop-picker .menu-item .muted { flex: none; }
 .pop-head .menu-body { z-index: 40; }
-.menu-item { display: flex; align-items: center; gap: var(--s2); }
 .menu-item .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .menu-item[aria-checked="true"] { background: var(--secondary); font-weight: 600; }
 .menu-item.danger { color: var(--destructive); }
@@ -867,33 +878,7 @@ kbd {
 .mk-pair i { display: block; height: 9cqw; border: 1px solid var(--border); border-radius: 1cqw; background: var(--muted); }
 .mk-pair figure:first-child i { box-shadow: inset 0 0 0 2px #e5484d; }
 
-/* Menus with icons */
-.menu-body { width: 248px; }
-.menu-item { gap: 10px; min-height: 32px; padding: 6px var(--s2); }
-.menu-item > .ico { width: 16px; height: 16px; color: var(--muted-foreground); }
-.menu-item:hover > .ico, .menu-item:focus-visible > .ico { color: var(--foreground); }
-.menu-item.danger > .ico { color: var(--destructive); }
-.menu-label {
-  padding: 8px var(--s2) 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
-  color: var(--muted-foreground);
-}
-.menu-sep { margin: 2px var(--s1); }
-.menu[open] > summary.btn { background: var(--secondary); }
-.more-menu > summary .ico { width: 14px; height: 14px; transition: transform 150ms ease-out; }
-.more-menu[open] > summary .ico { transform: rotate(180deg); }
-.more-menu > .menu-body { animation: menu-in 120ms ease-out; transform-origin: top right; }
-@keyframes menu-in { from { opacity: 0; transform: translateY(-4px) scale(0.98); } }
-
-/* Top bar: secondary actions drop to icons before they drop into More */
-.topbar .spacer { flex: 1 1 0; min-width: 0; }
-@media (max-width: 1320px) {
-  .topbar .btn.wide-only { width: 32px; padding: 0; font-size: 0; gap: 0; }
-  .topbar .btn.wide-only .ico { width: 16px; height: 16px; }
-}
-
-/* Report loading: a calm skeleton, then the report fades in */
-.canvas { position: relative; }
-.canvas iframe { transition: opacity 180ms ease-out; }
+/* While the report loads, a skeleton stands in and the preview fades in over it. */
 .canvas-skeleton {
   position: absolute; inset: 0; display: grid; align-content: start; gap: 14px;
   max-width: 1100px; margin: 0 auto; padding: 56px 48px; pointer-events: none;
@@ -912,7 +897,7 @@ kbd {
   .canvas-skeleton i, .index .sk-row, .more-menu > .menu-body { animation: none; }
 }
 
-/* Popup notice for pages Margin cannot open on: information, not an error */
+/* Pages Margin cannot open on get a neutral notice, since nothing went wrong. */
 .pop-notice {
   display: grid; grid-template-columns: 16px 1fr; gap: 4px 10px; align-items: start;
   margin: 0 var(--s4) var(--s3); padding: 12px;
@@ -922,3 +907,27 @@ kbd {
 .pop-notice > .ico { width: 16px; height: 16px; margin-top: 1px; color: var(--brand-deep); }
 .pop-notice b { display: block; margin-bottom: 2px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--foreground); }
 .pop-notice .pop-notice-extra { grid-column: 2; margin-top: 6px; color: var(--foreground); }
+
+/* Controls reference: popup panel, report dialog and settings card */
+.ctl-start {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
+  padding: var(--s3); background: var(--muted); border-radius: var(--radius);
+}
+.ctl-start b { display: block; font-size: 13px; }
+.ctl-start .hint { display: block; font-size: 12px; color: var(--muted-foreground); }
+.ctl-keys { display: inline-flex; gap: 4px; flex: none; }
+.ctl-group { display: grid; gap: var(--s2); }
+.ctl-group h3 { margin: var(--s2) 0 0; font-size: 12px; font-weight: 800; color: var(--muted-foreground); }
+.ctl-group .keys { font-size: 13px; grid-template-columns: minmax(96px, max-content) minmax(0, 1fr); }
+.controls-dialog { width: min(560px, 94vw); }
+.controls-dialog header h1 { margin-right: auto; }
+.controls-dialog .sheet-body { gap: var(--s3); max-height: 70vh; }
+.controls-dialog footer { justify-content: flex-start; }
+.pop-controls { display: flex; flex-direction: column; max-height: 600px; }
+.pop-controls .pop-head { gap: var(--s2); }
+.pop-controls [data-controls-back] .ico { transform: rotate(180deg); }
+.pop-controls-body { display: grid; gap: var(--s3); padding: 0 var(--s4) var(--s3); overflow: auto; }
+.pop-controls-body .keys { grid-template-columns: minmax(0, 1fr); gap: 0; font-size: 12px; }
+.pop-controls-body .keys dt { margin-top: var(--s2); }
+.conn-facts { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 12px; line-height: 17px; color: var(--muted-foreground); }
+.ctl-list { display: grid; gap: var(--s3); }

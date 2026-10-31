@@ -9,15 +9,15 @@
 <body class="options">
   <header class="field">
     <h1>Help and settings</h1>
-    <p class="lede">Margin puts a sheet over the page you are reviewing. Mark what looks wrong, number the details, and hand over the review as a Doc, a Word file or a web page.</p>
+    <p class="lede">Mark what looks wrong on any website, then share it as a Google Doc, a Word file, a web page or Jira issues.</p>
     <p class="hint" data-version></p>
   </header>
 
   <section class="card" aria-labelledby="start-title">
     <h2 id="start-title">Getting started</h2>
-    <p class="hint">The welcome tour walks through a full review in six steps. The tips point at the real buttons the first time you open the popup and the report.</p>
+    <p class="hint">The tour shows a whole review in a few short steps. Tips also point at the real buttons the first time you open the popup and the report.</p>
     <div class="row">
-      <button class="btn action" type="button" data-welcome>Open the welcome tour</button>
+      <button class="btn action" type="button" data-welcome>Take the tour</button>
       <button class="btn" type="button" data-replay>Show the tips again</button>
       <span class="state" data-replay-state></span>
     </div>
@@ -48,10 +48,10 @@
     </label>
     <div class="setting">
       <span>
-        <b>Keyboard shortcut</b>
+        <b>Start and stop shortcut</b>
         <span class="hint" data-shortcut>Checking</span>
       </span>
-      <button class="btn" type="button" data-shortcuts>Change shortcut</button>
+      <button class="btn" type="button" data-shortcuts>Change in Chrome</button>
     </div>
     <div class="setting">
       <span>
@@ -64,7 +64,12 @@
 
   <section class="card" aria-labelledby="connections-title">
     <h2 id="connections-title">Connections</h2>
-    <p class="hint">Connect once to send a review to Jira or Figma. Margin only asks for access to a service when you connect it, and Disconnect takes that access back and forgets the sign-in.</p>
+    <p class="hint">Connections are optional. Copy for Docs, Word and HTML files work without them. Connect Jira or Figma if you want to send comments straight there. You sign in once on this computer.</p>
+    <ul class="conn-facts">
+      <li>Nothing is sent until you choose Send to Jira or Send to Figma in the report, and you see what goes before it goes.</li>
+      <li>Margin asks Chrome for access to a service only when you click Connect.</li>
+      <li>Disconnect signs you out and removes that access.</li>
+    </ul>
     <p class="note" role="status" data-return hidden></p>
     <div class="setting" id="connect-jira" data-connection="jira">
       <span>
@@ -88,39 +93,15 @@
     </div>
   </section>
 
-  <section class="card" aria-labelledby="annotating-title">
-    <h2 id="annotating-title">While annotating</h2>
-    <dl class="keys">
-      <dt>Drag</dt><dd>Mark an area. A note opens beside it.</dd>
-      <dt>Click</dt><dd>Pick the element under the pointer, when selector capture is on.</dd>
-      <dt><kbd>S</kbd></dt><dd>Turn selector capture on or off.</dd>
-      <dt>Click in the box</dt><dd>Drop a numbered marker inside the region you just marked. Right-click one to remove it.</dd>
-      <dt><kbd>M</kbd></dt><dd>Turn numbered markers on or off.</dd>
-      <dt>Right-click</dt><dd>Comment on one element or the whole visible area, switch selectors, or stop.</dd>
-      <dt><kbd>Ctrl</kbd> <kbd>Enter</kbd></dt><dd>Save the note.</dd>
-      <dt><kbd>Esc</kbd></dt><dd>Close the menu or the note, then stop annotating.</dd>
-    </dl>
-  </section>
-
-  <section class="card" aria-labelledby="editor-title">
-    <h2 id="editor-title">In the image editor</h2>
-    <p class="hint">Open it from the report by clicking any screenshot, or with Edit image in Edit comments.</p>
-    <dl class="keys">
-      <dt><kbd>V</kbd> <kbd>M</kbd> <kbd>B</kbd> <kbd>A</kbd></dt><dd>Select, Marker, Box and Arrow.</dd>
-      <dt>Drag a handle</dt><dd>Resize a box, an arrow or the marked region.</dd>
-      <dt>Right-click a number</dt><dd>Remove that item. The rest renumber.</dd>
-      <dt>Right-click elsewhere</dt><dd>Add, duplicate, renumber, reset the region or change the zoom.</dd>
-      <dt>Double-click</dt><dd>Write the item's note.</dd>
-      <dt><kbd>Ctrl</kbd> <kbd>Z</kbd></dt><dd>Undo. Add <kbd>Shift</kbd> to redo.</dd>
-      <dt><kbd>Delete</kbd></dt><dd>Remove the selected item.</dd>
-      <dt>Arrow keys</dt><dd>Nudge the selection by one pixel, or ten with <kbd>Shift</kbd>.</dd>
-      <dt><kbd>+</kbd> <kbd>-</kbd> <kbd>0</kbd> <kbd>1</kbd></dt><dd>Zoom in, zoom out, fit and actual size.</dd>
-    </dl>
+  <section class="card" id="controls" aria-labelledby="controls-title">
+    <h2 id="controls-title">Controls</h2>
+    <p class="hint">Press <kbd>?</kbd> in the report, or the question mark in the Margin menu, to see these any time.</p>
+    <div class="ctl-list" data-controls-body></div>
   </section>
 
   <section class="card" aria-labelledby="menu-title">
     <h2 id="menu-title">Chrome's right-click menu</h2>
-    <p class="hint">Right-click any page to start or stop annotating, comment on the whole visible area, or open the review report.</p>
+    <p class="hint">Right-click any page to start or stop, comment on everything you can see, or open the report.</p>
   </section>
 
   <section class="card" aria-labelledby="problem-title">

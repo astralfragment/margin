@@ -4,6 +4,7 @@ import { PROVIDERS, readConnections, requestAccess, connect, disconnect } from '
 import { THEME_KEY, THEMES, applyTheme } from './lib/theme.js';
 import { openReportTab } from './lib/report-tab.js';
 import { reportProblem } from './lib/feedback.js';
+import { annotateShortcut, renderControls, openShortcutSettings, keycaps } from './lib/controls.js';
 
 applyTheme();
 const themeEl = document.querySelector('[data-theme-choice]');
@@ -27,11 +28,12 @@ selectorsEl.addEventListener('change', () => chrome.storage.local.set({ [SELECTO
 markersEl.checked = stored[MARKERS_KEY] !== false;
 markersEl.addEventListener('change', () => chrome.storage.local.set({ [MARKERS_KEY]: markersEl.checked }));
 
-const command = (await chrome.commands.getAll()).find((c) => c.name === 'toggle-annotate');
-document.querySelector('[data-shortcut]').textContent = command?.shortcut
-  ? `${command.shortcut} starts and stops annotating.`
-  : 'No shortcut is set. Pick one in Chrome.';
-document.querySelector('[data-shortcuts]').addEventListener('click', () => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' }));
+const shortcut = await annotateShortcut();
+const shortcutEl = document.querySelector('[data-shortcut]');
+if (shortcut) shortcutEl.innerHTML = `${keycaps(shortcut)} starts and stops Margin on any page.`;
+else shortcutEl.textContent = 'Not set yet. Chrome may have skipped it because another extension uses the same keys.';
+document.querySelector('[data-shortcuts]').addEventListener('click', openShortcutSettings);
+renderControls(document.querySelector('[data-controls-body]'));
 
 /**
  * Formats a byte count for people.
@@ -47,8 +49,8 @@ document.querySelector('[data-storage]').textContent =
   `${issues.length} ${issues.length === 1 ? 'comment' : 'comments'} with their screenshots, ${size(bytes)}. Delete a review you no longer need to free space.`;
 
 const CONNECTION_HINTS = {
-  jira: 'Not connected. Connect to create Jira issues with the screenshots attached.',
-  figma: 'Not connected. Connect to post comments on the Figma frames your links point at.',
+  jira: 'Turns each comment into a Jira issue with its screenshot attached. You pick the project and issue type first.',
+  figma: 'Adds each comment to the Figma frame it links to, so designers see it in Figma. Paste a Figma frame link on a comment to use it.',
 };
 
 const rows = new Map();
@@ -63,7 +65,7 @@ async function paintConnections() {
     const who = [current?.account?.name, current?.account?.email].filter(Boolean).join(', ') || 'your account';
     const sites = current?.sites?.map((site) => site.name).join(', ');
     row.el.dataset.connected = String(Boolean(current));
-    row.state.textContent = current ? `Connected as ${who}.${sites ? ` Jira sites ${sites}.` : ''}` : CONNECTION_HINTS[provider];
+    row.state.textContent = current ? `Connected as ${who}.${sites ? ` Jira sites ${sites}.` : ''} Send from the report under More.` : CONNECTION_HINTS[provider];
     row.button.textContent = current ? 'Disconnect' : 'Connect';
     row.button.classList.toggle('action', !current);
     row.button.classList.remove('danger');

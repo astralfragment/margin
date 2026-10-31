@@ -23,6 +23,7 @@ import { startTour, tourOnce } from './lib/tour.js';
 import { wireSend } from './send.js';
 import { applyTheme } from './lib/theme.js';
 import { reportProblem } from './lib/feedback.js';
+import { renderControls } from './lib/controls.js';
 
 const send = (type, payload = {}) => chrome.runtime.sendMessage({ type, ...payload });
 const frame = document.querySelector('[data-preview]');
@@ -30,6 +31,24 @@ applyTheme((theme) => {
   frame.contentDocument?.documentElement?.setAttribute('data-theme', theme);
 });
 addIcons();
+const controlsDialog = document.querySelector('[data-controls-dialog]');
+document.querySelector('[data-controls]').innerHTML = icon('help');
+controlsDialog.querySelector('[data-controls-close]').innerHTML = icon('close');
+document.querySelector('[data-controls]').addEventListener('click', async () => {
+  await renderControls(controlsDialog.querySelector('[data-controls-body]'));
+  controlsDialog.showModal();
+});
+controlsDialog.querySelector('[data-controls-close]').addEventListener('click', () => controlsDialog.close());
+controlsDialog.addEventListener('click', (event) => event.target === controlsDialog && controlsDialog.close());
+controlsDialog.querySelector('[data-controls-settings]').addEventListener('click', () => chrome.runtime.openOptionsPage());
+controlsDialog.querySelector('[data-controls-tour]').addEventListener('click', () => {
+  controlsDialog.close();
+  document.querySelector('[data-tour]').click();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key !== '?' || event.target.closest('input, textarea, select, [contenteditable="true"]') || document.querySelector('dialog[open]')) return;
+  document.querySelector('[data-controls]').click();
+});
 document.querySelector('[data-report-problem]').addEventListener('click', (event) => {
   event.currentTarget.closest('details')?.removeAttribute('open');
   reportProblem('report');
@@ -141,8 +160,6 @@ function escapeText(value) {
   return node.innerHTML;
 }
 
-/* Toast and confirm --------------------------------------------------------- */
-
 const toastEl = document.querySelector('[data-toast]');
 let toastTimer = 0;
 
@@ -198,8 +215,6 @@ function confirmSheet({ title, body, buttons }) {
   });
 }
 
-/* Menus -------------------------------------------------------------------- */
-
 /**
  * Closes every open dropdown menu except one.
  * @param {Element | null} [except] A menu to leave open.
@@ -224,8 +239,6 @@ document.addEventListener('keydown', (event) => {
 document.querySelectorAll('[data-proxy]').forEach((item) =>
   item.addEventListener('click', () => document.querySelector(item.dataset.proxy).click()),
 );
-
-/* Group context ---------------------------------------------------------- */
 
 const groupEl = document.querySelector('[data-group]');
 const opened = new URL(location.href);
@@ -343,8 +356,6 @@ if (opened.searchParams.get('created') && group) {
   toast(`New comments from the page now go to ${group.name}.`, { ms: 9000 });
 }
 
-/* Report ----------------------------------------------------------------- */
-
 let issues = await hydrate(await issuesInGroup(groupId));
 let sortOrder = readPref(SORT_KEY) === 'number' ? 'number' : 'severity';
 /** The comments in the order the sidebar and preview list them. The same array is kept, so the Send dialogs see changes. */
@@ -401,8 +412,6 @@ function previewDoc() {
   const theme = document.documentElement.dataset.theme ?? 'light';
   return `<!doctype html><html lang="en" data-theme="${theme}"><head><meta charset="utf-8" /><base target="_blank" /><style>${FONT_CSS}${REPORT_CSS}${PREVIEW_DARK_CSS}${PREVIEW_EDIT_CSS}</style></head><body>${renderBody(issues, { ...options, order: sortOrder, preview: true })}</body></html>`;
 }
-
-/* Sidebar index ---------------------------------------------------------- */
 
 const indexEl = document.querySelector('[data-index]');
 const filtersEl = document.querySelector('[data-filters]');
@@ -953,8 +962,6 @@ document.querySelector('[data-skip]').addEventListener('click', (event) => {
   (rows.find((r) => !r.hidden) ?? indexEl).focus();
 });
 
-/* Exports ---------------------------------------------------------------- */
-
 document.querySelector('[data-download]').addEventListener('click', () => {
   saveBlob(new Blob([buildReport(issues, options)], { type: 'text/html' }), `${basename}.html`);
   toast(`Downloaded ${basename}.html`);
@@ -1054,8 +1061,6 @@ document.querySelector('[data-recrop]').addEventListener('click', async () => {
 
 wireSend({ ordered, numberOf, group, options, reviewTitle: docsOptions.title, send, onChange: rerender });
 
-/* Export settings -------------------------------------------------------- */
-
 const fieldsDialog = document.querySelector('[data-fields-dialog]');
 const fieldsBody = document.querySelector('[data-fields-body]');
 
@@ -1083,8 +1088,6 @@ document.querySelector('[data-fields-save]').addEventListener('click', async () 
   refreshPreview();
   toast('Export settings saved');
 });
-
-/* Comment editor --------------------------------------------------------- */
 
 const editDialog = document.querySelector('[data-edit-dialog]');
 const editBody = document.querySelector('[data-edit-body]');
@@ -1327,8 +1330,6 @@ editSave.addEventListener('click', async () => {
   const parts = [changes && `${changes} ${changes === 1 ? 'comment' : 'comments'} updated`, removed.size && `${removed.size} deleted`].filter(Boolean);
   toast(parts.length ? `Saved. ${parts.join(', ')}.` : 'No changes to save');
 });
-
-/* Recheck fixes ---------------------------------------------------------- */
 
 const verifyDialog = document.querySelector('[data-verify-dialog]');
 const verifyBody = document.querySelector('[data-verify-body]');

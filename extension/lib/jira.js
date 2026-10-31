@@ -333,8 +333,6 @@ function withPriority(priorities, severity) {
 const worstSeverity = (issues) =>
   SEVERITY_ORDER.find((key) => issues.some((issue) => severityOf(issue.severity).key === key)) ?? 'major';
 
-/* Without sign-in -------------------------------------------------------- */
-
 const MAX_LINK_TEXT = 6000;
 
 /**

@@ -73,11 +73,22 @@
 
     <footer class="pop-foot">
       <button class="btn grow" type="button" data-report>Open report</button>
-      <button class="icon-btn lg" type="button" data-options title="Help and settings" aria-label="Help and settings"></button>
+      <button class="icon-btn lg" type="button" data-options title="Controls and shortcuts" aria-label="Controls and shortcuts"></button>
     </footer>
   </main>
 
   <div data-sheet hidden></div>
+
+  <section class="pop-controls" data-controls-panel aria-labelledby="pop-controls-title" hidden>
+    <header class="pop-head">
+      <button class="icon-btn" type="button" data-controls-back aria-label="Back"></button>
+      <b id="pop-controls-title">Controls</b>
+    </header>
+    <div class="pop-controls-body" data-controls-body></div>
+    <footer class="pop-foot">
+      <button class="btn grow" type="button" data-controls-settings>All settings</button>
+    </footer>
+  </section>
 
   <script type="module" src="popup.js"></script>
 </body>

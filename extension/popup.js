@@ -9,6 +9,7 @@ import { connection } from './lib/oauth.js';
 import { icon, addIcons } from './lib/icons.js';
 import { openReportTab } from './lib/report-tab.js';
 import { reportProblem } from './lib/feedback.js';
+import { renderControls } from './lib/controls.js';
 import { tourOnce } from './lib/tour.js';
 import { applyTheme } from './lib/theme.js';
 
@@ -153,8 +154,6 @@ function openSettings(kind) {
   window.close();
 }
 
-/* Header ----------------------------------------------------------------- */
-
 $('[data-mark]').innerHTML = icon('mark');
 $('[data-more-icon]').innerHTML = icon('more');
 addIcons();
@@ -217,8 +216,6 @@ $('[data-picker-list]').addEventListener('click', async (event) => {
   render();
   $('[data-group] > summary').focus();
 });
-
-/* Links ------------------------------------------------------------------ */
 
 /**
  * One quiet row for a linked ticket or file. Without details it offers to connect instead. Details kept from
@@ -295,8 +292,6 @@ async function refresh(force = false) {
   renderLinks();
 }
 
-/* Start ------------------------------------------------------------------ */
-
 /**
  * The alert for a page Margin may not run on, with where the review's comments are.
  */
@@ -367,8 +362,6 @@ async function showShortcut() {
   state.shortcut = command?.shortcut ?? '';
   $('[data-shortcut]').textContent = state.shortcut.split('+').join(' ');
 }
-
-/* This page -------------------------------------------------------------- */
 
 /**
  * Where a comment stands against its recheck.
@@ -592,8 +585,6 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.verifyRun?.newValue) showRun(changes.verifyRun.newValue);
 });
 
-/* Footer and menu -------------------------------------------------------- */
-
 /** Opens the report on every review. */
 function openAllReviews() {
   openReportTab('group=all').finally(() => window.close());
@@ -609,7 +600,32 @@ function renderFooter() {
 }
 
 $('[data-report]').addEventListener('click', () => (reviewOpen() ? openReport() : openAllReviews()));
-$('[data-options]').addEventListener('click', () => openSettings());
+$('[data-options]').addEventListener('click', () => openControls());
+$('[data-controls-back]').innerHTML = icon('chevronRight');
+$('[data-controls-back]').addEventListener('click', closeControls);
+$('[data-controls-settings]').addEventListener('click', () => openSettings());
+
+/** Swaps the popup body for the controls reference. */
+async function openControls() {
+  document.querySelectorAll('details.menu').forEach((menu) => (menu.open = false));
+  await renderControls($('[data-controls-body]'), { only: ['page', 'report'] });
+  home.hidden = true;
+  $('[data-controls-panel]').hidden = false;
+  $('[data-controls-back]').focus();
+}
+
+$('[data-controls-panel]').addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeControls();
+  }
+});
+
+function closeControls() {
+  $('[data-controls-panel]').hidden = true;
+  home.hidden = false;
+  $('[data-options]').focus();
+}
 $('[data-settings]').addEventListener('click', () => openSettings());
 $('[data-all]').addEventListener('click', openAllReviews);
 $('[data-new-group]').addEventListener('click', () => openSheet('new'));
@@ -684,8 +700,6 @@ function menuKeys(event) {
 
 document.addEventListener('keydown', menuKeys);
 
-/* Sheet ------------------------------------------------------------------ */
-
 const home = $('[data-home]');
 const sheetHost = $('[data-sheet]');
 
@@ -741,8 +755,6 @@ function openSheet(mode, focus = 'name') {
   });
 }
 
-/* Boot ------------------------------------------------------------------- */
-
 /**
  * Caps the popup at the height Chrome gives it, which is less than 600 px on a short screen,
  * so the comment list scrolls instead of the whole popup.
@@ -781,6 +793,6 @@ if (draft && (draft.mode === 'new' || (draft.groupId === state.group?.id && revi
     { target: '[data-group]', title: 'Pick the review', body: 'New comments land in this review. Start a new one for each round of feedback.' },
     { target: '[data-list]', title: 'Your comments', body: hasComments ? 'The comments on this page. Recheck captures them again for a before and after.' : 'The comments you make on this page show here.' },
     { target: '[data-report]', title: 'The report', body: 'Number details on screenshots, tidy the wording and export the review.' },
-    { target: '[data-options]', title: 'Help and settings', body: 'Shortcuts, connections, the theme and the welcome tour live here.' },
+    { target: '[data-options]', title: 'Controls', body: 'Every key and gesture, and your start shortcut. Settings are one click further.' },
   ]);
 }

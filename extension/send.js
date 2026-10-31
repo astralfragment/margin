@@ -113,8 +113,6 @@ export function wireSend({ ordered, numberOf, group, options, reviewTitle, send,
   const label = (issue) => `${pad(numberOf(issue))} ${issue.title || 'Untitled comment'}`;
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
-  /* Jira ----------------------------------------------------------------- */
-
   const jiraDialog = document.querySelector('[data-jira-dialog]');
   const jiraBody = jiraDialog.querySelector('[data-jira-body]');
   const jiraAccount = jiraDialog.querySelector('[data-jira-account]');
@@ -416,8 +414,6 @@ export function wireSend({ ordered, numberOf, group, options, reviewTitle, send,
     document.querySelector('.menu:not(.review-menu)').open = false;
     openJira();
   });
-
-  /* Figma ---------------------------------------------------------------- */
 
   const figmaDialog = document.querySelector('[data-figma-dialog]');
   const figmaBody = figmaDialog.querySelector('[data-figma-body]');

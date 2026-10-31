@@ -26,6 +26,7 @@
     <button class="btn wide-only" type="button" data-edit data-icon="pencil" title="Edit comments">Edit comments</button>
     <button class="btn action" type="button" data-copy data-icon="copy">Copy for Docs</button>
 
+    <button class="icon-btn" type="button" data-controls title="Controls and shortcuts" aria-label="Controls and shortcuts" aria-haspopup="dialog"></button>
     <details class="menu more-menu">
       <summary class="btn" aria-label="More actions">More<span data-more-chevron></span></summary>
       <div class="menu-body" role="menu">
@@ -138,6 +139,18 @@
     <header><h1 id="confirm-title" data-confirm-title></h1></header>
     <div class="sheet-body"><p class="hint" data-confirm-body></p></div>
     <footer data-confirm-foot></footer>
+  </dialog>
+
+  <dialog class="sheet controls-dialog" data-controls-dialog aria-labelledby="controls-title">
+    <header>
+      <h1 id="controls-title">Controls</h1>
+      <button class="icon-btn" type="button" data-controls-close aria-label="Close"></button>
+    </header>
+    <div class="sheet-body" data-controls-body></div>
+    <footer>
+      <button class="btn ghost" type="button" data-controls-settings>All settings</button>
+      <button class="btn ghost" type="button" data-controls-tour>Take the tour</button>
+    </footer>
   </dialog>
 
   <div class="toast" data-toast role="status" aria-live="polite" hidden></div>
