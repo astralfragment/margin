@@ -9,7 +9,7 @@ const shortcut = command?.shortcut
 const STEPS = [
   {
     title: 'Start a review',
-    body: `Open the page you are reviewing and click the Margin icon. Name the review, link the Jira ticket or Figma file if you have them, and start. A sheet covers the page and the bar at the top shows you are reviewing. Esc stops. ${shortcut}`,
+    body: `Open the page you are reviewing and click the Margin icon. Name the review, link the Jira ticket or Figma file if you have them, and start. A sheet covers the page and the bar at the bottom shows you are reviewing. Esc stops. ${shortcut}`,
   },
   {
     title: 'Drag over what looks wrong',
