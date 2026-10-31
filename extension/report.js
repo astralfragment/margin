@@ -84,7 +84,8 @@ function writePref(key, value) {
 const PREVIEW_EDIT_CSS = `
 .issue figure { width: fit-content; max-width: 100%; }
 .issue figure img:not(.after):not(.at-width) { cursor: crosshair; }
-.issue figure img:not(.after):not(.at-width):hover { outline: 2px solid var(--accent); outline-offset: 2px; }
+.issue figure img:not(.after):not(.at-width) { transition: border-color 120ms ease-out; }
+.issue figure img:not(.after):not(.at-width):hover { border-color: var(--ink-2); }
 .quick-bar {
   display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center;
   margin: var(--s2) 0 0 calc(24px + var(--s3)); font-size: 12px; color: var(--ink-2);

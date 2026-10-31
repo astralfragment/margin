@@ -261,8 +261,8 @@ function drawMarks(ctx, marks) {
   const r = Math.round(Math.min(16, Math.max(10, ctx.canvas.width / 70)));
   const line = Math.max(2, Math.round(ctx.canvas.width / 600));
   const haloed = (trace) => {
-    ctx.lineWidth = line + 3;
-    ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+    ctx.lineWidth = line + 2;
+    ctx.strokeStyle = '#ffffff';
     trace();
     ctx.stroke();
     ctx.lineWidth = line;
@@ -309,6 +309,27 @@ function drawMarks(ctx, marks) {
 }
 
 /**
+ * Outlines the marked region crisply: a solid red line on whole pixels with a thin white edge on both sides,
+ * pulled inside the image so no side is clipped when the region touches the edge.
+ * @param {OffscreenCanvasRenderingContext2D} ctx The canvas to draw on.
+ */
+function outlineBox(ctx, x, y, w, h) {
+  const line = 2 * Math.max(1, Math.round(ctx.canvas.width / 450));
+  const edge = line / 2 + 1;
+  const left = Math.max(edge, Math.round(x));
+  const top = Math.max(edge, Math.round(y));
+  const right = Math.min(ctx.canvas.width - edge, Math.round(x + w));
+  const bottom = Math.min(ctx.canvas.height - edge, Math.round(y + h));
+  ctx.lineJoin = 'miter';
+  ctx.lineWidth = line + 2;
+  ctx.strokeStyle = '#ffffff';
+  ctx.strokeRect(left, top, right - left, bottom - top);
+  ctx.lineWidth = line;
+  ctx.strokeStyle = HIGHLIGHT;
+  ctx.strokeRect(left, top, right - left, bottom - top);
+}
+
+/**
  * Draws a region of the screenshot with the annotated box outlined on top.
  * @param {ImageBitmap} bitmap The source screenshot.
  * @param {{x:number,y:number,w:number,h:number}} src The part of the bitmap to draw, in bitmap pixels.
@@ -327,12 +348,7 @@ async function drawRegion(bitmap, src, box, maxWidth, marks = [], scale = 1) {
   const y = (box.y - src.y) * factor;
   const w = box.w * factor;
   const h = box.h * factor;
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = 'rgba(255,255,255,0.92)';
-  ctx.strokeRect(x - 2, y - 2, w + 4, h + 4);
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = HIGHLIGHT;
-  ctx.strokeRect(x, y, w, h);
+  outlineBox(ctx, x, y, w, h);
 
   const px = (v) => (v * scale - src.x) * factor;
   const py = (v) => (v * scale - src.y) * factor;
