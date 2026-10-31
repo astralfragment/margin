@@ -1,0 +1,23 @@
+/* The drawing inside the image editor. The engine builds these SVG nodes by hand, so they are styled here. */
+/* The marker colour is the one the background draws into the exported images, so the editor matches them. */
+[data-slot="image-editor"] { --marker: #e5484d; }
+[data-theme="dark"] [data-slot="image-editor"] { --marker: #ff7a7a; }
+[data-slot="editor-canvas"] svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; touch-action: none; user-select: none; }
+[data-slot="editor-canvas"]:is([data-tool="dot"], [data-tool="box"], [data-tool="arrow"]) svg { cursor: crosshair; }
+[data-slot="editor-canvas"][data-tool="select"] :is(.ed-hit, .ed-grab), .ed-disc { cursor: move; }
+.ed-halo, .ed-ink, .ed-grab, .ed-handle, .ed-ring { vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
+.ed-halo { fill: none; stroke: rgb(255 255 255 / 0.92); stroke-width: 5; }
+.ed-ink { fill: none; stroke: var(--marker); stroke-width: 2; }
+.ed-selected .ed-ink { stroke-width: 3; }
+.ed-hit { pointer-events: all; }
+.ed-grab { stroke: transparent; stroke-width: 16; pointer-events: stroke; }
+.ed-disc-halo { fill: rgb(255 255 255 / 0.92); }
+.ed-disc-fill { fill: var(--marker); }
+.ed-disc-text { fill: #ffffff; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+.ed-ring { fill: none; stroke: var(--ring); stroke-width: 2; stroke-dasharray: 4 3; pointer-events: none; }
+.ed-handle { fill: #ffffff; stroke: var(--ring); stroke-width: 1.5; }
+.h-nw, .h-se { cursor: nwse-resize; }
+.h-ne, .h-sw { cursor: nesw-resize; }
+.h-n, .h-s { cursor: ns-resize; }
+.h-e, .h-w { cursor: ew-resize; }
+.h-move { cursor: move; }

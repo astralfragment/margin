@@ -13,8 +13,25 @@ export async function resetTours() {
  * @param {TourStep[]} steps The steps in order.
  */
 export async function tourOnce(name, steps) {
+  if (!(await tourSeen(name))) startTour(name, steps);
+}
+
+/**
+ * True when a page's tour was finished or skipped, for pages that draw their own tour.
+ * @param {string} name Which page the tour belongs to.
+ */
+export async function tourSeen(name) {
   const done = (await chrome.storage.local.get(TOURS_KEY))[TOURS_KEY] ?? {};
-  if (!done[name]) startTour(name, steps);
+  return Boolean(done[name]);
+}
+
+/**
+ * Remembers that a page's tour was finished or skipped.
+ * @param {string} name Which page the tour belongs to.
+ */
+export async function markTourSeen(name) {
+  const done = (await chrome.storage.local.get(TOURS_KEY))[TOURS_KEY] ?? {};
+  await chrome.storage.local.set({ [TOURS_KEY]: { ...done, [name]: true } });
 }
 
 /**
@@ -105,8 +122,7 @@ export function startTour(name, steps) {
     removeEventListener('resize', place);
     removeEventListener('keydown', onKey, true);
     root.remove();
-    const done = (await chrome.storage.local.get(TOURS_KEY))[TOURS_KEY] ?? {};
-    await chrome.storage.local.set({ [TOURS_KEY]: { ...done, [name]: true } });
+    await markTourSeen(name);
   };
 
   const onKey = (e) => {
