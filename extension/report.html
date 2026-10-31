@@ -5,7 +5,7 @@
   <title>Margin review</title>
   <link rel="stylesheet" href="ui.css" />
 </head>
-<body class="app">
+<body class="app is-loading">
   <a class="skip-link" href="#comments" data-skip>Skip to comments</a>
   <header class="topbar">
     <span class="brand">Margin</span>
@@ -13,47 +13,48 @@
     <details class="menu review-menu">
       <summary class="icon-btn" title="Review menu" aria-label="Review menu" data-review-menu-icon></summary>
       <div class="menu-body" role="menu">
-        <button class="menu-item" type="button" role="menuitem" data-new-group>New review</button>
-        <button class="menu-item" type="button" role="menuitem" data-edit-links>Edit name and links</button>
+        <button class="menu-item" type="button" role="menuitem" data-new-group data-icon="plus">New review</button>
+        <button class="menu-item" type="button" role="menuitem" data-edit-links data-icon="pencil">Edit name and links</button>
         <div class="menu-sep" data-delete-sep></div>
-        <button class="menu-item danger" type="button" role="menuitem" data-delete-group>Delete review</button>
+        <button class="menu-item danger" type="button" role="menuitem" data-delete-group data-icon="trash">Delete review</button>
       </div>
     </details>
     <span class="link-chips" data-link-chips></span>
 
     <span class="spacer"></span>
-    <button class="btn wide-only" type="button" data-verify title="Recheck every comment on the page you last opened Margin on">Recheck this page</button>
-    <button class="btn wide-only" type="button" data-edit>Edit comments</button>
-    <button class="btn action" type="button" data-copy>Copy for Docs</button>
+    <button class="btn wide-only" type="button" data-verify data-icon="refresh" title="Recheck every comment on the page you last opened Margin on">Recheck this page</button>
+    <button class="btn wide-only" type="button" data-edit data-icon="pencil" title="Edit comments">Edit comments</button>
+    <button class="btn action" type="button" data-copy data-icon="copy">Copy for Docs</button>
 
-    <details class="menu">
-      <summary class="btn" aria-label="More actions">More</summary>
-      <div class="menu-body">
-        <button class="menu-item narrow-only" type="button" data-proxy="[data-verify]">Recheck this page</button>
-        <button class="menu-item narrow-only" type="button" data-proxy="[data-edit]">Edit comments</button>
+    <details class="menu more-menu">
+      <summary class="btn" aria-label="More actions">More<span data-more-chevron></span></summary>
+      <div class="menu-body" role="menu">
+        <button class="menu-item narrow-only" type="button" data-proxy="[data-verify]" data-icon="refresh">Recheck this page</button>
+        <button class="menu-item narrow-only" type="button" data-proxy="[data-edit]" data-icon="pencil">Edit comments</button>
         <div class="menu-sep narrow-only"></div>
         <span class="menu-label">Export</span>
-        <button class="menu-item" type="button" data-doc>Word compatible file (.doc)</button>
-        <button class="menu-item" type="button" data-download>HTML file</button>
-        <button class="menu-item" type="button" data-print>Print</button>
-        <button class="menu-item" type="button" data-markdown>Copy as Markdown</button>
-        <button class="menu-item" type="button" data-fields>Export settings</button>
+        <button class="menu-item" type="button" data-doc data-icon="file">Word compatible file (.doc)</button>
+        <button class="menu-item" type="button" data-download data-icon="download">HTML file</button>
+        <button class="menu-item" type="button" data-print data-icon="printer">Print</button>
+        <button class="menu-item" type="button" data-markdown data-icon="markdown">Copy as Markdown</button>
+        <button class="menu-item" type="button" data-fields data-icon="sliders">Export settings</button>
         <div class="menu-sep"></div>
         <span class="menu-label">Share</span>
-        <button class="menu-item" type="button" data-save-review>Save review file</button>
-        <button class="menu-item" type="button" data-open-review>Open review file</button>
+        <button class="menu-item" type="button" data-save-review data-icon="save">Save review file</button>
+        <button class="menu-item" type="button" data-open-review data-icon="folder">Open review file</button>
         <input type="file" accept=".json,application/json" data-review-input hidden />
         <div class="menu-sep"></div>
         <span class="menu-label">Send</span>
-        <button class="menu-item" type="button" data-send-jira>Send to Jira</button>
-        <button class="menu-item" type="button" data-send-figma>Send to Figma</button>
+        <button class="menu-item" type="button" data-send-jira data-icon="jira">Send to Jira</button>
+        <button class="menu-item" type="button" data-send-figma data-icon="figma">Send to Figma</button>
         <div class="menu-sep"></div>
         <span class="menu-label">Images</span>
-        <button class="menu-item" type="button" data-recrop>Redo crops</button>
+        <button class="menu-item" type="button" data-recrop data-icon="crop">Redo crops</button>
         <div class="menu-sep"></div>
         <span class="menu-label">Help</span>
-        <button class="menu-item" type="button" data-tour>Take the tour</button>
-        <button class="menu-item" type="button" data-help>Help and settings</button>
+        <button class="menu-item" type="button" data-tour data-icon="compass">Take the tour</button>
+        <button class="menu-item" type="button" data-help data-icon="settings">Help and settings</button>
+        <button class="menu-item" type="button" data-report-problem data-icon="flag">Report a problem</button>
       </div>
     </details>
   </header>
@@ -69,11 +70,12 @@
       </div>
       <div class="sidebar-filters" data-filters></div>
       <div class="sidebar-filters" data-status-filters></div>
-      <nav class="index" id="comments" data-index aria-label="Comments" tabindex="-1"></nav>
+      <nav class="index" id="comments" data-index aria-label="Comments" tabindex="-1"><i class="sk-row"></i><i class="sk-row"></i><i class="sk-row"></i><i class="sk-row"></i><i class="sk-row"></i></nav>
       <div class="sidebar-foot" data-index-foot></div>
     </aside>
 
     <main class="canvas">
+      <div class="canvas-skeleton" aria-hidden="true"><i class="sk-title"></i><i class="sk-line"></i><i class="sk-shot"></i><i class="sk-line short"></i><i class="sk-shot"></i></div>
       <iframe data-preview title="Report preview"></iframe>
     </main>
   </div>

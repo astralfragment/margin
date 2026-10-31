@@ -2,11 +2,13 @@ import { readIssues } from './lib/store.js';
 import { resetTours } from './lib/tour.js';
 import { PROVIDERS, readConnections, requestAccess, connect, disconnect } from './lib/oauth.js';
 import { THEME_KEY, THEMES, applyTheme } from './lib/theme.js';
+import { openReportTab } from './lib/report-tab.js';
+import { reportProblem } from './lib/feedback.js';
 
 applyTheme();
 const themeEl = document.querySelector('[data-theme-choice]');
 themeEl.innerHTML = THEMES.map((t) => `<option value="${t.key}">${t.label}</option>`).join('');
-themeEl.value = (await chrome.storage.local.get(THEME_KEY))[THEME_KEY] ?? 'light';
+themeEl.value = (await chrome.storage.local.get(THEME_KEY))[THEME_KEY] ?? 'system';
 themeEl.addEventListener('change', () => chrome.storage.local.set({ [THEME_KEY]: themeEl.value }));
 
 const SELECTORS_KEY = 'selectorMode';
@@ -165,9 +167,11 @@ if (target?.matches('[data-connection]')) {
   target.querySelector('[data-connection-toggle]').focus();
 }
 
-document.querySelector('[data-report]').addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('report.html?group=all') }));
+document.querySelector('[data-report]').addEventListener('click', () => openReportTab('group=all'));
 document.querySelector('[data-welcome]').addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') }));
 document.querySelector('[data-replay]').addEventListener('click', async () => {
   await resetTours();
   document.querySelector('[data-replay-state]').textContent = 'The tips show next time you open the popup or the report.';
 });
+
+document.querySelector('[data-report-problem]').addEventListener('click', () => reportProblem('settings'));

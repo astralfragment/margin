@@ -1,24 +1,23 @@
 /**
- * The colour theme for Margin's own pages. Light is the default. Dark and
- * "match system" are opt in from Help and settings.
+ * The colour theme for Margin's own pages. "Match system" is the default.
+ * Light and dark are fixed choices in Help and settings.
  */
 export const THEME_KEY = 'theme';
 export const THEMES = [
+  { key: 'system', label: 'Match system' },
   { key: 'light', label: 'Light' },
   { key: 'dark', label: 'Dark' },
-  { key: 'system', label: 'Match system' },
 ];
 
 const systemDark = matchMedia('(prefers-color-scheme: dark)');
 
 /**
  * Resolves a stored theme choice to the theme that is actually shown.
- * @param {string | undefined} choice The stored choice, light when unset.
+ * @param {string | undefined} choice The stored choice, "match system" when unset.
  */
 function resolve(choice) {
-  if (choice === 'dark') return 'dark';
-  if (choice === 'system') return systemDark.matches ? 'dark' : 'light';
-  return 'light';
+  if (choice === 'dark' || choice === 'light') return choice;
+  return systemDark.matches ? 'dark' : 'light';
 }
 
 /**
@@ -38,5 +37,5 @@ export async function applyTheme(onChange) {
     choice = changes[THEME_KEY].newValue;
     paint();
   });
-  systemDark.addEventListener('change', () => choice === 'system' && paint());
+  systemDark.addEventListener('change', () => choice !== 'dark' && choice !== 'light' && paint());
 }

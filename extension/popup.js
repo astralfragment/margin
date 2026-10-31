@@ -6,7 +6,9 @@ import { cleanJiraLink, cleanFigmaLink } from './lib/review-file.js';
 import { refreshLinks, detailsAt, timeAgo, statusTone } from './lib/review-links.js';
 import { mountReviewSheet, pendingDraft } from './lib/review-sheet.js';
 import { connection } from './lib/oauth.js';
-import { icon } from './lib/icons.js';
+import { icon, addIcons } from './lib/icons.js';
+import { openReportTab } from './lib/report-tab.js';
+import { reportProblem } from './lib/feedback.js';
 import { tourOnce } from './lib/tour.js';
 import { applyTheme } from './lib/theme.js';
 
@@ -155,6 +157,8 @@ function openSettings(kind) {
 
 $('[data-mark]').innerHTML = icon('mark');
 $('[data-more-icon]').innerHTML = icon('more');
+addIcons();
+$('[data-report-problem]').addEventListener('click', () => reportProblem('popup').finally(() => window.close()));
 $('[data-options]').innerHTML = icon('help');
 $('[data-alert-icon]').outerHTML = icon('alert');
 for (const [selector, name] of [
@@ -299,10 +303,11 @@ async function refresh(force = false) {
 function restrictedAlert() {
   const comments = reviewOpen() ? inReview() : [];
   const pages = [...new Set(comments.map((issue) => pageName(issue.page ?? { url: '' })))];
-  const where = comments.length ? ` Your review has ${plural(comments.length, 'comment')} ${pages.length === 1 ? `on ${pages[0]}` : `across ${pages.length} pages`}.` : '';
   return {
-    title: 'Margin cannot run on this tab',
-    text: `Browser pages, the Chrome Web Store and blank tabs are closed to extensions. Open the page you want to review in a normal tab, then click Margin again.${where}`,
+    notice: true,
+    title: 'Open a website to annotate',
+    text: 'Margin works on regular web pages. Chrome pages, the Web Store and new tabs are off limits to extensions.',
+    extra: comments.length ? `${plural(comments.length, 'comment')} so far ${pages.length === 1 ? `on ${pages[0]}` : `across ${pages.length} pages`}.` : '',
   };
 }
 
@@ -325,8 +330,15 @@ function renderStart() {
   const alert = state.alert ?? (restricted ? restrictedAlert() : null);
   $('[data-restricted]').hidden = !alert;
   if (alert) {
+    const box = $('[data-restricted]');
+    box.className = alert.notice ? 'pop-notice' : 'link-error pop-alert';
+    box.setAttribute('role', alert.notice ? 'status' : 'alert');
+    box.querySelector('.ico')?.replaceWith(document.createRange().createContextualFragment(icon(alert.notice ? 'info' : 'alert')));
     $('[data-alert-title]').textContent = alert.title;
     $('[data-alert-text]').textContent = alert.text;
+    const extra = $('[data-alert-extra]');
+    extra.textContent = alert.extra ?? '';
+    extra.hidden = !alert.extra;
   }
   $('[data-no-review]').hidden = open || restricted;
   const elsewhere = $('[data-active-elsewhere]');
@@ -374,8 +386,7 @@ function recheckState(issue) {
  */
 function openReport(commentId) {
   const query = `group=${encodeURIComponent(state.group.id)}${commentId ? `&comment=${encodeURIComponent(commentId)}` : ''}`;
-  chrome.tabs.create({ url: chrome.runtime.getURL(`report.html?${query}`) });
-  window.close();
+  openReportTab(query).finally(() => window.close());
 }
 
 /**
@@ -585,8 +596,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 
 /** Opens the report on every review. */
 function openAllReviews() {
-  chrome.tabs.create({ url: chrome.runtime.getURL('report.html?group=all') });
-  window.close();
+  openReportTab('group=all').finally(() => window.close());
 }
 
 /** Sets the footer button: the report for an open review, every review otherwise, and nothing before the first review. */

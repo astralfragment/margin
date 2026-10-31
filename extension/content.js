@@ -620,10 +620,10 @@
 
   /** Shows the overlay in the theme Margin's own pages use: light unless the stored setting says dark, or system on a dark OS. */
   function paintTheme() {
-    const dark = themeChoice === 'dark' || (themeChoice === 'system' && systemDark.matches);
+    const dark = themeChoice === 'dark' || (themeChoice !== 'light' && systemDark.matches);
     root.dataset.theme = dark ? 'dark' : 'light';
   }
-  systemDark.addEventListener('change', () => themeChoice === 'system' && paintTheme());
+  systemDark.addEventListener('change', () => themeChoice !== 'dark' && themeChoice !== 'light' && paintTheme());
 
   let refreshTimer = 0;
   chrome.storage.onChanged.addListener((changes, area) => {
