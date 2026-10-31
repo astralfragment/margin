@@ -4,7 +4,7 @@
  */
 export const THEME_KEY = 'theme';
 export const THEMES = [
-  { key: 'system', label: 'Match system' },
+  { key: 'system', label: 'Match system default' },
   { key: 'light', label: 'Light' },
   { key: 'dark', label: 'Dark' },
 ];
