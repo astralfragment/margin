@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Margin",
-  "version": "0.5.0",
-  "description": "Mark up UI issues on any page, number the details, and export a clean review.",
+  "name": "Margin - Website Annotation, Screenshots & Bug Reports",
+  "version": "0.5.1",
+  "description": "Annotate any website and mark up screenshots for UI review, design QA and client feedback. Send bug reports to Jira, Figma or Docs.",
   "permissions": [
     "activeTab",
     "scripting",

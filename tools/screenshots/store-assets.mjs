@@ -412,14 +412,15 @@ try {
     const root = sh.querySelector('.root');
     const fire = (type, x, y) => root.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, composed: true, clientX: x, clientY: y, button: 0, detail: 1 }));
     for (const p of [{ x: ${at.what.x + at.what.w - 4}, y: ${at.what.y + 4} }, { x: ${at.audit.x + at.audit.w - 4}, y: ${at.audit.y + 4} }]) {
+      sh.querySelector('[data-add-marker]').click();
       fire('mousedown', p.x, p.y);
       fire('mouseup', p.x, p.y);
     }
-    const panel = sh.querySelector('.panel');
     const set = (el, value) => { el.value = value; el.dispatchEvent(new Event('input')); };
-    set(panel.querySelector('[data-title]'), 'Hero buttons compete for attention');
-    set(panel.querySelector('[data-note]'), 'Both read as the main action. Keep lime for the audit.');
-    const rows = panel.querySelectorAll('.mrow input');
+    set(sh.querySelector('[data-title]'), 'Hero buttons compete for attention');
+    sh.querySelector('[data-add-note]').click();
+    set(sh.querySelector('[data-note]'), 'Both read as the main action. Keep lime for the audit.');
+    const rows = sh.querySelectorAll('.panel .mrow textarea');
     set(rows[0], 'Turn this into a quiet text link');
     set(rows[1], 'Keep this as the one lime button');
     sh.activeElement?.blur?.();
