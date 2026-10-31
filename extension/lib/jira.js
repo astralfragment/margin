@@ -1,8 +1,7 @@
 import { authedFetch, authedJson } from './oauth.js';
 import { severityOf, SEVERITY_ORDER } from './severity.js';
 import { markList } from './marks.js';
-
-const pad = (n) => String(n).padStart(2, '0');
+import { pad } from './format.js';
 
 /** Jira priority names tried for each severity, first match wins. */
 const PRIORITY_NAMES = {

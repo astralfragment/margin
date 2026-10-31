@@ -49,6 +49,10 @@ const ARTICLE = /<article\b[\s\S]*?<\/article>/g;
 
 /** The body with every card replaced by its id, so a change that only touches cards can patch them in place. */
 const skeletonOf = (html: string) => html.replace(ARTICLE, (m) => m.match(/id="([^"]+)"/)?.[1] ?? '');
+/**
+ * The report's comment articles by id.
+ * @param html The report body.
+ */
 const articlesOf = (html: string) => new Map((html.match(ARTICLE) ?? []).map((m) => [m.match(/id="([^"]+)"/)?.[1] ?? '', m]));
 
 type Props = {

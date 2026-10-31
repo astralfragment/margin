@@ -61,15 +61,22 @@ export function useLinkRefresh(group: Group | null) {
   });
 }
 
+/** The saved export settings. */
 export const useExportConfig = () => useQuery(storageQuery(['export-config'], ['exportConfig'], () => readExportConfig() as Promise<ExportConfig>));
 
+/** Saves the export settings. */
 export const useSaveExportConfig = () => useMutation({ mutationFn: (config: ExportConfig) => writeExportConfig(config) as Promise<ExportConfig> });
 
+/**
+ * Whether a guided tour has been seen.
+ * @param name The tour.
+ */
 export const useTourSeen = (name: string) => useQuery(storageQuery(['tour-seen', name], ['tours'], () => tourSeen(name) as Promise<boolean>));
 
 export const useConnection = <T,>(provider: 'jira' | 'figma', enabled = true) =>
   useQuery({ ...storageQuery(['connection', provider], ['connections'], async () => ((await connection(provider)) as T | null) ?? null), enabled });
 
+/** The recheck that is running, if any. */
 export const useVerifyRun = () =>
   useQuery(storageQuery(['verify-run'], ['verifyRun'], async () => ((await chrome.storage.local.get('verifyRun')).verifyRun as VerifyRun | undefined) ?? null));
 

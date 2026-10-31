@@ -6,10 +6,18 @@ function Popover(props: PopoverPrimitive.Root.Props) {
   return <PopoverPrimitive.Root data-slot="popover" {...props} />;
 }
 
+/**
+ * The element that opens a popover.
+ * @param props Trigger props.
+ */
 function PopoverTrigger(props: PopoverPrimitive.Trigger.Props) {
   return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />;
 }
 
+/**
+ * The popover panel.
+ * @param props Popup props and placement.
+ */
 function PopoverContent({
   className,
   align = 'start',

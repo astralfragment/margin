@@ -10,6 +10,10 @@ export function JiraIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
   );
 }
 
+/**
+ * The Figma mark.
+ * @param props SVG props.
+ */
 export function FigmaIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden className={cn('size-4 shrink-0', className)} {...props}>
@@ -18,6 +22,10 @@ export function FigmaIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
   );
 }
 
+/**
+ * The Margin mark.
+ * @param props SVG props.
+ */
 export function MarginMark({ className, ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 21 18" fill="none" aria-hidden className={cn('h-4 w-[19px] shrink-0', className)} {...props}>

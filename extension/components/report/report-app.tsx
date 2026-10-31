@@ -55,6 +55,7 @@ export function ReportApp() {
   );
 }
 
+/** The report, or a placeholder while it loads. */
 function ReportScreen() {
   const report = useReport();
   return report ? <Loaded report={report} /> : <ReportSkeleton />;
@@ -64,12 +65,17 @@ function ReportScreen() {
 const applyMarks = (issue: Issue, res: { marks: Mark[]; shot?: string; detail?: string }) =>
   patchCached(issue.id, { marks: res.marks, ...(res.shot ? { shot: res.shot, detail: res.detail } : {}) });
 
+/** Closes a comment card's menu. */
 function closeCardMenu() {
   const { cardMenu, set } = useReportUi.getState();
   cardMenu?.chip.setAttribute('aria-expanded', 'false');
   set({ cardMenu: null });
 }
 
+/**
+ * The report once its review has loaded.
+ * @param props The loaded report.
+ */
 function Loaded({ report }: { report: Report }) {
   const { issues, ordered, sections, numberOf, group, groupId, groups, exportOptions, sortOrder, basename, title, config } = report;
   const ui = useReportUi();

@@ -14,11 +14,20 @@ import { Toasts } from './toasts';
 
 const DARK = '(prefers-color-scheme: dark)';
 
+/**
+ * Builds a subscribe function for one event on one target.
+ * @param target What to listen on.
+ * @param type The event name.
+ */
 const onEvent = (target: EventTarget, type: string) => (change: () => void) => {
   target.addEventListener(type, change);
   return () => target.removeEventListener(type, change);
 };
 
+/**
+ * Subscribes to the system switching between light and dark.
+ * @param change Called when the scheme changes.
+ */
 const subscribeDark = (change: () => void) => onEvent(matchMedia(DARK), 'change')(change);
 const subscribeResize = onEvent(window, 'resize');
 

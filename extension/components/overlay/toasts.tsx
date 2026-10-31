@@ -51,6 +51,7 @@ function PlainToast({ toast }: { toast: Extract<Toast, { kind: 'plain' }> }) {
   );
 }
 
+/** The short messages the overlay shows after an action. */
 export function Toasts() {
   const toast = useOverlay((s) => s.toast);
   if (!toast) return null;

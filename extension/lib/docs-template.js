@@ -35,6 +35,11 @@ const STATUS_STYLE = {
   wontfix: { ink: '#71717a' },
 };
 
+/**
+ * An inline font style for Docs and Word.
+ * @param {number} size The size in points.
+ * @param {string} extra More style rules.
+ */
 const font = (size, extra = '') => `font-family: ${SANS}; font-size: ${size}pt; color: ${INK}; ${extra}`.trim();
 const H1 = font(22, 'font-weight: 700; margin: 0 0 6px; line-height: 1.2;');
 const H2 = font(15, 'font-weight: 700; margin: 26px 0 2px; line-height: 1.3;');
@@ -56,12 +61,25 @@ const BARE = 'border: none; padding: 0; vertical-align: top;';
  * @param {string} [url] Where they link to.
  */
 const LINK = `color: ${INK}; text-decoration: underline;`;
+/**
+ * A label, linked when there is an address.
+ * @param {string} label The text.
+ * @param {string} url The address.
+ */
 const linked = (label, url) => (url ? `<a href="${esc(url)}" style="${LINK}">${esc(label)}</a>` : esc(label));
 
+/**
+ * Escaped text with its line breaks kept.
+ * @param {string} text The text.
+ */
 const multiline = (text) => esc(text).replace(/\n/g, '<br />');
 
 /** The severity as its shape character and label, bold in its colour. */
 const sevText = (comment) => `<b style="color: ${SEV_STYLE[comment.severity.key].ink};">${comment.shape}&nbsp;${esc(comment.severity.label)}</b>`;
+/**
+ * A status label in its colour.
+ * @param {{key: string, label: string}} status The status.
+ */
 const statusText = (status) => `<b style="color: ${STATUS_STYLE[status.key].ink};">${esc(status.label)}</b>`;
 
 /**

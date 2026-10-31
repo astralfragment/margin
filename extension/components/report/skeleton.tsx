@@ -1,5 +1,9 @@
 import { cn } from '@/lib/utils';
 
+/**
+ * A loading placeholder bar.
+ * @param props Extra classes.
+ */
 const Bar = ({ className }: { className?: string }) => <span className={cn('block animate-pulse rounded-md bg-muted motion-reduce:animate-none', className)} />;
 
 /** The report's shape while the review loads: a cover line, comment titles and screenshot frames. */

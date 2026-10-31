@@ -47,8 +47,10 @@ export const pageQuery = () =>
     return { review: active?.group ?? (active?.id ? (active as Review) : null), comments, total: page?.total ?? comments.length };
   });
 
+/** This page's review, comments and settings. */
 export const usePage = () => useQuery(pageQuery()).data ?? EMPTY;
 
+/** This page's data from the cache, for code outside React. */
 export const readPage = () => queryClient.getQueryData<PageData>(pageQuery().queryKey) ?? EMPTY;
 
 /** Reads the review and this page's comments again, as after a capture or a save. */

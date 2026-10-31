@@ -24,10 +24,15 @@ export function draftIn(draft: Draft | null | undefined, scope: string) {
   return draft && draft.scope === scope && Date.now() - draft.at < DRAFT_AGE ? draft : null;
 }
 
+/**
+ * Keeps what was typed in the popup so it survives closing.
+ * @param draft The typed fields and their scope.
+ */
 export function saveDraft(draft: Omit<Draft, 'at'>) {
   return browser.storage.local.set({ [DRAFT_KEY]: { ...draft, at: Date.now() } });
 }
 
+/** Forgets the saved popup draft. */
 export function dropDraft() {
   return browser.storage.local.remove(DRAFT_KEY);
 }

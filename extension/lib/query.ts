@@ -11,6 +11,11 @@ export const queryClient = new QueryClient({
 /** The storage keys a query reads. A key ending in * matches every key with that prefix, such as img:*. */
 export type StorageMeta = { storage: string[] };
 
+/**
+ * True when a storage change touches a key. A key ending in * matches a prefix.
+ * @param key The key.
+ * @param changed The keys that changed.
+ */
 const reads = (key: string, changed: string[]) =>
   key.endsWith('*') ? changed.some((c) => c.startsWith(key.slice(0, -1))) : changed.includes(key);
 

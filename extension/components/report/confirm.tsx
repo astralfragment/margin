@@ -11,6 +11,10 @@ const ConfirmContext = createContext<Confirm>(() => Promise.resolve(null));
 /** Asks a question in a small dialog. Resolves with the value of the button pressed, or null on Escape. */
 export const useConfirm = () => useContext(ConfirmContext);
 
+/**
+ * Provides the confirm dialog to the report.
+ * @param props The report content.
+ */
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [ask, setAsk] = useState<ConfirmAsk | null>(null);
   const resolver = useRef<(value: string | null) => void>(null);

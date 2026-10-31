@@ -8,6 +8,11 @@ const stroke = (box, width, paths) =>
     .map((d) => `<path d="${d}"/>`)
     .join('')}</svg>`;
 
+/**
+ * An inline SVG icon from paths.
+ * @param {number} box The view box size.
+ * @param {string[]} paths The path data.
+ */
 const fill = (box, paths) =>
   `<svg viewBox="0 0 ${box} ${box}" fill="currentColor" aria-hidden="true">${paths.map((d) => `<path d="${d}"/>`).join('')}</svg>`;
 

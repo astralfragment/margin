@@ -234,6 +234,10 @@ export function RecheckDialog({ groupId, ordered, numberOf }: Props) {
   );
 }
 
+/**
+ * The frame of the recheck dialog.
+ * @param props The state, body, footer and key handler.
+ */
 function Layout({ state, body, foot, onKeyDown }: { state: string; body: ReactNode; foot: ReactNode; onKeyDown?: (e: KeyboardEvent) => void }) {
   return (
     <>
@@ -420,6 +424,10 @@ function Walk({ run, ordered, numberOf, others, onDone }: WalkProps) {
   );
 }
 
+/**
+ * A before or after screenshot with its caption.
+ * @param props The image, alt text and caption.
+ */
 function Figure({ src, alt, caption }: { src?: string; alt: string; caption: string }) {
   return (
     <figure className="grid gap-2">

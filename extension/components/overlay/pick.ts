@@ -1,6 +1,10 @@
 import { host } from './host';
 import type { Anchor, ElementInfo, Picked, Rect } from './store';
 
+/**
+ * The area of a box in square pixels.
+ * @param box The box to measure.
+ */
 const area = (box: { width: number; height: number }) => box.width * box.height;
 
 /** Builds a short, readable CSS path for an element. */

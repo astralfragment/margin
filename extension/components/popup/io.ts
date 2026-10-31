@@ -13,9 +13,15 @@ export type PopupData = {
 
 export type RunState = { state: 'running' | 'done' | 'cancelled'; groupId: string; done: number; total: number; checked: string[]; at: number };
 
+/**
+ * Sends a message to the background.
+ * @param type The message type.
+ * @param payload Extra fields.
+ */
 export const send = (type: string, payload: object = {}) =>
   browser.runtime.sendMessage({ type, ...payload }) as Promise<{ error?: string } | undefined>;
 
+/** Which of Jira and Figma are connected. */
 export async function connectedServices(): Promise<Record<LinkKind, boolean>> {
   const [jira, figma] = await Promise.all([connection('jira'), connection('figma')]);
   return { jira: Boolean(jira?.sites?.length), figma: Boolean(figma) };
@@ -32,6 +38,7 @@ export async function loadData(): Promise<PopupData> {
   return { groups, issues, activeId: (bag.activeGroupId as string | undefined) ?? null, connected };
 }
 
+/** The address, title and id of the active tab. */
 export async function activeTab(): Promise<TabInfo> {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   return { id: tab?.id, url: tab?.url ?? '', title: tab?.title ?? '', width: tab?.width };
@@ -60,6 +67,10 @@ export async function annotatingNow(tabId?: number) {
   }
 }
 
+/**
+ * Opens the report, or focuses it if it is open.
+ * @param query The query string to open it with.
+ */
 export function openReport(query: string) {
   openReportTab(query).finally(() => window.close());
 }
@@ -71,6 +82,10 @@ export function openSettings(kind?: LinkKind) {
   window.close();
 }
 
+/**
+ * Opens an address in a new tab.
+ * @param url The address.
+ */
 export function openUrl(url: string) {
   browser.tabs.create({ url });
 }

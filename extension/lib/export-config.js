@@ -2,6 +2,10 @@ import { DEFAULT_FIELDS, FACT_FIELDS, withDefaults } from './fields.js';
 import { STATUSES } from './status.js';
 
 const ALL_STATUSES = STATUSES.map((s) => s.key);
+/**
+ * Every detail field turned on or off.
+ * @param {boolean} on True to turn them on.
+ */
 const allFields = (on) => Object.fromEntries(FACT_FIELDS.map((f) => [f.key, on]));
 
 /**

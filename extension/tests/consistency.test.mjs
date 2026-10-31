@@ -19,6 +19,14 @@ const pages = {
   c: { url: 'https://shop.example.com/blog/123', title: 'Blog - Shop' },
 };
 const element = { selector: 'main > h1.hero', tag: 'h1', classes: 'hero title', text: 'Welcome', styles: { font: '32px Inter 700', color: 'rgb(18, 21, 28)' } };
+/**
+ * A test comment.
+ * @param {number} n Its number.
+ * @param {string} page Its page.
+ * @param {string} severity Its severity.
+ * @param {string} status Its status.
+ * @param {object} extra More fields.
+ */
 const base = (n, page, severity, status, extra = {}) => ({
   id: `c${n}`,
   groupId: 'g1',
@@ -53,6 +61,12 @@ const EXPECTED = [3, 6, 1, 2, 5, 4];
 const statusOfNumber = Object.fromEntries(issues.map((issue, i) => [i + 1, issue.status]));
 
 let failures = 0;
+/**
+ * Fails the test when two values differ.
+ * @param {string} name What is compared.
+ * @param {unknown} actual The value found.
+ * @param {unknown} expected The value wanted.
+ */
 const same = (name, actual, expected) => {
   const a = JSON.stringify(actual);
   const e = JSON.stringify(expected);
@@ -71,6 +85,10 @@ function chunks(text, start) {
   return hits.map((hit, i) => ({ number: Number(hit[1]), body: text.slice(hit.index, hits[i + 1]?.index ?? text.length) }));
 }
 
+/**
+ * Reads labels out of an export with a pattern.
+ * @param {RegExp} pattern The label pattern.
+ */
 const labelsBy = (pattern) => (body) => [...body.matchAll(pattern)].map((m) => m[1]);
 const htmlLabels = labelsBy(/<dt>([^<]+)<\/dt>/g);
 const docsLabels = labelsBy(new RegExp(`<b style="color: #68686f;">${LABEL_GROUP}</b>&nbsp; `, 'g'));

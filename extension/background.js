@@ -398,6 +398,10 @@ async function encodeRaw(bitmap) {
   return toDataUrl(await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.9 }));
 }
 
+/**
+ * Loads an image from a data URL or address into a bitmap.
+ * @param {string} src The image address.
+ */
 const decode = async (src) => createImageBitmap(await (await fetch(src)).blob());
 
 /**
@@ -1166,6 +1170,10 @@ const DIFF_CELL = 2;
 const DIFF_LEVEL = 32;
 let lastCaptureAt = 0;
 let verifyRun = null;
+/**
+ * Waits for a number of milliseconds.
+ * @param {number} ms How long to wait.
+ */
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
@@ -1375,6 +1383,7 @@ function migrateOnce() {
 
 migrateOnce();
 
+/** Migrates stored reviews to the current shape and sets up the right-click menu. */
 async function boot() {
   await migrateOnce();
   await createMenus();

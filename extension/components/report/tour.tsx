@@ -14,12 +14,20 @@ export type TourStep = {
 
 const PAD = 4;
 
+/**
+ * The box of a tour step's target.
+ * @param step The tour step.
+ */
 function measure(step: TourStep) {
   if (typeof step.target === 'function') return step.target();
   const el = document.querySelector(step.target);
   return el?.getClientRects().length ? el.getBoundingClientRect() : null;
 }
 
+/**
+ * Scrolls a tour step's target into view.
+ * @param step The tour step.
+ */
 function reveal(step: TourStep) {
   if (step.reveal) step.reveal();
   else if (typeof step.target === 'string') document.querySelector(step.target)?.scrollIntoView({ block: 'nearest' });

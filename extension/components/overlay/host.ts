@@ -95,6 +95,10 @@ export function deepAll(selector: string) {
 
 let tabZoom = 1;
 
+/**
+ * Keeps the overlay at its own size when the page's zoom changes.
+ * @param zoom The tab zoom factor.
+ */
 export const setTabZoom = (zoom: number) => {
   tabZoom = zoom || 1;
 };

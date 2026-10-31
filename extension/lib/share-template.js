@@ -8,6 +8,10 @@ const STATUS_INK = { open: '#09090b', fixed: '#15803d', wontfix: '#71717a' };
 const DOT = ' · ';
 const LINK = 'color: inherit; text-decoration: underline;';
 
+/**
+ * Text folded onto one line.
+ * @param {string} text The text.
+ */
 const oneLine = (text) => String(text ?? '').replace(/\s*\n\s*/g, ' ').trim();
 
 /** Escapes the characters that would break a Markdown table cell or start formatting by accident. */

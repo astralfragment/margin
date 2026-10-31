@@ -23,6 +23,7 @@ import {
   setField,
   setSeverity,
   startPlacing,
+  filled,
 } from './controller';
 import { FigmaField } from './figma-field';
 import { Hint, MenuContent } from './floating';
@@ -44,8 +45,6 @@ function errorCopy(error: string) {
   }
   return ['The screenshot failed', `${error.replace(/\.$/, '')}. Your draft is kept.`];
 }
-
-const filled = (card: Card) => Boolean(card.title.trim() || card.note.trim());
 
 /**
  * Places the composer beside its area, never over it: right, then left, below and above, clear of the capture bar
@@ -163,6 +162,10 @@ function MoreMenu({ card, side }: { card: Card; side: Side }) {
   );
 }
 
+/**
+ * The composer footer with Discard and Save, or the question it is asking.
+ * @param props The open comment.
+ */
 function Footer({ card }: { card: Card }) {
   if (card.asking) {
     const parts = [card.note.trim() && 'its note', card.marks.length && `${card.marks.length} ${card.marks.length === 1 ? 'marker' : 'markers'}`].filter(Boolean);
@@ -216,6 +219,10 @@ function Footer({ card }: { card: Card }) {
   );
 }
 
+/**
+ * Explains a failed capture and offers to try again.
+ * @param props The error text and whether a retry is running.
+ */
 function ErrorNotice({ error, retrying }: { error: string; retrying: boolean }) {
   const [head, body] = errorCopy(error);
   return (
@@ -332,6 +339,7 @@ function ComposerCard({ card }: { card: Card }) {
   );
 }
 
+/** The comment card that opens beside the marked area. */
 export function Composer() {
   const card = useOverlay((s) => s.card);
   return card ? <ComposerCard card={card} /> : null;

@@ -19,6 +19,10 @@ import { pad, parseLinks, plural, send } from './util';
 
 type Draft = { severity: string; status: string; title: string; note: string; links: string; remove: boolean };
 
+/**
+ * The editable fields of a comment.
+ * @param issue The comment.
+ */
 const draftOf = (issue: Issue): Draft => ({
   severity: severityOf(issue.severity).key,
   status: statusOf(issue.status).key,
@@ -28,6 +32,11 @@ const draftOf = (issue: Issue): Draft => ({
   remove: false,
 });
 
+/**
+ * True when two drafts are equal.
+ * @param a One draft.
+ * @param b The other draft.
+ */
 const same = (a?: Draft, b?: Draft) => JSON.stringify(a) === JSON.stringify(b);
 
 type Props = {

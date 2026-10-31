@@ -156,6 +156,10 @@ function Settings({ config, counts, onClose }: { config: ExportConfig; counts: R
   );
 }
 
+/**
+ * A titled group of export settings.
+ * @param props The title, an optional note and the settings.
+ */
 function Group({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
   return (
     <fieldset className="grid content-start gap-3">
@@ -166,6 +170,10 @@ function Group({ title, note, children }: { title: string; note?: string; childr
   );
 }
 
+/**
+ * One labelled export setting.
+ * @param props The label and the control.
+ */
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -175,6 +183,10 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+/**
+ * A checkbox export setting with a hint.
+ * @param props The state, handler, label, hint and whether it is off.
+ */
 function Check({ checked, onChange, label, hint, disabled }: { checked: boolean; onChange: (on: boolean) => void; label: string; hint?: string; disabled?: boolean }) {
   return (
     <label className={cn('flex w-fit items-center gap-2.5 text-sm', disabled ? 'opacity-50' : 'cursor-pointer')}>

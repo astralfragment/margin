@@ -12,11 +12,19 @@ const SHAPES: Record<SeverityKey, { icon: LucideIcon; fill: boolean; text: strin
   nit: { icon: CircleDashed, fill: false, text: 'text-sev-nit', tint: 'bg-sev-nit-tint' },
 };
 
+/**
+ * Text and background classes for a severity.
+ * @param key The severity key, such as major.
+ */
 export function severityStyle(key?: string) {
   const { key: k } = severityOf(key) as { key: SeverityKey };
   return SHAPES[k];
 }
 
+/**
+ * The shape that marks a severity next to its label.
+ * @param props The severity and extra classes.
+ */
 export function SeverityIcon({ severity, className }: { severity?: string; className?: string }) {
   const { icon: Icon, fill, text } = severityStyle(severity);
   return <Icon aria-hidden className={cn('size-3 shrink-0', text, fill && 'fill-current', className)} />;

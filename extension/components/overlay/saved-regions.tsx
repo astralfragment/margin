@@ -13,6 +13,10 @@ const OUTLINE: Record<string, string> = {
   wontfix: 'border-muted-foreground',
 };
 
+/**
+ * The outline and number of a saved comment on the page.
+ * @param props The comment, its box and whether it is highlighted.
+ */
 function SavedRegion({ comment, box, hot }: { comment: PageComment; box: Rect; hot: boolean }) {
   const scale = useOverlay((s) => s.scale);
   const show = () => setState({ tip: comment.id });

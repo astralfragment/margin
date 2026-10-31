@@ -14,6 +14,7 @@ const PortalContext = createContext<HTMLElement | null>(null);
 
 export const PortalProvider = PortalContext.Provider;
 
+/** The shadow root element that popovers and menus render into. */
 const usePortal = () => useContext(PortalContext);
 
 const POPUP =
@@ -21,6 +22,10 @@ const POPUP =
 
 type Placement = Pick<PopoverPrimitive.Positioner.Props, 'side' | 'align' | 'sideOffset' | 'alignOffset' | 'collisionPadding' | 'anchor'>;
 
+/**
+ * A popover rendered inside the overlay shadow root.
+ * @param props Popup props and placement.
+ */
 export function PopoverContent({ className, side = 'top', align = 'center', sideOffset = 8, ...props }: PopoverPrimitive.Popup.Props & Placement) {
   return (
     <PopoverPrimitive.Portal container={usePortal()}>
@@ -31,6 +36,10 @@ export function PopoverContent({ className, side = 'top', align = 'center', side
   );
 }
 
+/**
+ * A menu rendered inside the overlay shadow root.
+ * @param props Popup props and placement.
+ */
 export function MenuContent({
   className,
   side = 'bottom',
@@ -58,6 +67,10 @@ export function MenuContent({
   );
 }
 
+/**
+ * An on and off switch styled for the overlay.
+ * @param props Switch props and extra classes.
+ */
 export function Switch({ className, ...props }: SwitchPrimitive.Root.Props) {
   return (
     <SwitchPrimitive.Root

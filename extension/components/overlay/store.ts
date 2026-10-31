@@ -139,6 +139,10 @@ const overlayStore = createStore<OverlayState>()(() => ({
 
 export const getState = overlayStore.getState;
 
+/**
+ * Merges a change into the overlay state.
+ * @param patch The fields to change.
+ */
 export const setState = (patch: Partial<OverlayState>) => overlayStore.setState(patch);
 
 /** Changes the open composer, if there is one. */

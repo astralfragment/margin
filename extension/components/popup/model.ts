@@ -1,4 +1,6 @@
 import { routeOf } from '@/lib/review-model.js';
+import { hostOf, pad, plural } from '@/lib/format.js';
+export { hostOf, pad, plural };
 
 export type Link = {
   key?: string;
@@ -46,19 +48,11 @@ const RESTRICTED = /^(chrome|edge|about|devtools|chrome-extension|view-source|da
 /** A share of changed pixels below this reads as the same as the capture. */
 const CHANGED_SHARE = 0.003;
 
+/**
+ * True for a page Chrome closes to extensions.
+ * @param url The page address.
+ */
 export const isRestricted = (url: string) => !url || RESTRICTED.test(url);
-
-export const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
-
-export const pad = (n: number) => String(n).padStart(2, '0');
-
-export function hostOf(url?: string) {
-  try {
-    return new URL(url ?? '').host;
-  } catch {
-    return '';
-  }
-}
 
 /** True when two URLs are the same page, ignoring the query and hash. */
 export function samePage(a?: string, b?: string) {

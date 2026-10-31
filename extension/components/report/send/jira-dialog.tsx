@@ -37,6 +37,11 @@ type Props = {
 
 type Choice = { siteId?: string; projectId?: string; typeId?: string; mode?: Mode };
 
+/**
+ * True when two addresses share an origin.
+ * @param a One address.
+ * @param b The other address.
+ */
 function sameOrigin(a?: string, b?: string) {
   try {
     return new URL(a ?? '').origin === new URL(b ?? '').origin;
@@ -47,6 +52,11 @@ function sameOrigin(a?: string, b?: string) {
 
 /** The lib's Jira helpers take a numbering over plain objects. */
 const byNumber = (numberOf: (issue: Issue) => number) => numberOf as (issue: object) => number;
+/**
+ * A comment number and title for a list.
+ * @param issue The comment.
+ * @param numberOf Gives the comment its number.
+ */
 const label = (issue: Issue, numberOf: (issue: Issue) => number) => `${pad(numberOf(issue))} ${issue.title || 'Untitled comment'}`;
 const valid = <T extends { id: string }>(items: T[], id?: string | null) => (id && items.some((i) => i.id === id) ? id : undefined);
 
@@ -79,6 +89,10 @@ export function JiraDialog({ open, onOpenChange, ...rest }: Props) {
   );
 }
 
+/**
+ * The frame of the Send to Jira dialog.
+ * @param props The body, state and footer.
+ */
 function Layout({ body, state, children }: { body: ReactNode; state: string; children: ReactNode }) {
   return (
     <>
@@ -93,6 +107,10 @@ function Layout({ body, state, children }: { body: ReactNode; state: string; chi
   );
 }
 
+/**
+ * A labelled field.
+ * @param props The label and the control.
+ */
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid min-w-0 gap-1.5">
@@ -102,6 +120,10 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+/**
+ * A labelled select for a Jira project or issue type.
+ * @param props The label, value, items, handler and whether it is off.
+ */
 function Picker({ label: name, value, items, onChange, disabled }: { label: string; value: string; items: { id: string; name: string }[]; onChange: (v: string) => void; disabled?: boolean }) {
   return (
     <Field label={name}>
@@ -121,6 +143,10 @@ function Picker({ label: name, value, items, onChange, disabled }: { label: stri
   );
 }
 
+/**
+ * The choice between one issue per comment and one for the review.
+ * @param props The mode, handler, comment count and ticket.
+ */
 function ModePicks({ value, onChange, count, ticket }: { value: Mode; onChange: (mode: Mode) => void; count: number; ticket: string | null }) {
   const whole = ticket ? 'ticket' : 'review';
   const options = [
@@ -142,6 +168,10 @@ function ModePicks({ value, onChange, count, ticket }: { value: Mode; onChange: 
   );
 }
 
+/**
+ * The outcome of a send, with a link to the issue.
+ * @param props Whether it worked, the title, link and detail.
+ */
 function ResultCard({ ok, title, url, text }: { ok: boolean; title: ReactNode; url?: string; text?: string }) {
   return (
     <div className={ok ? 'grid gap-1 rounded-lg border p-3' : 'grid gap-1 rounded-lg border border-destructive/50 p-3'}>

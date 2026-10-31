@@ -13,6 +13,10 @@ function ToggleGroup({ className, ...props }: ToggleGroupPrimitive.Props<string>
   );
 }
 
+/**
+ * One button in a toggle group.
+ * @param props Toggle props and extra classes.
+ */
 function ToggleGroupItem({ className, ...props }: TogglePrimitive.Props<string>) {
   return (
     <TogglePrimitive

@@ -44,8 +44,19 @@ type Callbacks = {
 };
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
+/**
+ * Keeps a number between two limits.
+ * @param v The number.
+ * @param lo The lower limit.
+ * @param hi The upper limit.
+ */
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
+/**
+ * Creates an SVG element with attributes.
+ * @param tag The element name.
+ * @param attrs The attributes.
+ */
 function el(tag: string, attrs: Record<string, string | number> = {}) {
   const node = document.createElementNS(SVG_NS, tag);
   for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));

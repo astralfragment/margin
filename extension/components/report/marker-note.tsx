@@ -25,6 +25,10 @@ export function MarkerNote({ ask, onSave, onRemove, onDismiss }: Props) {
   );
 }
 
+/**
+ * The form for a marker's note.
+ * @param props The marker and handlers.
+ */
 function NoteForm({ ask, onSave, onRemove }: { ask: NoteAsk; onSave: (note: string) => void; onRemove: () => void }) {
   const [value, setValue] = useState(ask.note);
   const [error, setError] = useState('');

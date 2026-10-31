@@ -4,6 +4,7 @@ import { DEFAULT_FIELDS, FACT_FIELDS, withDefaults } from './fields.js';
 import { exportOptions } from './export-config.js';
 import { markList } from './marks.js';
 import { widthCaption, widthShots } from './widths.js';
+import { pad } from './format.js';
 
 /** One date style for the review header and one date and time style for each comment, in the browser's locale, so every format reads the same. */
 const DAY = new Intl.DateTimeFormat(undefined, { dateStyle: 'long' });
@@ -17,8 +18,6 @@ const momentOf = (value) => {
   const date = new Date(value);
   return value == null || Number.isNaN(date.getTime()) ? '' : MOMENT.format(date);
 };
-
-const pad = (n) => String(n).padStart(2, '0');
 
 /** Each severity's shape as a text character, for formats that cannot draw: square, triangle, circle and hollow circle. */
 export const SEVERITY_SHAPES = { blocker: '■', major: '▲', minor: '●', nit: '○' };
@@ -40,9 +39,17 @@ export function numbering(issues) {
   return (issue) => numbers.get(issue.id) ?? 0;
 }
 
+/**
+ * True for an address part that is an id, not a word.
+ * @param {string} part The address part.
+ */
 const looksLikeId = (part) =>
   /^\d+$/.test(part) || /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(part) || (/\d/.test(part) && /^[\w-]{16,}$/.test(part));
 
+/**
+ * An address part as a readable screen name.
+ * @param {string} part The address part.
+ */
 const screenWord = (part) => {
   const words = part.replace(/[-_]+/g, ' ').trim();
   if (/^[a-z]{2,4}$/i.test(words) && !/[aeiouy]/i.test(words)) return words.toUpperCase();
@@ -101,6 +108,10 @@ function environmentText(issue) {
   return `${env.browser}${env.os ? ` on ${env.os}` : ''}${env.zoom ? `, zoom ${env.zoom}%` : ''}`;
 }
 
+/**
+ * True for a Figma address.
+ * @param {string} url The address.
+ */
 const isFigma = (url) => /^https:\/\/([\w-]+\.)?figma\.com\//i.test(url);
 
 /**

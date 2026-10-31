@@ -32,6 +32,10 @@ export function LinkRows({ group, connected, refreshing, failed, onRefresh, onCo
   );
 }
 
+/**
+ * One of the review's links, opened or connected from the popup.
+ * @param props The kind, the link and handlers.
+ */
 function LinkRow({ kind, link, onConnect, onOpen }: { kind: LinkKind; link: Link; onConnect: (kind: LinkKind) => void; onOpen: (url: string) => void }) {
   const Icon = kind === 'jira' ? Ticket : Frame;
   const service = kind === 'jira' ? 'Jira' : 'Figma';
@@ -69,6 +73,10 @@ function LinkRow({ kind, link, onConnect, onOpen }: { kind: LinkKind; link: Link
   );
 }
 
+/**
+ * When the links' details were last fetched, with a refresh.
+ * @param props The review, connection state and handlers.
+ */
 function Freshness({ group, connected, refreshing, failed, onRefresh, onConnect }: Omit<Props, 'onOpen'>) {
   const at = detailsAt(group) as number | null;
   const off = (['jira', 'figma'] as const).find((kind) => group[kind]?.fetchedAt && !connected[kind]);

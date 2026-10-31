@@ -65,6 +65,10 @@ export function LinkField({ api, autoFocus, focusNext, onConnect }: Props) {
   );
 }
 
+/**
+ * The field where a Jira or Figma link is pasted.
+ * @param props The field state, its id and focus handling.
+ */
 function LinkInput({ api, id, autoFocus, focusNext }: { api: LinkFieldApi; id: string; autoFocus: boolean; focusNext: () => void }) {
   const { kind, field } = api;
   const [open, setOpen] = useState(false);
@@ -172,6 +176,10 @@ function LinkInput({ api, id, autoFocus, focusNext }: { api: LinkFieldApi; id: s
   );
 }
 
+/**
+ * Says why a link could not be read and how to fix it.
+ * @param props The field state, its kind and a retry.
+ */
 function FieldError({ field, kind, onRetry }: { field: FieldState; kind: LinkKind; onRetry: () => void }) {
   const copy = COPY[kind];
   const text =
@@ -191,6 +199,10 @@ function FieldError({ field, kind, onRetry }: { field: FieldState; kind: LinkKin
 
 type RowProps = { kind: LinkKind; field: FieldState; focus: FocusTarget; onRemove: () => void; onUndo: () => void; onConnect: () => void };
 
+/**
+ * A linked Jira ticket or Figma file, with its actions.
+ * @param props The link, its state and handlers.
+ */
 function LinkRow({ kind, field, focus, onRemove, onUndo, onConnect }: RowProps) {
   const copy = COPY[kind];
   const v = field.value ?? {};
@@ -265,6 +277,10 @@ function LinkRow({ kind, field, focus, onRemove, onUndo, onConnect }: RowProps) 
   );
 }
 
+/**
+ * One line of the links area, with an icon and an action.
+ * @param props The icon, action, state and content.
+ */
 function Row({ icon, action, busy, alert, className, children }: { icon?: ReactNode; action?: ReactNode; busy?: boolean; alert?: boolean; className?: string; children: ReactNode }) {
   return (
     <div
@@ -279,6 +295,10 @@ function Row({ icon, action, busy, alert, className, children }: { icon?: ReactN
   );
 }
 
+/**
+ * The muted line under a link title.
+ * @param props The text.
+ */
 function Description({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   const long = text.length > DESCRIPTION_FOLD;

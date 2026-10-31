@@ -31,6 +31,10 @@ function RowFrame({ provider, children, onKeyDown }: { provider: Provider; child
   );
 }
 
+/**
+ * The name and status of a connection.
+ * @param props The service, a badge and the status line.
+ */
 function RowText({ provider, badge, status }: { provider: Provider; badge?: ReactNode; status: ReactNode }) {
   return (
     <div className="grid min-w-0 gap-1">

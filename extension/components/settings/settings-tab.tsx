@@ -39,6 +39,7 @@ function SwitchRow({ storageKey, on, title, description }: SwitchRowProps) {
   );
 }
 
+/** How much storage the reviews use. */
 function StorageSummary() {
   const { data: summary } = useQuery(
     storageQuery(['storage-summary'], ['*'], async () => {
@@ -65,6 +66,7 @@ function StorageSummary() {
   );
 }
 
+/** The keyboard shortcut and where to change it. */
 function ShortcutRow() {
   const shortcut = useAnnotateShortcut();
   return (

@@ -10,19 +10,28 @@ import type { Group } from './model';
 /** How long a finished recheck keeps showing its outcome. */
 const RUN_SHOWN_MS = 60_000;
 
+/** The active tab. */
 export const useTab = () => useQuery({ queryKey: ['active-tab'], queryFn: activeTab });
 
 /** The reviews, comments and active review, without creating a review, so a site with none can say so. */
 export const usePopupData = () => useQuery(storageQuery(['popup-data'], ['groups', 'issues', 'activeGroupId'], loadData));
 
+/** Which of Jira and Figma are connected. */
 export const useConnected = () => useQuery(storageQuery(['connected'], ['connections'], connectedServices));
 
+/**
+ * Whether Margin is running on a tab.
+ * @param tabId The tab.
+ * @param enabled Whether to ask.
+ */
 export const useAnnotating = (tabId: number | undefined, enabled: boolean) =>
   useQuery({ queryKey: ['annotating', tabId], queryFn: () => annotatingNow(tabId), enabled });
 
+/** The saved popup draft. */
 export const useDraft = () =>
   useQuery(storageQuery(['review-draft'], ['reviewDraft'], async () => ((await browser.storage.local.get('reviewDraft')).reviewDraft as Draft | undefined) ?? null));
 
+/** Which guided tours have been seen. */
 export const useToursDone = () =>
   useQuery(storageQuery(['tours'], ['tours'], async () => ((await browser.storage.local.get('tours')).tours ?? {}) as Record<string, boolean>));
 

@@ -20,6 +20,8 @@ import {
   type Rect,
   type Viewport,
 } from './store';
+import { pad } from '@/lib/format.js';
+export { pad };
 
 declare global {
   interface Window {
@@ -31,14 +33,38 @@ declare global {
 const MIN_DRAG = 6;
 const SHOT_TIMEOUT = 10000;
 
-export const pad = (n: number) => String(n).padStart(2, '0');
+/** Resolves after the next two animation frames, once the page has painted. */
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+/**
+ * Waits for a number of milliseconds.
+ * @param ms How long to wait.
+ */
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+/**
+ * Sends a message to the background.
+ * @param msg The message.
+ */
 const send = <T = Record<string, unknown>>(msg: object) => chrome.runtime.sendMessage(msg) as Promise<T>;
+/**
+ * Sends a message to the background and ignores a failure.
+ * @param msg The message.
+ */
 const quiet = (msg: object) => send(msg).catch(() => null);
+/**
+ * True for an element the user types into.
+ * @param el The element.
+ */
 const isEditable = (el: EventTarget | null | undefined) =>
   el instanceof HTMLElement && (el.isContentEditable || ['input', 'textarea', 'select'].includes(el.localName));
+/**
+ * True for an input or textarea.
+ * @param el The element.
+ */
 const isField = (el: Element | null) => el?.localName === 'input' || el?.localName === 'textarea';
+/**
+ * The readable message of an error.
+ * @param err The error.
+ */
 const errorText = (err: unknown) => String((err as Error)?.message ?? err);
 
 type ShotResult = { id?: string; error?: string };
@@ -66,8 +92,21 @@ let toastTimer = 0;
 let toastSeq = 0;
 let scrollFrame = 0;
 
+/**
+ * The overlay element with a data-scope name.
+ * @param name The scope name.
+ */
 const scope = (name: string) => shadow.querySelector<HTMLElement>(`[data-scope="${name}"]`);
+/**
+ * True when an event path passes through a scope.
+ * @param path The event path.
+ * @param name The scope name.
+ */
 const inScope = (path: EventTarget[], name: string) => path.some((n) => n instanceof Element && n.getAttribute('data-scope') === name);
+/**
+ * The comment area's box as it sits on screen now.
+ * @param card The comment and where it was captured.
+ */
 const liveRect = (card: Pick<Card, 'rect' | 'anchor' | 'viewport'>) => liveBox(card);
 
 /** Moves the capture bar to the top while an area or a drag reaches into the strip it covers at the bottom. */
@@ -76,17 +115,30 @@ function placeBar(rect: Rect | null = getState().card && liveRect(getState().car
   if (barAtTop !== getState().barAtTop) setState({ barAtTop });
 }
 
+/**
+ * Turns pick element on or off.
+ * @param next True to turn it on.
+ */
 export function setPickElement(next: boolean) {
   writeSetting('pickElement', next);
   if (!next) setState({ hover: null });
 }
 
+/**
+ * Turns numbered markers on or off.
+ * @param next True to turn them on.
+ */
 export const setMarkers = (next: boolean) => writeSetting('markers', next);
 
+/**
+ * Opens a capture bar popover, or closes it.
+ * @param popover The popover to open, or null.
+ */
 export function setPopover(popover: 'options' | 'help' | null) {
   setState({ popover, menu: null });
 }
 
+/** Opens the report. */
 export const openReport = () => {
   clearToast();
   quiet({ type: 'openReport' });
@@ -107,6 +159,11 @@ export function holdToast(ms: number) {
   if (ms) toastTimer = window.setTimeout(clearToast, ms);
 }
 
+/**
+ * Shows a short message.
+ * @param text The message.
+ * @param ms How long it stays.
+ */
 export function toast(text: string, ms = 1600) {
   clearTimeout(toastTimer);
   setState({ toast: { kind: 'plain', id: ++toastSeq, text } });
@@ -137,6 +194,7 @@ function onScroll() {
   });
 }
 
+/** Refits the overlay when the window changes size. */
 function onResize() {
   fitZoom();
   onScroll();
@@ -252,6 +310,7 @@ async function captureWidths(which: { ids?: string[]; page?: boolean }) {
   return res;
 }
 
+/** Captures this page's comments at three widths. */
 export const captureWidthsOnPage = () => captureWidths({ page: true });
 
 /** Captures the open composer's comment at three widths, showing progress in its More menu. */
@@ -265,6 +324,7 @@ export async function captureCardWidths() {
   setTimeout(() => getState().card?.id === card.id && patchCard({ more: false, widths: 'idle' }), 900);
 }
 
+/** Closes the right-click menu. */
 export function closeMenu() {
   if (getState().menu) setState({ menu: null, hover: null });
 }
@@ -294,7 +354,15 @@ export const menuActions = {
   stop: () => setActive(false),
 };
 
-const filled = (card: Card) => Boolean(card.title.trim() || card.note.trim());
+/**
+ * True when the comment has a title or a note.
+ * @param card The open comment.
+ */
+export const filled = (card: Card) => Boolean(card.title.trim() || card.note.trim());
+/**
+ * True when the comment has anything that would be lost by closing it.
+ * @param card The open comment.
+ */
 const hasWork = (card: Card) => Boolean(filled(card) || card.marks.length || card.frame || card.link.trim());
 
 /** True when the open composer can give way to a new capture without losing anything. */
@@ -367,6 +435,10 @@ function closeCard(discard: boolean, refocus = true) {
   if (refocus && hadFocus) focusBar();
 }
 
+/**
+ * The parts of a comment that count as edits.
+ * @param card The open comment.
+ */
 const readDraft = (card: Card): Draft => ({
   title: card.title,
   note: card.note,
@@ -376,6 +448,10 @@ const readDraft = (card: Card): Draft => ({
   link: card.link,
 });
 
+/**
+ * The fields needed to reopen a comment.
+ * @param c The open comment.
+ */
 const cardArgs = (c: Card): CardArgs => ({
   id: c.id,
   rect: c.rect,
@@ -389,14 +465,24 @@ const cardArgs = (c: Card): CardArgs => ({
   extraMarks: c.extraMarks,
 });
 
+/**
+ * Sets the open comment's severity.
+ * @param severity The severity key.
+ */
 export function setSeverity(severity: SeverityKey) {
   patchCard({ severity });
 }
 
+/**
+ * Updates the title, note or link of the open comment.
+ * @param field Which field.
+ * @param value The new text.
+ */
 export function setField(field: 'title' | 'note' | 'link', value: string) {
   patchCard((c) => ({ [field]: field === 'title' ? value.replace(/\s*\n\s*/g, ' ') : value, asking: c.asking && null }));
 }
 
+/** Waits for a click inside the area to place a marker. */
 export function startPlacing() {
   patchCard({ placing: true });
 }
@@ -410,11 +496,13 @@ export function addFrame() {
   }
 }
 
+/** Removes the link from the open comment. */
 export function removeLink() {
   patchCard({ link: '', showLink: false });
   focusCard('addFrame');
 }
 
+/** Removes the Figma frame from the open comment. */
 export function removeFrame() {
   patchCard({ frame: null });
   focusCard('addFrame');
@@ -428,6 +516,7 @@ function pageScore(page: string) {
   return home + words.filter((w) => name.includes(w)).length;
 }
 
+/** Opens or closes the Figma frame list. */
 function togglePicker() {
   const card = getState().card;
   const frames = readPage().review?.figma?.frames ?? [];
@@ -463,11 +552,19 @@ export function pickerView() {
   return { query, visible, groups, active };
 }
 
+/**
+ * Updates the Figma frame list and keeps the active frame in view.
+ * @param patch The fields to change.
+ */
 export function setPicker(patch: Partial<NonNullable<Card['picker']>>) {
   patchCard((c) => ({ picker: c.picker && { ...c.picker, ...patch } }));
   requestAnimationFrame(() => scope('card')?.querySelector('[data-active]')?.scrollIntoView({ block: 'nearest' }));
 }
 
+/**
+ * Links the open comment to a Figma frame.
+ * @param frame The frame, or undefined for none.
+ */
 export function pickFrame(frame: { id: string; name: string; page?: string } | undefined) {
   const file = readPage().review?.figma;
   if (!frame || !file) return;
@@ -476,6 +573,11 @@ export function pickFrame(frame: { id: string; name: string; page?: string } | u
   focusCard('title');
 }
 
+/**
+ * Updates one marker's note.
+ * @param index The marker position.
+ * @param note The new note.
+ */
 export function setMarkNote(index: number, note: string) {
   patchCard((c) => ({ marks: c.marks.map((m, i) => (i === index ? { ...m, note: note.replace(/\s*\n\s*/g, ' ') } : m)) }));
 }
@@ -516,16 +618,22 @@ export function askDiscard() {
   focusCard('keep');
 }
 
+/** Dismisses the question and returns to the title. */
 export function keepEditing() {
   patchCard({ asking: null });
   focusCard('title');
 }
 
+/** Answers yes to the question in the footer. */
 export function confirmAsk() {
   const card = getState().card;
   if (card) closeCard(card.asking !== 'changes');
 }
 
+/**
+ * True when the comment differs from when it opened.
+ * @param card The open comment.
+ */
 const changed = (card: Card) => JSON.stringify(readDraft(card)) !== card.original;
 
 /** Steps back one level on Esc: the More menu, the frame list, marker placing, the question in the footer, then the composer. */
@@ -592,6 +700,7 @@ export function redraw() {
   toast(`Drag over the new area.${kept} Esc keeps the old one.`, 4200);
 }
 
+/** Abandons a redraw and restores the comment it replaced. */
 function cancelRedraw() {
   const old = pending?.old;
   pending = null;
@@ -884,6 +993,7 @@ function onKeyUp(e: KeyboardEvent) {
   passThrough(false);
 }
 
+/** Gives the page back to Margin after holding Alt. */
 const endPass = () => passThrough(false);
 
 /** Takes back the last marker on Ctrl+Z when focus is not in a field with text to undo, or is in the last marker's empty note. */

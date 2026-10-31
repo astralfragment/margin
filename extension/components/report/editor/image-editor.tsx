@@ -332,6 +332,10 @@ export function ImageEditor({ issue, label, modal = false, onSaved, onClosed, re
   );
 }
 
+/**
+ * A tooltip that shows a tool name and its key.
+ * @param props The label, keys and trigger.
+ */
 function Tip({ label, keys, children }: { label: string; keys: string[]; children: ReactNode }) {
   return (
     <Tooltip>

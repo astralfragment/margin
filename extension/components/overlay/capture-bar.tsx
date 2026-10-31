@@ -33,6 +33,10 @@ function useStatus() {
   return n ? `${n} ${n === 1 ? 'comment' : 'comments'}` : 'Drag over anything to comment';
 }
 
+/**
+ * One switch in the Options popover, with its shortcut.
+ * @param props The setting, its label, detail, keys and state.
+ */
 function OptionRow({ id, label, detail, keys, checked, onChange }: { id: string; label: string; detail: string; keys: string; checked: boolean; onChange: (on: boolean) => void }) {
   return (
     <div className="flex items-start gap-3">
@@ -48,6 +52,10 @@ function OptionRow({ id, label, detail, keys, checked, onChange }: { id: string;
   );
 }
 
+/**
+ * A capture bar button that opens a popover.
+ * @param props Which popover, its label, icon and content.
+ */
 function BarPopover({ name, label, icon, children, className }: { name: 'options' | 'help'; label: string; icon: ReactNode; children: ReactNode; className?: string }) {
   const open = useOverlay((s) => s.popover === name);
   return (
@@ -67,6 +75,7 @@ function BarPopover({ name, label, icon, children, className }: { name: 'options
   );
 }
 
+/** The Options popover for pick element and numbered markers. */
 function Options() {
   const pickElement = useSetting('pickElement');
   const markers = useSetting('markers');
@@ -96,6 +105,7 @@ function Options() {
   );
 }
 
+/** The Help popover with the keyboard controls. */
 function Help() {
   return (
     <BarPopover name="help" label="Keys and gestures" icon={<CircleHelp />} className="max-h-(--available-height) w-96 overflow-y-auto">

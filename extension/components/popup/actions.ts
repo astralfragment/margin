@@ -12,6 +12,10 @@ const UNDO_MS = 5000;
 
 type Context = { tab: TabInfo; data: PopupData; group: Group | null; host: string; restricted: boolean; open: boolean };
 
+/**
+ * Focuses an element after the next frame.
+ * @param selector Which element.
+ */
 const focusLater = (selector: string) => requestAnimationFrame(() => document.querySelector<HTMLElement>(selector)?.focus());
 
 /**

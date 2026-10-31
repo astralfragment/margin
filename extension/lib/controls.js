@@ -64,6 +64,10 @@ export function openShortcutSettings() {
   else chrome.runtime.sendMessage({ type: 'openShortcuts' });
 }
 
+/**
+ * Key caps for a list of keys.
+ * @param {string[]} keys The keys.
+ */
 const kbd = (keys) => keys.map((key) => `<kbd>${key}</kbd>`).join(' ');
 
 /** A shortcut such as Alt+Shift+M as keycaps, for pages not yet in React. */

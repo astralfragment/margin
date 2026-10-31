@@ -306,6 +306,10 @@ export async function readGroups() {
   return Array.isArray(bag[GROUPS_KEY]) ? bag[GROUPS_KEY] : [];
 }
 
+/**
+ * Saves the list of reviews.
+ * @param {object[]} groups The reviews.
+ */
 async function writeGroups(groups) {
   await chrome.storage.local.set({ [GROUPS_KEY]: groups });
 }
@@ -327,6 +331,11 @@ export async function addGroup(name, page) {
   return group;
 }
 
+/**
+ * Changes fields on one review.
+ * @param {string} id The review.
+ * @param {object} patch The fields to change.
+ */
 export async function patchGroup(id, patch) {
   const groups = await readGroups();
   const found = groups.find((s) => s.id === id);
@@ -348,6 +357,10 @@ export async function removeGroup(id) {
   if (active === id) await chrome.storage.local.remove(ACTIVE_KEY);
 }
 
+/**
+ * Makes a review the active one.
+ * @param {string} id The review.
+ */
 export async function setActiveGroup(id) {
   await chrome.storage.local.set({ [ACTIVE_KEY]: id });
 }

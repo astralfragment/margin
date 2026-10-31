@@ -43,6 +43,7 @@ function useFitHeight() {
   return root;
 }
 
+/** The toolbar popup, once its data has loaded. */
 export function PopupApp() {
   const root = useFitHeight();
   const tab = useTab();
@@ -68,6 +69,10 @@ type Props = {
   toursDone: Record<string, boolean>;
 };
 
+/**
+ * The popup for the active tab and its review.
+ * @param props The tab, the review data, connections, draft and tours.
+ */
 function Popup({ tab, data, connected, draft, toursDone }: Props) {
   const host = hostOf(tab.url);
   const restricted = isRestricted(tab.url);

@@ -1,20 +1,11 @@
+import { hostOf, pad, plural } from '@/lib/format.js';
+export { hostOf, pad, plural };
+
 /**
  * Messages the background service worker, which owns storage writes and image work.
  * Each message has its own reply shape, so the reply is untyped and callers read the fields they asked for.
  */
 export const send = (type: string, payload: object = {}): Promise<any> => chrome.runtime.sendMessage({ type, ...payload });
-
-export const pad = (n: number) => String(n).padStart(2, '0');
-
-export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
-export function hostOf(url?: string) {
-  try {
-    return new URL(url ?? '').host;
-  } catch {
-    return url ?? '';
-  }
-}
 
 /** True when two URLs are the same page, ignoring the query and hash. */
 export function samePage(a?: string, b?: string) {
@@ -27,10 +18,19 @@ export function samePage(a?: string, b?: string) {
   }
 }
 
+/**
+ * A date and time for a file name.
+ * @param date The date.
+ */
 export function stamp(date: Date) {
   return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}`;
 }
 
+/**
+ * Downloads a file.
+ * @param blob The contents.
+ * @param filename The file name.
+ */
 export function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -56,6 +56,11 @@ export function readPref(key: string) {
   }
 }
 
+/**
+ * Saves a report preference in this browser.
+ * @param key The preference.
+ * @param value Its value.
+ */
 export function writePref(key: string, value: string) {
   try {
     localStorage.setItem(key, value);
@@ -79,6 +84,10 @@ export function parseLinks(value: string) {
   return { links, bad };
 }
 
+/**
+ * Opens an address in a new tab.
+ * @param url The address.
+ */
 export const openTab = (url: string) => chrome.tabs.create({ url });
 
 /** Text colour of a Jira status by its category: To do muted, In progress plain, Done green. */

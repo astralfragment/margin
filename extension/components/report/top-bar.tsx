@@ -68,6 +68,10 @@ type Props = {
   actions: Actions;
 };
 
+/**
+ * One item in the Share menu.
+ * @param props The icon, handler, state and label.
+ */
 function Item({ icon: Icon, onClick, disabled, children, destructive }: { icon: LucideIcon | typeof JiraIcon; onClick: () => void; disabled?: boolean; children: ReactNode; destructive?: boolean }) {
   return (
     <DropdownMenuItem onClick={onClick} disabled={disabled} variant={destructive ? 'destructive' : 'default'}>

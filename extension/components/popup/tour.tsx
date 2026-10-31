@@ -11,6 +11,10 @@ const PAD = 4;
 
 export type TourStep = { target: string; title: string; body: string };
 
+/**
+ * The box of a tour step's target.
+ * @param step The tour step.
+ */
 const rectOf = (step: TourStep | undefined) => {
   const el = step && document.querySelector(step.target);
   return el && el.getClientRects().length ? el.getBoundingClientRect() : null;

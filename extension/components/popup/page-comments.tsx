@@ -67,6 +67,10 @@ export function PageComments(props: Props) {
   );
 }
 
+/**
+ * The recheck button and its progress for this page.
+ * @param props The page, the run and handlers.
+ */
 function Recheck({ live, run, verifyError, onVerify, onCancelVerify }: Props) {
   const edge = '-mr-2';
   if (run?.state === 'running') {
@@ -116,6 +120,10 @@ function Recheck({ live, run, verifyError, onVerify, onCancelVerify }: Props) {
   );
 }
 
+/**
+ * This page's comments grouped by the width they were captured at.
+ * @param props The page and handlers.
+ */
 function Folds({ live, onWidth, onOpen }: { live: PageView; onWidth: (width: number) => void; onOpen: (commentId: string) => void }) {
   const first = live.elsewhere[0];
   if (!live.otherWidths.size && !first) return null;

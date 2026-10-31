@@ -1,6 +1,10 @@
 import { buildReviewModel, imageSize } from './review-model.js';
 import { INTER_WOFF2 } from './report-fonts.js';
 
+/**
+ * Escapes text for HTML.
+ * @param {unknown} value The text.
+ */
 export const escapeHtml = (value) =>
   String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -332,6 +336,10 @@ export function wireFilters(root) {
   });
 }
 
+/**
+ * The shape that marks a severity.
+ * @param {string} key The severity key.
+ */
 const shapeIcon = (key) => `<span class="shape">${SHAPE_SVG[key]}</span>`;
 
 /**
@@ -377,6 +385,10 @@ function framed(src, alt, { caption = '', attrs = '', dpr = 1, maxHeight = 460 }
   return `<figure><div class="frame"><img alt="${esc(alt)}" src="${src}"${sized}${attrs} /></div>${caption ? `<figcaption>${caption}</figcaption>` : ''}</figure>`;
 }
 
+/**
+ * A comment's numbered marker notes.
+ * @param {{n: number, note: string}[]} marks The markers.
+ */
 const markList = (marks) =>
   marks.length ? `<ol class="marks">${marks.map((item) => `<li value="${item.n}"><span class="m">${item.n}</span><span>${esc(item.note)}</span></li>`).join('')}</ol>` : '';
 
