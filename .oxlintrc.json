@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "unicorn", "oxc"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error"
+  },
+  "rules": {
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "error",
+    "typescript/no-explicit-any": "error",
+    "no-unused-vars": "error",
+    "no-empty": "error",
+    "id-length": ["error", { "min": 2, "exceptions": ["_", "x", "y", "w", "h"] }],
+    "no-console": ["error", { "allow": ["warn", "error"] }]
+  },
+  "ignorePatterns": [
+    ".output/**",
+    ".wxt/**",
+    "extension/*.js",
+    "extension/lib/*.js",
+    "extension/components/ui/**"
+  ]
+}

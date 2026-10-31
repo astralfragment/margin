@@ -480,7 +480,7 @@ export function renderBody(
       : '';
   const options = { shots, fields: withDefaults(fields), widths, preview };
   const empty = preview
-    ? 'No comments yet. Open the page you want to review and press Alt+Shift+A to add a comment.'
+    ? 'No comments yet. Open the page you want to review and press Alt+Shift+M to add a comment.'
     : 'No comments in this review.';
   const body = sorted.length
     ? `${sorted.map((issue, index) => issueCard(issue, index, options, numberOf(issue))).join('\n')}${

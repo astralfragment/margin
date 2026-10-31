@@ -447,7 +447,7 @@ function renderSidebar() {
         </button>`;
         })
         .join('')}<div class="index-none" data-index-none hidden><p data-index-none-text></p><button class="btn sm" type="button" data-clear-filters>Clear search and filters</button></div>`
-    : '<p class="index-empty">No comments in this review yet. Open the page you want to review and press Alt+Shift+A to add one.</p>';
+    : '<p class="index-empty">No comments in this review yet. Open the page you want to review and press Alt+Shift+M to add one.</p>';
 
   rows = [...indexEl.querySelectorAll('[data-jump]')];
   applyFilter();

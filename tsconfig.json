@@ -1,0 +1,13 @@
+{
+  "extends": "./.wxt/tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    // React screens import the plain JS modules in lib/, typed from their JSDoc but not checked.
+    "allowJs": true,
+    // Restated from .wxt/tsconfig.json because the shadcn CLI reads them relative to this file.
+    "paths": {
+      "@": ["./extension"],
+      "@/*": ["./extension/*"]
+    }
+  }
+}
