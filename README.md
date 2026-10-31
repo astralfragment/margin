@@ -18,7 +18,7 @@
   <a href="LICENSE">MIT license</a>
 </p>
 
-Margin is a Chrome extension for UI reviews. Drag over anything on a web page that looks wrong, write what is wrong, and pin numbered notes on the details. When you are done, Margin turns the whole review into a document a developer or client can act on straight away.
+Margin is a free Chrome extension for website annotation, UI review and visual bug reporting. Drag over anything on a web page that looks wrong, write what is wrong, and pin numbered notes on the details. When you are done, Margin turns the whole review into a document a developer or client can act on straight away.
 
 It needs no account. Everything stays in your browser until you choose to send a review to Jira or Figma.
 
