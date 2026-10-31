@@ -1,8 +1,10 @@
 /*
  * Tailwind and shadcn/ui entry for pages rebuilt in React. Legacy pages link
  * public/ui.css only, so Tailwind's preflight never reaches them.
- * Neutral greys carry the interface. The accent colour (lime unless changed in
- * Help and settings) marks the one lead action, and severity colours carry meaning.
+ * Cool zinc greys carry the interface. The accent colour (lime unless changed in
+ * Help and settings) fills the one lead action and, in light mode, tints selected
+ * and hovered items. Dark mode never tints surfaces, since hues mixed into near
+ * black turn muddy: colour there comes from text, icons and solid accents.
  */
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -19,73 +21,83 @@
   color-scheme: light;
   --radius: 16px;
   --background: #ffffff;
-  --foreground: #0a0a0a;
+  --foreground: #09090b;
   --card: #ffffff;
-  --card-foreground: #0a0a0a;
+  --card-foreground: #09090b;
   --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
-  --primary: #171717;
+  --popover-foreground: #09090b;
+  --primary: #18181b;
   --primary-foreground: #fafafa;
-  --secondary: #f5f5f5;
-  --secondary-foreground: #171717;
-  --muted: #f5f5f5;
-  --muted-foreground: #6b6b6b;
-  --accent: #f5f5f5;
-  --accent-foreground: #171717;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #68686f;
+  --accent: color-mix(in oklab, var(--action) 16%, var(--background));
+  --accent-foreground: #09090b;
   --destructive: #dc2626;
-  --border: #e5e5e5;
-  --input: #8a8a8a;
-  --ring: #a3a3a3;
+  --border: #e4e4e7;
+  --input: #8a8a93;
+  --ring: #a1a1aa;
   --action: #c1f354;
   --action-foreground: #000000;
   --sidebar: #fafafa;
-  --sidebar-foreground: #0a0a0a;
-  --sidebar-primary: #171717;
+  --sidebar-foreground: #09090b;
+  --sidebar-primary: #18181b;
   --sidebar-primary-foreground: #fafafa;
-  --sidebar-accent: #f0f0f0;
-  --sidebar-accent-foreground: #171717;
-  --sidebar-border: #e5e5e5;
-  --sidebar-ring: #a3a3a3;
+  --sidebar-accent: color-mix(in oklab, var(--action) 16%, var(--background));
+  --sidebar-accent-foreground: #09090b;
+  --sidebar-border: #e4e4e7;
+  --sidebar-ring: #a1a1aa;
   --sev-blocker: #dc2626;
   --sev-major: #c2410c;
   --sev-minor: #2563eb;
   --sev-nit: #71717a;
   --success: #15803d;
+  --sev-blocker-tint: color-mix(in oklab, var(--sev-blocker) 10%, var(--background));
+  --sev-major-tint: color-mix(in oklab, var(--sev-major) 10%, var(--background));
+  --sev-minor-tint: color-mix(in oklab, var(--sev-minor) 10%, var(--background));
+  --sev-nit-tint: color-mix(in oklab, var(--sev-nit) 10%, var(--background));
+  --success-tint: color-mix(in oklab, var(--success) 10%, var(--background));
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --background: #0a0a0a;
+  --background: #09090b;
   --foreground: #fafafa;
-  --card: #141414;
+  --card: #111113;
   --card-foreground: #fafafa;
-  --popover: #171717;
+  --popover: #18181b;
   --popover-foreground: #fafafa;
   --primary: #fafafa;
-  --primary-foreground: #171717;
-  --secondary: #262626;
+  --primary-foreground: #18181b;
+  --secondary: #27272a;
   --secondary-foreground: #fafafa;
-  --muted: #262626;
-  --muted-foreground: #a3a3a3;
-  --accent: #262626;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
   --accent-foreground: #fafafa;
   --destructive: #f87171;
-  --border: #262626;
-  --input: #666666;
-  --ring: #737373;
-  --sidebar: #0f0f0f;
+  --border: #27272a;
+  --input: #71717a;
+  --ring: #71717a;
+  --sidebar: #0c0c0e;
   --sidebar-foreground: #fafafa;
   --sidebar-primary: #fafafa;
-  --sidebar-primary-foreground: #171717;
-  --sidebar-accent: #1f1f1f;
+  --sidebar-primary-foreground: #18181b;
+  --sidebar-accent: #27272a;
   --sidebar-accent-foreground: #fafafa;
-  --sidebar-border: #262626;
-  --sidebar-ring: #737373;
+  --sidebar-border: #27272a;
+  --sidebar-ring: #71717a;
   --sev-blocker: #f87171;
   --sev-major: #fb923c;
   --sev-minor: #60a5fa;
   --sev-nit: #a1a1aa;
   --success: #4ade80;
+  --sev-blocker-tint: #27272a;
+  --sev-major-tint: #27272a;
+  --sev-minor-tint: #27272a;
+  --sev-nit-tint: #27272a;
+  --success-tint: #27272a;
 }
 
 /*
@@ -94,7 +106,7 @@
  * 4.5:1 or better. Selectors are not tied to :root so the overlay's shadow root
  * can carry the same attributes.
  */
-[data-accent="neutral"] { --action: #171717; --action-foreground: #fafafa; }
+[data-accent="neutral"] { --action: #18181b; --action-foreground: #fafafa; }
 [data-theme="dark"][data-accent="neutral"], [data-theme="dark"] [data-accent="neutral"] { --action: #fafafa; --action-foreground: #171717; }
 [data-accent="blue"] { --action: #2563eb; --action-foreground: #ffffff; --ring: #2563eb; }
 [data-theme="dark"][data-accent="blue"], [data-theme="dark"] [data-accent="blue"] { --action: #60a5fa; --action-foreground: #0a0a0a; --ring: #60a5fa; }
@@ -143,12 +155,12 @@
   --color-sev-major: var(--sev-major);
   --color-sev-minor: var(--sev-minor);
   --color-sev-nit: var(--sev-nit);
-  --color-sev-blocker-tint: color-mix(in oklab, var(--sev-blocker) 12%, var(--background));
-  --color-sev-major-tint: color-mix(in oklab, var(--sev-major) 12%, var(--background));
-  --color-sev-minor-tint: color-mix(in oklab, var(--sev-minor) 12%, var(--background));
-  --color-sev-nit-tint: color-mix(in oklab, var(--sev-nit) 12%, var(--background));
+  --color-sev-blocker-tint: var(--sev-blocker-tint);
+  --color-sev-major-tint: var(--sev-major-tint);
+  --color-sev-minor-tint: var(--sev-minor-tint);
+  --color-sev-nit-tint: var(--sev-nit-tint);
   --color-success: var(--success);
-  --color-success-tint: color-mix(in oklab, var(--success) 12%, var(--background));
+  --color-success-tint: var(--success-tint);
 }
 
 @layer base {
