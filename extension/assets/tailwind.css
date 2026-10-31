@@ -1,7 +1,8 @@
 /*
  * Tailwind and shadcn/ui entry for pages rebuilt in React. Legacy pages link
  * public/ui.css only, so Tailwind's preflight never reaches them.
- * Neutral greys carry the interface. Lime marks the one lead action, and severity colours carry meaning.
+ * Neutral greys carry the interface. The accent colour (lime unless changed in
+ * Help and settings) marks the one lead action, and severity colours carry meaning.
  */
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -45,16 +46,11 @@
   --sidebar-accent-foreground: #171717;
   --sidebar-border: #e5e5e5;
   --sidebar-ring: #a3a3a3;
-  --sev-blocker: #ce2c31;
+  --sev-blocker: #dc2626;
   --sev-major: #c2410c;
-  --sev-minor: #0d74ce;
-  --sev-nit: #60646c;
-  --sev-blocker-tint: #feebec;
-  --sev-major-tint: #ffefd6;
-  --sev-minor-tint: #e6f4fe;
-  --sev-nit-tint: #f0f0f3;
-  --success: #18794e;
-  --success-tint: #e6f6eb;
+  --sev-minor: #2563eb;
+  --sev-nit: #71717a;
+  --success: #15803d;
 }
 
 :root[data-theme="dark"] {
@@ -85,17 +81,29 @@
   --sidebar-accent-foreground: #fafafa;
   --sidebar-border: #262626;
   --sidebar-ring: #737373;
-  --sev-blocker: #ff9592;
-  --sev-major: #ffa057;
-  --sev-minor: #70b8ff;
-  --sev-nit: #b0b4ba;
-  --sev-blocker-tint: #3b1219;
-  --sev-major-tint: #331e0b;
-  --sev-minor-tint: #0d2847;
-  --sev-nit-tint: #212225;
-  --success: #3dd68c;
-  --success-tint: #132d21;
+  --sev-blocker: #f87171;
+  --sev-major: #fb923c;
+  --sev-minor: #60a5fa;
+  --sev-nit: #a1a1aa;
+  --success: #4ade80;
 }
+
+/*
+ * The accent colour fills the one lead action on each screen and the focus ring.
+ * lib/theme.js sets data-accent next to data-theme. Every pair keeps its text at
+ * 4.5:1 or better. Selectors are not tied to :root so the overlay's shadow root
+ * can carry the same attributes.
+ */
+[data-accent="neutral"] { --action: #171717; --action-foreground: #fafafa; }
+[data-theme="dark"][data-accent="neutral"], [data-theme="dark"] [data-accent="neutral"] { --action: #fafafa; --action-foreground: #171717; }
+[data-accent="blue"] { --action: #2563eb; --action-foreground: #ffffff; --ring: #2563eb; }
+[data-theme="dark"][data-accent="blue"], [data-theme="dark"] [data-accent="blue"] { --action: #60a5fa; --action-foreground: #0a0a0a; --ring: #60a5fa; }
+[data-accent="rose"] { --action: #e11d48; --action-foreground: #ffffff; --ring: #e11d48; }
+[data-theme="dark"][data-accent="rose"], [data-theme="dark"] [data-accent="rose"] { --action: #fb7185; --action-foreground: #0a0a0a; --ring: #fb7185; }
+[data-accent="orange"] { --action: #f97316; --action-foreground: #0a0a0a; --ring: #ea580c; }
+[data-theme="dark"][data-accent="orange"], [data-theme="dark"] [data-accent="orange"] { --ring: #fb923c; }
+[data-accent="teal"] { --action: #2dd4bf; --action-foreground: #0a0a0a; --ring: #0d9488; }
+[data-theme="dark"][data-accent="teal"], [data-theme="dark"] [data-accent="teal"] { --ring: #2dd4bf; }
 
 @theme inline {
   --font-sans: Manrope, ui-sans-serif, system-ui, "Segoe UI", sans-serif;
@@ -135,12 +143,12 @@
   --color-sev-major: var(--sev-major);
   --color-sev-minor: var(--sev-minor);
   --color-sev-nit: var(--sev-nit);
-  --color-sev-blocker-tint: var(--sev-blocker-tint);
-  --color-sev-major-tint: var(--sev-major-tint);
-  --color-sev-minor-tint: var(--sev-minor-tint);
-  --color-sev-nit-tint: var(--sev-nit-tint);
+  --color-sev-blocker-tint: color-mix(in oklab, var(--sev-blocker) 12%, var(--background));
+  --color-sev-major-tint: color-mix(in oklab, var(--sev-major) 12%, var(--background));
+  --color-sev-minor-tint: color-mix(in oklab, var(--sev-minor) 12%, var(--background));
+  --color-sev-nit-tint: color-mix(in oklab, var(--sev-nit) 12%, var(--background));
   --color-success: var(--success);
-  --color-success-tint: var(--success-tint);
+  --color-success-tint: color-mix(in oklab, var(--success) 12%, var(--background));
 }
 
 @layer base {

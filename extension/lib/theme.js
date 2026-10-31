@@ -1,6 +1,6 @@
 /**
- * The colour theme for Margin's own pages. "Match system" is the default.
- * Light and dark are fixed choices in Help and settings.
+ * The colour theme and accent colour for Margin's own pages. "Match system" and
+ * lime are the defaults. Both are choices in Help and settings.
  */
 export const THEME_KEY = 'theme';
 export const THEMES = [
@@ -8,6 +8,20 @@ export const THEMES = [
   { key: 'light', label: 'Light' },
   { key: 'dark', label: 'Dark' },
 ];
+
+export const ACCENT_KEY = 'accent';
+/** Swatches show the light theme value. Labels are what people pick from. */
+export const ACCENTS = [
+  { key: 'lime', label: 'Lime', swatch: '#c1f354' },
+  { key: 'neutral', label: 'Black and white', swatch: '#171717' },
+  { key: 'blue', label: 'Blue', swatch: '#2563eb' },
+  { key: 'rose', label: 'Rose', swatch: '#e11d48' },
+  { key: 'orange', label: 'Orange', swatch: '#f97316' },
+  { key: 'teal', label: 'Teal', swatch: '#2dd4bf' },
+];
+
+/** The stored accent, lime when unset or unknown. */
+export const resolveAccent = (choice) => (ACCENTS.some((a) => a.key === choice) ? choice : 'lime');
 
 const systemDark = matchMedia('(prefers-color-scheme: dark)');
 
@@ -25,7 +39,9 @@ function resolve(choice) {
  * @param {(theme: 'light' | 'dark') => void} [onChange] Called with the shown theme each time it is applied, for documents the page draws itself, such as the report preview.
  */
 export async function applyTheme(onChange) {
-  let choice = (await chrome.storage.local.get(THEME_KEY))[THEME_KEY];
+  const stored = await chrome.storage.local.get([THEME_KEY, ACCENT_KEY]);
+  let choice = stored[THEME_KEY];
+  document.documentElement.dataset.accent = resolveAccent(stored[ACCENT_KEY]);
   const paint = () => {
     const theme = resolve(choice);
     document.documentElement.dataset.theme = theme;
@@ -33,7 +49,9 @@ export async function applyTheme(onChange) {
   };
   paint();
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'local' || !(THEME_KEY in changes)) return;
+    if (area !== 'local') return;
+    if (ACCENT_KEY in changes) document.documentElement.dataset.accent = resolveAccent(changes[ACCENT_KEY].newValue);
+    if (!(THEME_KEY in changes)) return;
     choice = changes[THEME_KEY].newValue;
     paint();
   });
