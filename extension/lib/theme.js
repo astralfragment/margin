@@ -14,7 +14,6 @@ export const ACCENT_KEY = 'accent';
 export const ACCENTS = [
   { key: 'lime', label: 'Lime', swatch: '#c1f354' },
   { key: 'neutral', label: 'Black and white', swatch: '#171717' },
-  { key: 'blue', label: 'Blue', swatch: '#2563eb' },
   { key: 'rose', label: 'Rose', swatch: '#e11d48' },
   { key: 'orange', label: 'Orange', swatch: '#f97316' },
   { key: 'teal', label: 'Teal', swatch: '#2dd4bf' },
