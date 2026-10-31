@@ -108,8 +108,6 @@
  */
 [data-accent="neutral"] { --action: #18181b; --action-foreground: #fafafa; }
 [data-theme="dark"][data-accent="neutral"], [data-theme="dark"] [data-accent="neutral"] { --action: #fafafa; --action-foreground: #171717; }
-[data-accent="blue"] { --action: #2563eb; --action-foreground: #ffffff; --ring: #2563eb; }
-[data-theme="dark"][data-accent="blue"], [data-theme="dark"] [data-accent="blue"] { --action: #60a5fa; --action-foreground: #0a0a0a; --ring: #60a5fa; }
 [data-accent="rose"] { --action: #e11d48; --action-foreground: #ffffff; --ring: #e11d48; }
 [data-theme="dark"][data-accent="rose"], [data-theme="dark"] [data-accent="rose"] { --action: #fb7185; --action-foreground: #0a0a0a; --ring: #fb7185; }
 [data-accent="orange"] { --action: #f97316; --action-foreground: #0a0a0a; --ring: #ea580c; }
