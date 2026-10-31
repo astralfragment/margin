@@ -913,7 +913,9 @@ async function backHome(
   await chrome.tabs.update(tab.id, { active: true, pinned: spot.pinned });
   if (spot.groupId !== -1) await bestEffort(chrome.tabs.group({ groupId: spot.groupId, tabIds: [tab.id] }), 'put the tab back in its group');
   if (moved.placeholderId !== null) await bestEffort(chrome.tabs.remove(moved.placeholderId), 'close the placeholder tab');
-  await bestEffort(chrome.windows.remove(moved.popupId), 'close the narrow window');
+  // Chrome closes the narrow window by itself once its last tab moves out.
+  const popupOpen = await chrome.windows.get(moved.popupId).then(() => true, () => false);
+  if (popupOpen) await bestEffort(chrome.windows.remove(moved.popupId), 'close the narrow window');
 }
 
 /**
