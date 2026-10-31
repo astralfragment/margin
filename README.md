@@ -108,15 +108,12 @@ The install itself has no host permissions, so Margin cannot read pages in the b
 | `server/` | The sign-in helper that runs on lilacfragment.co.za, and its settings template |
 | `extension/welcome.html` | The first-run guide |
 | `extension/options.html` | Help and settings |
-| `tools/` | Packaging and the scripts that render the store images |
 
 ## Development
 
 Margin is plain JavaScript modules with no build step and no dependencies. Edit a file, then click reload on the extension card in `chrome://extensions`.
 
-`npm run package` builds the team zip and the Chrome Web Store zip into `dist`. The team zip pins one extension ID with a private key that is not in this repository, so the command only runs on the maintainer's machine.
-
-`node tools/screenshots/store-assets.mjs` renders the store screenshots and promo tiles into `store/assets`.
+Packaging, store listing and screenshot tools are kept outside this repository.
 
 ## Roadmap
 
