@@ -1,5 +1,5 @@
 import { buildReviewModel, imageSize } from './review-model.js';
-import { MANROPE_WOFF2 } from './report-fonts.js';
+import { INTER_WOFF2 } from './report-fonts.js';
 
 export const escapeHtml = (value) =>
   String(value ?? '')
@@ -50,7 +50,7 @@ export const REPORT_CSS = `
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0; padding: 56px 24px 48px; background: var(--bg); color: var(--ink);
-  font: 500 14px/1.55 Manrope, ui-sans-serif, system-ui, "Segoe UI", Arial, sans-serif;
+  font: 500 14px/1.55 Inter, ui-sans-serif, system-ui, "Segoe UI", Arial, sans-serif;
   font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
 }
 .wrap { max-width: 920px; margin: 0 auto; }
@@ -282,10 +282,8 @@ export const PREVIEW_DARK_CSS = `
 @media screen { :root[data-theme="dark"] {${DARK_TOKENS} } }
 `;
 
-/** Manrope embedded as data URLs, so the file reads the same on any machine. */
-const FONT_FACES = Object.entries(MANROPE_WOFF2)
-  .map(([weight, data]) => `@font-face { font-family: Manrope; font-weight: ${weight}; font-display: swap; src: url(data:font/woff2;base64,${data}) format("woff2"); }`)
-  .join('\n');
+/** Inter embedded as a data URL, so the file reads the same on any machine. */
+const FONT_FACES = `@font-face { font-family: Inter; font-weight: 100 900; font-display: swap; src: url(data:font/woff2;base64,${INTER_WOFF2}) format("woff2"); }`;
 
 /** A value for a CSS string, such as the review name in the printed page margins. */
 const cssString = (text) => `"${String(text).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, ' ')}"`;
@@ -295,7 +293,7 @@ const cssString = (text) => `"${String(text).replace(/\\/g, '\\\\').replace(/"/g
  * @param {object} model The review model.
  */
 function pageCss(model) {
-  const box = 'font-family: Manrope, Arial, sans-serif; font-size: 8pt; font-weight: 600; color: #5b5670;';
+  const box = 'font-family: Inter, Arial, sans-serif; font-size: 8pt; font-weight: 600; color: #5b5670;';
   return `
 @page {
   size: A4; margin: 18mm 15mm 18mm;

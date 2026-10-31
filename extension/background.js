@@ -293,7 +293,7 @@ function drawMarks(ctx, marks) {
   }
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = `700 ${Math.round(r * 1.15)}px Manrope, "Segoe UI", sans-serif`;
+  ctx.font = `700 ${Math.round(r * 1.15)}px Inter, "Segoe UI", sans-serif`;
   marks.forEach((m, i) => {
     ctx.beginPath();
     ctx.arc(m.x, m.y, r + 2, 0, Math.PI * 2);
