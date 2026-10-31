@@ -1,8 +1,4 @@
-import { SEVERITIES, SEVERITY_ORDER, severityOf } from './severity.js';
-import { STATUSES, statusOf } from './status.js';
-import { DEFAULT_FIELDS, withDefaults } from './fields.js';
-import { markList } from './marks.js';
-import { widthCaption, widthShots } from './widths.js';
+import { buildReviewModel } from './review-model.js';
 import { icon } from './icons.js';
 
 export const escapeHtml = (value) =>
@@ -13,7 +9,6 @@ export const escapeHtml = (value) =>
     .replace(/"/g, '&quot;');
 
 const esc = escapeHtml;
-const pad = (n) => String(n).padStart(2, '0');
 
 const SEVERITY_ICONS = { blocker: 'sevBlocker', major: 'sevMajor', minor: 'sevMinor', nit: 'sevNit' };
 const STATUS_ICONS = { open: 'statusOpen', fixed: 'statusFixed', wontfix: 'statusWontfix' };
@@ -51,18 +46,20 @@ header.top { display: flex; flex-wrap: wrap; gap: var(--s4); align-items: baseli
 .stat b { font-weight: 800; color: var(--sev, var(--ink)); }
 .stat[aria-pressed="true"] { color: var(--bg); background: var(--ink); border-color: var(--ink); }
 .stat[aria-pressed="true"] b { color: inherit; }
+.comm { margin-top: var(--s5); }
+.comm-head { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: baseline; margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+.comm-n { font-size: 12px; font-weight: 800; color: var(--ink-2); min-width: 24px; }
+.comm-url { margin: 2px 0 0 calc(24px + var(--s3)); font-size: 12px; overflow-wrap: anywhere; }
 .issue { padding: var(--s5) 0; border-top: 1px solid var(--line); }
 .issue:first-of-type { border-top: 0; padding-top: var(--s3); }
 .issue[data-sev="blocker"] { --sev: var(--sev-blocker); }
 .issue[data-sev="major"] { --sev: var(--sev-major); }
 .issue[data-sev="minor"] { --sev: var(--sev-minor); }
 .issue[data-sev="nit"] { --sev: var(--sev-nit); }
-.issue.hide { display: none; }
+.issue.hide, .comm.hide { display: none; }
 .issue > header { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; }
 .num { font-size: 12px; font-weight: 800; color: var(--ink-2); min-width: 24px; }
-.issue h2 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; flex: 1; min-width: 12ch; }
-.key { font-size: 12px; font-weight: 600; white-space: nowrap; }
-.key-status { font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+.issue h3 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; flex: 1; min-width: 12ch; }
 .where { margin: 2px 0 0 calc(24px + var(--s3)); font-size: 12px; }
 .ico { display: inline-flex; flex: none; width: 12px; height: 12px; }
 .ico svg { display: block; width: 100%; height: 100%; }
@@ -115,6 +112,7 @@ details.tech[open] > summary::before, details.full[open] > summary::before { tra
 details.tech > summary:hover { color: var(--ink); }
 details.tech dl.facts { margin-left: 0; margin-top: var(--s2); }
 .toc { margin: 0 0 var(--s5); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.toc-page { margin: 0; padding: var(--s3) var(--s3) 0; font-size: 12px; font-weight: 800; color: var(--ink-2); }
 .toc ol { list-style: none; margin: 0; padding: var(--s1); display: grid; gap: 1px; }
 .toc a { display: grid; grid-template-columns: 24px 8px minmax(0, 1fr) auto; gap: var(--s2); align-items: center; padding: 6px var(--s2); border-radius: 8px; text-decoration: none; color: var(--ink); font-size: 13px; }
 .toc a:hover { background: var(--surface); }
@@ -130,7 +128,7 @@ details.tech dl.facts { margin-left: 0; margin-top: var(--s2); }
 .empty { border: 1px dashed var(--line); border-radius: var(--radius); padding: var(--s6); text-align: center; color: var(--ink-2); }
 .empty[hidden] { display: none; }
 @media (max-width: 560px) {
-  details.tech, .note, ol.marks, dl.facts, .issue figure, .pair, .widths, .where, details.full { margin-left: 0; }
+  details.tech, .note, ol.marks, dl.facts, .issue figure, .pair, .widths, .where, .comm-url, details.full { margin-left: 0; }
   .pair, .widths { grid-template-columns: minmax(0, 1fr); }
   dl.facts { grid-template-columns: 74px minmax(0, 1fr); }
 }
@@ -173,6 +171,7 @@ export function wireFilters(root) {
         const byStatus = picked.statusFilter === 'all' || issue.dataset.status === picked.statusFilter;
         issue.classList.toggle('hide', !(bySeverity && byStatus));
       });
+      root.querySelectorAll('.comm').forEach((section) => section.classList.toggle('hide', !section.querySelector('.issue:not(.hide)')));
     });
   });
   root.defaultView?.addEventListener('beforeprint', () => {
@@ -180,159 +179,6 @@ export function wireFilters(root) {
       d.open = true;
     });
   });
-}
-
-/**
- * Numbers comments in the order they were made, counting within each review, so a comment keeps one number
- * in the report, the exports, the Send dialogs and the All reviews view.
- * @param {object[]} issues Every comment shown, in the order they were made.
- * @returns {(issue: {id: string}) => number} The number of a comment.
- */
-export function numbering(issues) {
-  const counts = new Map();
-  const numbers = new Map();
-  for (const issue of issues) {
-    const n = (counts.get(issue.groupId) ?? 0) + 1;
-    counts.set(issue.groupId, n);
-    numbers.set(issue.id, n);
-  }
-  return (issue) => numbers.get(issue.id) ?? 0;
-}
-
-const looksLikeId = (part) =>
-  /^\d+$/.test(part) || /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(part) || (/\d/.test(part) && /^[\w-]{16,}$/.test(part));
-
-const screenWord = (part) => {
-  const words = part.replace(/[-_]+/g, ' ').trim();
-  if (/^[a-z]{2,4}$/i.test(words) && !/[aeiouy]/i.test(words)) return words.toUpperCase();
-  return words.charAt(0).toUpperCase() + words.slice(1);
-};
-
-/**
- * The site name in a tab title. "Page | Site" and "Page - Site" put it last, "Site: tagline" puts it first.
- * @param {string} [title] The tab title.
- */
-function appOf(title) {
-  const text = title?.trim() ?? '';
-  const parts = text.split(/\s[|-]\s/);
-  if (parts.length > 1) return parts.at(-1).trim();
-  return text.split(/:\s/)[0].trim();
-}
-
-/**
- * Where a comment was made, as "App > Screen > Path". The app is the site part
- * of the tab title, else the host; the screen path comes from Flutter's #/
- * route when there is one, else the URL path, with record ids left out.
- *
- * @param {{ url: string, title?: string }} page The captured page.
- */
-export function routeOf(page) {
-  let parsed;
-  try {
-    parsed = new URL(page.url);
-  } catch {
-    return page.url ?? '';
-  }
-  const app = appOf(page.title) || parsed.host;
-  const route = parsed.hash.startsWith('#/') ? parsed.hash.slice(1).split('?')[0] : parsed.pathname;
-  const screens = route
-    .split('/')
-    .filter(Boolean)
-    .map((part) => {
-      try {
-        return decodeURIComponent(part);
-      } catch {
-        return part;
-      }
-    })
-    .filter((part) => !looksLikeId(part))
-    .map(screenWord);
-  return [app, ...(screens.length ? screens : ['Home'])].join(' > ');
-}
-
-/**
- * The browser line for a comment, such as "Google Chrome 141 on Windows, zoom 100%", or an empty string for comments captured before it was recorded.
- * @param {{ env?: { browser: string, os: string, zoom: number } }} issue The stored comment.
- */
-export function environmentText(issue) {
-  const env = issue.env;
-  if (!env) return '';
-  return `${env.browser}${env.os ? ` on ${env.os}` : ''}${env.zoom ? `, zoom ${env.zoom}%` : ''}`;
-}
-
-const isFigma = (url) => /^https:\/\/([\w-]+\.)?figma\.com\//i.test(url);
-
-/**
- * The label for a comment's links: Figma when every link is a Figma link, else Links.
- * @param {string[]} links The comment's links.
- */
-export function linksLabel(links) {
-  return links.length && links.every(isFigma) ? 'Figma' : 'Links';
-}
-
-/**
- * A readable name for one of a comment's links: the frame name when the comment was matched to one,
- * Figma frame for other Figma links, else the site the link goes to.
- * @param {string} url The link.
- * @param {number} i Its place among the comment's links.
- * @param {object} issue The stored comment.
- */
-export function linkName(url, i, issue) {
-  if (isFigma(url)) {
-    if (i === 0 && issue.figmaFrame?.name) return issue.figmaFrame.name;
-    const figmas = (issue.links ?? []).filter(isFigma).length;
-    return figmas > 1 ? `Figma frame ${(issue.links ?? []).filter(isFigma).indexOf(url) + 1}` : 'Figma frame';
-  }
-  try {
-    return new URL(url).host.replace(/^www\./, '');
-  } catch {
-    return url;
-  }
-}
-
-/**
- * Turns a computed colour such as rgb(0 0 0) or lab(96.5 0 0) into a hex code, leaving other formats as they are.
- * @param {string} value The colour as the browser reported it.
- */
-export function hexColour(value) {
-  const text = String(value ?? '').trim();
-  const nums = text.match(/-?[\d.]+(?:e-?\d+)?%?/gi)?.map((n) => (n.endsWith('%') ? Number(n.slice(0, -1)) / 100 : Number(n))) ?? [];
-  const hex = (r, g, b, a = 1) => {
-    const part = (v) => Math.round(Math.min(1, Math.max(0, v)) * 255).toString(16).padStart(2, '0');
-    return `#${part(r)}${part(g)}${part(b)}${a < 1 ? part(a) : ''}`;
-  };
-  if (/^rgba?\(/i.test(text) && nums.length >= 3) return hex(nums[0] / 255, nums[1] / 255, nums[2] / 255, nums[3] ?? 1);
-  if (/^color\(srgb\s/i.test(text) && nums.length >= 3) return hex(nums[0], nums[1], nums[2], nums[3] ?? 1);
-  if (/^okl(ab|ch)\(/i.test(text) && nums.length >= 3) {
-    const [l, c, h] = nums;
-    const [a, b] = /^oklch/i.test(text) ? [c * Math.cos((h * Math.PI) / 180), c * Math.sin((h * Math.PI) / 180)] : [c, h];
-    const lp = (l + 0.3963377774 * a + 0.2158037573 * b) ** 3;
-    const mp = (l - 0.1055613458 * a - 0.0638541728 * b) ** 3;
-    const sp = (l - 0.0894841775 * a - 1.291485548 * b) ** 3;
-    const gamma = (v) => (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.max(0, v) ** (1 / 2.4) - 0.055);
-    return hex(
-      gamma(4.0767416621 * lp - 3.3077115913 * mp + 0.2309699292 * sp),
-      gamma(-1.2684380046 * lp + 2.6097574011 * mp - 0.3413193965 * sp),
-      gamma(-0.0041960863 * lp - 0.7034186147 * mp + 1.707614701 * sp),
-      nums[3] ?? 1,
-    );
-  }
-  if (/^lab\(/i.test(text) && nums.length >= 3) {
-    const [l, a, b] = nums;
-    const fy = (l + 16) / 116;
-    const inv = (t) => (t ** 3 > 0.008856 ? t ** 3 : (116 * t - 16) / 903.3);
-    const x = 0.96422 * inv(fy + a / 500);
-    const y = l > 8 ? fy ** 3 : l / 903.3;
-    const z = 0.82521 * inv(fy - b / 200);
-    const gamma = (c) => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055);
-    return hex(
-      gamma(3.1338561 * x - 1.6168667 * y - 0.4906146 * z),
-      gamma(-0.9787684 * x + 1.9161415 * y + 0.033454 * z),
-      gamma(0.0719453 * x - 0.2289914 * y + 1.4052427 * z),
-      nums[3] ?? 1,
-    );
-  }
-  return text;
 }
 
 /**
@@ -347,206 +193,161 @@ export const severityBadge = (sev) => `<span class="chip">${icon(SEVERITY_ICONS[
  */
 export const statusBadge = (status) => `<span class="status" data-status="${esc(status.key)}">${icon(STATUS_ICONS[status.key])}${esc(status.label)}</span>`;
 
-function factRows(issue, fields) {
-  const el = issue.element;
-  const rows = [
-    fields.figma && issue.links?.length
-      ? [linksLabel(issue.links), issue.links.map((url, i) => `<a href="${esc(url)}">${esc(linkName(url, i, issue))}</a>`).join(', ')]
-      : null,
-    fields.selector && el?.selector ? ['Selector', `<code>${esc(el.selector)}</code>`] : null,
-    fields.element && el
-      ? ['Element', `<code>${esc(el.tag)}${el.classes ? `.${esc(el.classes.split(' ').join('.'))}` : ''}</code>`]
-      : null,
-    fields.text && el?.text ? ['Text', esc(el.text)] : null,
-    fields.styles && el?.styles
-      ? ['Styles', `<span class="mono">${esc(el.styles.font)}, ${esc(hexColour(el.styles.color))}</span>`]
-      : null,
-    fields.position
-      ? [
-          'Position',
-          `<span class="mono">${issue.rect.w} x ${issue.rect.h} at ${issue.rect.x}, ${issue.rect.y} in ${issue.viewport.width} x ${issue.viewport.height} at ${issue.viewport.dpr}x</span>`,
-        ]
-      : null,
-    fields.captured ? ['Captured', esc(new Date(issue.createdAt).toLocaleString())] : null,
-    fields.browser && issue.env ? ['Browser', esc(environmentText(issue))] : null,
-  ].filter(Boolean);
-  return rows.map(([term, value]) => `<dt>${term}</dt><dd>${value}</dd>`).join('\n        ');
+/**
+ * The value of a detail row as HTML: its links named and linked, or its text, with code rows wrapped for a monospace face.
+ * @param {import('./review-model.js').DetailRow} row The detail row.
+ * @param {(html: string) => string} [code] Wraps a code value, since the Docs export can only style inline.
+ */
+export function rowHtml(row, code = (html) => `<code>${html}</code>`) {
+  if (row.links) {
+    const links = row.links.map((l) => (l.url ? `<a href="${esc(l.url)}">${esc(l.text)}</a>` : esc(l.text))).join(', ');
+    return row.extra ? `${links}, ${esc(row.extra)}` : links;
+  }
+  return row.code ? code(esc(row.value)) : esc(row.value);
 }
 
 /**
  * The marked region image, or the region before and after a recheck side by side.
- * @param {object} issue The stored comment.
- * @param {number} number Its comment number.
+ * @param {object} comment The comment from the review model.
  */
-function regionFigures(issue, number) {
-  const before = `<img alt="Marked region for comment ${number}" src="${issue.detail}" />`;
-  if (!issue.after) return `<figure>${before}</figure>`;
+function regionFigures({ images, number }) {
+  const before = `<img alt="Marked region for comment ${number}" src="${images.region}" />`;
+  if (!images.after) return `<figure>${before}</figure>`;
   return `<div class="pair">
         <figure>${before}<figcaption>Before</figcaption></figure>
-        <figure><img class="after" alt="Same region after recheck for comment ${number}" src="${issue.after}" /><figcaption>${esc(recheckCaption(issue))}</figcaption></figure>
+        <figure><img class="after" alt="Same region after recheck for comment ${number}" src="${images.after}" /><figcaption>${esc(images.afterCaption)}</figcaption></figure>
       </div>`;
 }
 
 /**
  * The region at mobile, tablet and desktop widths in one row, or nothing when the comment was not captured at widths.
- * @param {object} issue The stored comment.
- * @param {number} number Its comment number.
+ * @param {object} comment The comment from the review model.
  */
-function widthFigures(issue, number) {
-  const shots = widthShots(issue);
-  if (!shots.length) return '';
+function widthFigures({ images, number }) {
+  if (!images.widths.length) return '';
   return `<div class="widths">
-        ${shots
+        ${images.widths
           .map(
             (shot) =>
-              `<figure><img class="at-width" alt="${esc(shot.label)} width for comment ${number}" src="${shot.src}" /><figcaption>${esc(widthCaption(shot))}</figcaption></figure>`,
+              `<figure><img class="at-width" alt="${esc(shot.label)} width for comment ${number}" src="${shot.src}" /><figcaption>${esc(shot.caption)}</figcaption></figure>`,
           )
           .join('\n        ')}
       </div>`;
 }
 
 /**
- * The full viewport screenshot. In the preview it folds away when the comment also has its region image, so long reviews stay short.
- * @param {object} issue The stored comment.
- * @param {number} number Its comment number.
- * @param {boolean} fold True to fold it behind a toggle.
+ * The full viewport screenshot, folded away when the comment also has its region image, so long reviews stay short.
+ * @param {object} comment The comment from the review model.
  */
-function fullFigure(issue, number, fold) {
-  const figure = `<figure class="wide"><img alt="Full viewport for comment ${number}" src="${issue.shot}" /><figcaption>Full viewport</figcaption></figure>`;
-  return fold ? `<details class="full"><summary>Show full screenshot</summary>${figure}</details>` : figure;
-}
-
-/**
- * Caption for the image taken when a comment was rechecked.
- * @param {{ checkedAt?: string }} issue The stored comment.
- */
-export function recheckCaption(issue) {
-  return issue.checkedAt ? `After, rechecked ${new Date(issue.checkedAt).toLocaleString()}` : 'After recheck';
+function fullFigure({ images, number }) {
+  const figure = `<figure class="wide"><img alt="Full viewport for comment ${number}" src="${images.full}" /><figcaption>Full viewport</figcaption></figure>`;
+  return images.region ? `<details class="full"><summary>Show full screenshot</summary>${figure}</details>` : figure;
 }
 
 /**
  * One comment card.
- * @param {object} issue The stored comment.
+ * @param {object} comment The comment from the review model.
  * @param {number} index Its position in the report, which names the card.
- * @param {object} options Which images, fields and widths to show, and whether this is the preview.
- * @param {number} number Its comment number.
+ * @param {boolean} where True to name the page under the title, for the flat list that has no page headings.
  */
-function issueCard(issue, index, { shots, fields, widths, preview }, number) {
-  const sev = severityOf(issue.severity);
-  const status = statusOf(issue.status);
-  const region = issue.detail && shots !== 'viewport';
-  const facts = factRows(issue, fields);
+function issueCard(comment, index, where) {
+  const { severity, status, rows } = comment;
   return `
-    <article class="issue" id="c-${index + 1}" data-sev="${esc(sev.key)}" data-status="${esc(status.key)}">
+    <article class="issue" id="c-${index + 1}" data-sev="${esc(severity.key)}" data-status="${esc(status.key)}">
       <header>
-        <span class="num">${pad(number)}</span>
-        <h2>${esc(issue.title || 'Untitled comment')}</h2>
-        ${
-          fields.jira && issue.jira?.key
-            ? `<a class="key" href="${esc(issue.jira.url)}">${esc(issue.jira.key)}</a>${issue.jira.status ? `<span class="key-status">${esc(issue.jira.status)}</span>` : ''}`
-            : ''
-        }
+        <span class="num">${comment.label}</span>
+        <h3>${esc(comment.title)}</h3>
+        ${severityBadge(severity)}
         ${statusBadge(status)}
-        ${severityBadge(sev)}
       </header>
-      ${fields.page ? `<p class="where"><a href="${esc(issue.page.url)}">${esc(routeOf(issue.page))}</a></p>` : ''}
-      ${issue.note ? `<p class="note">${esc(issue.note)}</p>` : ''}
+      ${where && comment.url ? `<p class="where"><a href="${esc(comment.url)}">${esc(comment.route)}</a></p>` : ''}
+      ${comment.note ? `<p class="note">${esc(comment.note)}</p>` : ''}
+      ${comment.marks.length ? `<ol class="marks">${comment.marks.map((item) => `<li value="${item.n}">${esc(item.note)}</li>`).join('')}</ol>` : ''}
+      ${comment.images.region ? regionFigures(comment) : ''}
+      ${widthFigures(comment)}
       ${
-        markList(issue).length
-          ? `<ol class="marks">${markList(issue)
-              .map((item) => `<li value="${item.n}">${esc(item.note)}</li>`)
-              .join('')}</ol>`
+        rows.length
+          ? `<details class="tech"><summary>Technical details</summary><dl class="facts">
+        ${rows.map((row) => `<dt>${esc(row.label)}</dt><dd>${rowHtml(row)}</dd>`).join('\n        ')}
+      </dl></details>`
           : ''
       }
-      ${region ? regionFigures(issue, number) : ''}
-      ${widths ? widthFigures(issue, number) : ''}
-      ${facts ? `<details class="tech"><summary>Technical details</summary><dl class="facts">
-        ${facts}
-      </dl></details>` : ''}
-      ${issue.shot && shots !== 'detail' ? fullFigure(issue, number, region) : ''}
+      ${comment.images.full ? fullFigure(comment) : ''}
     </article>`;
 }
 
-/** Sorts by severity first, then by capture time. */
-export function sortIssues(issues) {
-  return [...issues].sort(
-    (a, b) =>
-      SEVERITY_ORDER.indexOf(severityOf(a.severity).key) - SEVERITY_ORDER.indexOf(severityOf(b.severity).key) ||
-      String(a.createdAt).localeCompare(String(b.createdAt)),
-  );
-}
-
 /**
- * The comments in the order the report lists them: by severity, or by number.
- * @param {object[]} issues The comments, in the order they were made.
- * @param {'severity' | 'number'} [order] How to sort.
+ * Renders the report contents, without the surrounding document. Comments are grouped by page as in every export,
+ * unless the preview is sorted by number, which lists them flat.
+ * The preview leaves the filter bar to the sidebar and adds an empty search message.
  */
-export function orderIssues(issues, order = 'severity') {
-  return order === 'number' ? [...issues] : sortIssues(issues);
-}
-
-/**
- * Renders the report contents, without the surrounding document.
- * The preview leaves the filter bar to the sidebar, folds the full screenshots and adds an empty search message.
- */
-export function renderBody(
-  issues,
-  { title = 'UI review', generatedAt = new Date(), shots = 'both', fields = DEFAULT_FIELDS, widths = true, order = 'severity', preview = false } = {},
-) {
-  const sorted = orderIssues(issues, order);
-  const numberOf = numbering(issues);
-  const counts = Object.fromEntries(
-    SEVERITIES.map((s) => [s.key, sorted.filter((i) => severityOf(i.severity).key === s.key).length]),
-  );
-  const pages = [...new Set(sorted.map((i) => i.page?.url).filter(Boolean))];
-  const statusesUsed = STATUSES.map((s) => ({ ...s, n: sorted.filter((i) => statusOf(i.status).key === s.key).length })).filter(
-    (s) => s.n > 0,
-  );
+export function renderBody(issues, { preview = false, ...options } = {}) {
+  const model = buildReviewModel(issues, options);
+  const flat = options.order === 'number';
+  const cards = new Map(model.comments.map((comment, index) => [comment, issueCard(comment, index, flat)]));
+  const statusesUsed = model.statuses.filter((s) => s.count > 0);
   const statusButtons =
     statusesUsed.length > 1
       ? [
           '<span class="sep"></span>',
           '<button class="stat" type="button" data-status-filter="all" aria-pressed="true">Any status</button>',
           ...statusesUsed.map(
-            (s) => `<button class="stat" type="button" data-status-filter="${s.key}" aria-pressed="false"><b>${s.n}</b> ${esc(s.label)}</button>`,
+            (s) => `<button class="stat" type="button" data-status-filter="${s.key}" aria-pressed="false"><b>${s.count}</b> ${esc(s.label)}</button>`,
           ),
         ].join('\n    ')
       : '';
-  const options = { shots, fields: withDefaults(fields), widths, preview };
   const empty = preview
     ? 'No comments yet. Open the page you want to review and press Alt+Shift+A to add a comment.'
     : 'No comments in this review.';
-  const body = sorted.length
-    ? `${sorted.map((issue, index) => issueCard(issue, index, options, numberOf(issue))).join('\n')}${
+  const listed = flat
+    ? model.comments.map((comment) => cards.get(comment)).join('\n')
+    : model.sections
+        .map(
+          (section) => `
+  <section class="comm">
+    <h2 class="comm-head"><span class="comm-n">${section.label}</span>${esc(section.route)}</h2>
+    ${section.url ? `<p class="comm-url"><a href="${esc(section.url)}">${esc(section.url)}</a></p>` : ''}
+    ${section.comments.map((comment) => cards.get(comment)).join('\n')}
+  </section>`,
+        )
+        .join('\n');
+  const body = model.total
+    ? `${listed}${
         preview ? '\n  <div class="empty" data-no-match hidden><p data-no-match-text></p><button class="stat" type="button" data-clear-filters>Clear search and filters</button></div>' : ''
       }`
     : `<p class="empty">${empty}</p>`;
   const stats = preview
     ? ''
     : `<div class="stats">
-    <button class="stat" type="button" data-filter="all" aria-pressed="true"><b>${sorted.length}</b> ${sorted.length === 1 ? 'comment' : 'comments'}</button>
-    ${SEVERITIES.filter((s) => counts[s.key] > 0)
+    <button class="stat" type="button" data-filter="all" aria-pressed="true"><b>${model.total}</b> ${model.total === 1 ? 'comment' : 'comments'}</button>
+    ${model.severities
+      .filter((s) => s.count > 0)
       .map(
         (s) =>
-          `<button class="stat" type="button" data-filter="${s.key}" style="--sev: var(${s.token})" aria-pressed="false"><b>${counts[s.key]}</b> ${s.label}</button>`,
+          `<button class="stat" type="button" data-filter="${s.key}" style="--sev: var(${s.token})" aria-pressed="false"><b>${s.count}</b> ${s.label}</button>`,
       )
       .join('\n    ')}
     ${statusButtons}
   </div>`;
 
   const contents =
-    preview || sorted.length < 2
+    preview || model.total < 2
       ? ''
-      : `<nav class="toc" aria-label="Contents"><ol>${sorted
-          .map((issue, index) => {
-            const sev = severityOf(issue.severity);
-            return `<li data-sev="${esc(sev.key)}"><a href="#c-${index + 1}"><span class="num">${pad(numberOf(issue))}</span><span class="dot"></span><span class="t">${esc(issue.title || 'Untitled comment')}</span><span class="s">${esc(statusOf(issue.status).label)}</span></a></li>`;
-          })
-          .join('')}</ol></nav>`;
+      : `<nav class="toc" aria-label="Contents">${model.sections
+          .map(
+            (section) =>
+              `<p class="toc-page">${section.label} ${esc(section.route)}</p><ol>${section.comments
+                .map(
+                  (comment) =>
+                    `<li data-sev="${esc(comment.severity.key)}"><a href="#c-${model.comments.indexOf(comment) + 1}"><span class="num">${comment.label}</span><span class="dot"></span><span class="t">${esc(comment.title)}</span><span class="s">${esc(comment.status.label)}</span></a></li>`,
+                )
+                .join('')}</ol>`,
+          )
+          .join('')}</nav>`;
   return `<div class="wrap">
   <header class="top">
-    <h1>${esc(title)}</h1>
-    <div class="meta-top">${esc(generatedAt.toLocaleString())}, ${sorted.length} ${sorted.length === 1 ? 'comment' : 'comments'} on ${pages.length} page${pages.length === 1 ? '' : 's'}</div>
+    <h1>${esc(model.title)}</h1>
+    <div class="meta-top">${esc(model.date)}, ${esc(model.summary)}</div>
   </header>
   ${stats}
   ${contents}
@@ -556,8 +357,8 @@ export function renderBody(
 }
 
 /**
- * Renders a self contained HTML report. Images are already data URLs, so the
- * returned string opens correctly from anywhere with no other files.
+ * Renders a self contained HTML report, grouped by page and sorted by severity like every export.
+ * Images are already data URLs, so the returned string opens correctly from anywhere with no other files.
  */
 export function buildReport(issues, options = {}) {
   const title = options.title ?? 'UI review';
@@ -570,7 +371,7 @@ export function buildReport(issues, options = {}) {
 <style>${REPORT_CSS}</style>
 </head>
 <body>
-${renderBody(issues, { ...options, preview: false })}
+${renderBody(issues, { ...options, order: 'severity', preview: false })}
 <script>(${wireFilters.toString()})(document);</script>
 </body>
 </html>`;

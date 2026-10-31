@@ -1,9 +1,5 @@
-import { SEVERITIES, severityOf } from './severity.js';
-import { statusOf as reviewStatusOf } from './status.js';
-import { environmentText, escapeHtml as esc, hexColour, linkName, linksLabel, numbering, recheckCaption, routeOf, sortIssues } from './report-template.js';
-import { DEFAULT_FIELDS, withDefaults } from './fields.js';
-import { markList } from './marks.js';
-import { widthCaption, widthShots, widthsLine } from './widths.js';
+import { escapeHtml as esc, rowHtml } from './report-template.js';
+import { buildReviewModel } from './review-model.js';
 
 /**
  * Document flavour for Google Docs and Word: a short overview table, then one
@@ -42,8 +38,6 @@ const STATUS_STYLE = {
   wontfix: { fill: '#f0f0f3', ink: '#60646c' },
 };
 
-const pad = (n) => String(n).padStart(2, '0');
-
 const H1 = `font-family: ${SANS}; font-size: 20pt; font-weight: 700; color: ${INK}; margin: 0 0 4px;`;
 const H2 = `font-family: ${SANS}; font-size: 14pt; font-weight: 700; color: ${INK}; margin: 28px 0 2px;`;
 const P = `font-family: ${SANS}; font-size: 10pt; line-height: 1.45; color: ${INK}; margin: 0 0 8px;`;
@@ -63,31 +57,9 @@ const FACT_VAL = `padding: 1px 0; font-family: ${SANS}; font-size: 8pt; color: $
  */
 const linked = (label, url) => (url ? `<a href="${esc(url)}" style="color: ${INK};">${esc(label)}</a>` : esc(label));
 
-/**
- * The status label and colours of a comment.
- * @param {object} issue The stored comment.
- */
-function statusOf(issue) {
-  const status = reviewStatusOf(issue.status);
-  return { key: status.key, label: status.label, ...STATUS_STYLE[status.key] };
-}
-
 /** A small coloured label, kept as bold coloured text so both editors keep it. */
 const sevLabel = (sev) => `<b style="color: ${SEV_STYLE[sev.key].ink};">${esc(sev.label)}</b>`;
-const statusLabel = (status) => `<b style="color: ${status.ink};">${esc(status.label)}</b>`;
-
-/** One line of provenance for the plain text copy. */
-function factLine(issue) {
-  return [
-    issue.element?.selector,
-    issue.rect && `${issue.rect.w} x ${issue.rect.h} at ${issue.rect.x}, ${issue.rect.y}`,
-    issue.viewport && `viewport ${issue.viewport.width} x ${issue.viewport.height} at ${issue.viewport.dpr}x`,
-    new Date(issue.createdAt).toLocaleString(),
-  ]
-    .filter(Boolean)
-    .map((part) => esc(part))
-    .join(', ');
-}
+const statusLabel = (status) => `<b style="color: ${STATUS_STYLE[status.key].ink};">${esc(status.label)}</b>`;
 
 function image(src, alt, caption, width = IMAGE_WIDTH) {
   if (!src) return '';
@@ -98,90 +70,60 @@ function image(src, alt, caption, width = IMAGE_WIDTH) {
 
 /**
  * The region at mobile, tablet and desktop widths as a borderless one row table, which Docs and Word both keep side by side.
- * @param {object} issue The stored comment.
- * @param {number} number Its comment number.
+ * @param {object} comment The comment from the review model.
  */
-function widthRow(issue, number) {
-  const shots = widthShots(issue);
+function widthRow({ images, number }) {
+  const shots = images.widths;
   if (!shots.length) return '';
   const cell = Math.floor(IMAGE_WIDTH / 3) - 8;
   return `<table cellspacing="0" cellpadding="0" style="${TABLE} margin: 10px 0 4px;"><tbody><tr>${shots
     .map(
       (shot) =>
-        `<td style="padding: 0 8px 0 0; vertical-align: top; width: ${cell}px;"><img src="${shot.src}" alt="${esc(shot.label)} width for comment ${number}" width="${cell}" style="border: 1px solid ${LINE};" /><p style="${CAPTION}">${esc(widthCaption(shot))}</p></td>`,
+        `<td style="padding: 0 8px 0 0; vertical-align: top; width: ${cell}px;"><img src="${shot.src}" alt="${esc(shot.label)} width for comment ${number}" width="${cell}" style="border: 1px solid ${LINE};" /><p style="${CAPTION}">${esc(shot.caption)}</p></td>`,
     )
     .join('')}</tr></tbody></table>`;
 }
 
-/** The technical details as a quiet two column table under the images. */
-function factTable(issue, fields) {
-  const el = issue.element;
-  const rows = [
-    fields.figma && issue.links?.length
-      ? [linksLabel(issue.links), issue.links.map((url, i) => `<a href="${esc(url)}">${esc(linkName(url, i, issue))}</a>`).join(', ')]
-      : null,
-    fields.jira && issue.jira?.key
-      ? ['Jira', `<a href="${esc(issue.jira.url)}">${esc(issue.jira.key)}</a>${issue.jira.status ? `, ${esc(issue.jira.status)}` : ''}`]
-      : null,
-    fields.selector && el?.selector ? ['Selector', `<span style="${MONO}">${esc(el.selector)}</span>`] : null,
-    fields.element && el
-      ? ['Element', `<span style="${MONO}">${esc(el.tag)}${el.classes ? `.${esc(el.classes.split(' ').join('.'))}` : ''}</span>`]
-      : null,
-    fields.text && el?.text ? ['Text', esc(el.text)] : null,
-    fields.styles && el?.styles
-      ? ['Styles', `<span style="${MONO}">${esc(el.styles.font)}, ${esc(hexColour(el.styles.color))}</span>`]
-      : null,
-    fields.position && issue.rect && issue.viewport
-      ? [
-          'Position',
-          `<span style="${MONO}">${issue.rect.w} x ${issue.rect.h} at ${issue.rect.x}, ${issue.rect.y} in ${issue.viewport.width} x ${issue.viewport.height} at ${issue.viewport.dpr}x</span>`,
-        ]
-      : null,
-    fields.browser && issue.env ? ['Browser', esc(environmentText(issue))] : null,
-    fields.captured ? ['Captured', esc(new Date(issue.createdAt).toLocaleString())] : null,
-  ].filter(Boolean);
+/**
+ * The technical details as a quiet two column table, between the region images and the full screenshot.
+ * @param {import('./review-model.js').DetailRow[]} rows The comment's detail rows.
+ */
+function factTable(rows) {
   if (!rows.length) return '';
   return `<table cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin: 12px 0 2px;"><tbody>${rows
-    .map(([key, value]) => `<tr><td style="${FACT_KEY}">${key}</td><td style="${FACT_VAL}">${value}</td></tr>`)
+    .map((row) => `<tr><td style="${FACT_KEY}">${esc(row.label)}</td><td style="${FACT_VAL}">${rowHtml(row, (html) => `<span style="${MONO}">${html}</span>`)}</td></tr>`)
     .join('')}</tbody></table>`;
 }
 
 /**
  * One comment as a bordered card: number, title, severity and status on a tinted band, then the note, marks, images and details.
- * @param {object} issue The stored comment.
- * @param {number} n Its comment number.
- * @param {string} shots Which screenshots to include.
- * @param {Record<string, boolean>} fields Which detail rows to include.
- * @param {boolean} widths Whether to add the width shots.
+ * @param {object} comment The comment from the review model.
  */
-function commentCard(issue, n, shots, fields, widths) {
-  const sev = severityOf(issue.severity);
-  const status = statusOf(issue);
-  const marks = markList(issue);
-  const region = shots === 'viewport' ? '' : image(issue.detail, `Marked region for comment ${n}`);
-  const after = shots === 'viewport' || !issue.after ? '' : image(issue.after, `Same region after recheck for comment ${n}`, recheckCaption(issue));
-  const full = shots === 'detail' ? '' : image(issue.shot, `Full viewport for comment ${n}`, 'Full viewport', region ? Math.round(IMAGE_WIDTH * 0.66) : IMAGE_WIDTH);
+function commentCard(comment) {
+  const { severity, status, images, number } = comment;
+  const region = image(images.region, `Marked region for comment ${number}`);
+  const after = image(images.after, `Same region after recheck for comment ${number}`, images.afterCaption);
+  const full = image(images.full, `Full viewport for comment ${number}`, 'Full viewport', region ? Math.round(IMAGE_WIDTH * 0.66) : IMAGE_WIDTH);
   return `<table cellspacing="0" cellpadding="0" width="${PAGE_WIDTH}" style="${TABLE} width: ${PAGE_WIDTH}px; border: 1px solid ${LINE}; margin: 12px 0 0;">
     <colgroup><col width="${PAGE_WIDTH - 170}" /><col width="170" /></colgroup>
     <tbody>
       <tr>
-        <td style="padding: 9px 12px; background: ${SEV_STYLE[sev.key].fill}; border-bottom: 1px solid ${LINE}; vertical-align: top;">
-          <p style="font-family: ${SANS}; font-size: 11.5pt; font-weight: 700; color: ${INK}; margin: 0;"><span style="color: ${INK_2};">${pad(n)}</span>&nbsp;&nbsp;${esc(issue.title || 'Untitled comment')}</p>
+        <td style="padding: 9px 12px; background: ${SEV_STYLE[severity.key].fill}; border-bottom: 1px solid ${LINE}; vertical-align: top;">
+          <p style="font-family: ${SANS}; font-size: 11.5pt; font-weight: 700; color: ${INK}; margin: 0;"><span style="color: ${INK_2};">${comment.label}</span>&nbsp;&nbsp;${esc(comment.title)}</p>
         </td>
-        <td style="padding: 9px 12px; background: ${SEV_STYLE[sev.key].fill}; border-bottom: 1px solid ${LINE}; vertical-align: top; text-align: right;">
-          <p style="font-family: ${SANS}; font-size: 9pt; margin: 1px 0 0;">${sevLabel(sev)}&nbsp;&nbsp;<span style="color: ${LINE};">|</span>&nbsp;&nbsp;${statusLabel(status)}</p>
+        <td style="padding: 9px 12px; background: ${SEV_STYLE[severity.key].fill}; border-bottom: 1px solid ${LINE}; vertical-align: top; text-align: right;">
+          <p style="font-family: ${SANS}; font-size: 9pt; margin: 1px 0 0;">${sevLabel(severity)}&nbsp;&nbsp;<span style="color: ${LINE};">|</span>&nbsp;&nbsp;${statusLabel(status)}</p>
         </td>
       </tr>
       <tr>
         <td colspan="2" style="padding: 10px 12px 12px; vertical-align: top;">
-          ${fields.page ? `<p style="${SMALL} margin: 0 0 8px;">${linked(routeOf(issue.page), issue.page.url)}</p>` : ''}
-          ${issue.note ? `<p style="${P}">${esc(issue.note).replace(/\n/g, '<br />')}</p>` : ''}
-          ${marks.map((item) => `<p style="${P} margin: 0 0 4px;"><b style="color: ${MARK_COLOR};">${item.n}.</b>&nbsp;${esc(item.note).replace(/\n/g, '<br />')}</p>`).join('\n          ')}
+          ${comment.note ? `<p style="${P}">${esc(comment.note).replace(/\n/g, '<br />')}</p>` : ''}
+          ${comment.marks.map((item) => `<p style="${P} margin: 0 0 4px;"><b style="color: ${MARK_COLOR};">${item.n}.</b>&nbsp;${esc(item.note).replace(/\n/g, '<br />')}</p>`).join('\n          ')}
           ${region}
           ${after}
-          ${widths ? widthRow(issue, n) : ''}
+          ${widthRow(comment)}
+          ${factTable(comment.rows)}
           ${full}
-          ${factTable(issue, fields)}
         </td>
       </tr>
     </tbody>
@@ -190,23 +132,20 @@ function commentCard(issue, n, shots, fields, widths) {
 
 /**
  * The overview table: every comment on one line, in report order, so a reader sees the whole review before the detail.
- * @param {{ page: object, issues: object[] }[]} groups The comments by page.
- * @param {(issue: object) => number} numberOf The comment numbers.
+ * @param {object[]} sections The review model's page sections.
  */
-function overviewTable(groups, numberOf) {
+function overviewTable(sections) {
   const cols = { n: 40, title: 330, page: 120, sev: 75, status: 75 };
-  const rows = groups.flatMap((group, g) =>
-    group.issues.map((issue) => {
-      const sev = severityOf(issue.severity);
-      const status = statusOf(issue);
-      return `<tr>
-        <td style="${TD} color: ${INK_2}; font-weight: 700;">${pad(numberOf(issue))}</td>
-        <td style="${TD}">${esc(issue.title || 'Untitled comment')}</td>
-        <td style="${TD} color: ${INK_2};">COMM${g + 1}</td>
-        <td style="${TD}">${sevLabel(sev)}</td>
-        <td style="${TD} background: ${status.fill};">${statusLabel(status)}</td>
-      </tr>`;
-    }),
+  const rows = sections.flatMap((section) =>
+    section.comments.map(
+      (comment) => `<tr>
+        <td style="${TD} color: ${INK_2}; font-weight: 700;">${comment.label}</td>
+        <td style="${TD}">${esc(comment.title)}</td>
+        <td style="${TD} color: ${INK_2};">${section.label}</td>
+        <td style="${TD}">${sevLabel(comment.severity)}</td>
+        <td style="${TD} background: ${STATUS_STYLE[comment.status.key].fill};">${statusLabel(comment.status)}</td>
+      </tr>`,
+    ),
   );
   return `<table cellspacing="0" cellpadding="0" width="${PAGE_WIDTH}" style="${TABLE} width: ${PAGE_WIDTH}px; margin: 4px 0 8px;">
     <colgroup>${Object.values(cols).map((w) => `<col width="${w}" />`).join('')}</colgroup>
@@ -217,60 +156,49 @@ function overviewTable(groups, numberOf) {
   </table>`;
 }
 
-/** A one row table with the count of each severity in its colour. */
-function severityStrip(issues) {
-  const cells = SEVERITIES.map((s) => ({ s, n: issues.filter((i) => severityOf(i.severity).key === s.key).length }))
-    .filter(({ n }) => n > 0)
+/**
+ * A one row table with the count of each severity in its colour.
+ * @param {{ key: string, label: string, count: number }[]} severities The review model's severity counts.
+ */
+function severityStrip(severities) {
+  const cells = severities
+    .filter((s) => s.count > 0)
     .map(
-      ({ s, n }) =>
-        `<td style="padding: 6px 14px 6px 10px; background: ${SEV_STYLE[s.key].fill}; border-right: 4px solid #ffffff; font-family: ${SANS}; font-size: 9pt; color: ${SEV_STYLE[s.key].ink};"><b style="font-size: 13pt;">${n}</b>&nbsp; ${esc(s.label)}</td>`,
+      (s) =>
+        `<td style="padding: 6px 14px 6px 10px; background: ${SEV_STYLE[s.key].fill}; border-right: 4px solid #ffffff; font-family: ${SANS}; font-size: 9pt; color: ${SEV_STYLE[s.key].ink};"><b style="font-size: 13pt;">${s.count}</b>&nbsp; ${esc(s.label)}</td>`,
     );
   return `<table cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin: 14px 0 6px;"><tbody><tr>${cells.join('')}</tr></tbody></table>`;
 }
 
 /**
  * One page's section: its route, its link and a card per comment.
- * @param {{ page: object, issues: object[] }} group The page and its comments.
- * @param {number} number The section number.
- * @param {(issue: object) => number} numberOf The comment numbers.
- * @param {string} shots Which screenshots to include.
- * @param {Record<string, boolean>} fields Which detail rows to include.
- * @param {boolean} widths Whether to add the width shots.
+ * @param {object} section A page section from the review model.
  */
-function commSection(group, number, numberOf, shots, fields, widths) {
-  const cardFields = { ...fields, page: false };
+function commSection(section) {
   return `
-  <h2 style="${H2}">COMM${number}&nbsp;&nbsp;${esc(routeOf(group.page))}</h2>
-  <p style="${SMALL} margin: 0 0 4px;"><a href="${esc(group.page.url)}" style="color: ${INK_2};">${esc(group.page.url)}</a></p>
-  ${group.issues.map((issue) => commentCard(issue, numberOf(issue), shots, cardFields, widths)).join('\n  ')}`;
+  <h2 style="${H2}">${section.label}&nbsp;&nbsp;${esc(section.route)}</h2>
+  ${section.url ? `<p style="${SMALL} margin: 0 0 4px;"><a href="${esc(section.url)}" style="color: ${INK_2};">${esc(section.url)}</a></p>` : ''}
+  ${section.comments.map(commentCard).join('\n  ')}`;
 }
 
-/** Groups issues by page, keeping first capture order, sorted by severity inside. */
-export function groupByPage(issues) {
-  const groups = new Map();
-  for (const issue of issues) {
-    const key = issue.page?.url ?? '';
-    if (!groups.has(key)) groups.set(key, { page: issue.page ?? { url: key, title: '' }, issues: [] });
-    groups.get(key).issues.push(issue);
-  }
-  return [...groups.values()].map((group) => ({ ...group, issues: sortIssues(group.issues) }));
-}
-
-/** Plain text version, used as the second clipboard flavour. */
-export function buildDocsText(issues, { title = 'UI review comments', widths = true } = {}) {
-  const lines = [title, ''];
-  const numberOf = numbering(issues);
-  groupByPage(issues).forEach((group, index) => {
-    lines.push(`COMM${index + 1}: ${routeOf(group.page)}`, group.page.url, '');
-    group.issues.forEach((issue) => {
-      const sev = severityOf(issue.severity);
-      const jira = issue.jira?.key ? `, ${issue.jira.key}${issue.jira.status ? ` ${issue.jira.status} in Jira` : ''}` : '';
-      lines.push(`${pad(numberOf(issue))}  [${sev.label}, ${statusOf(issue).label}${jira}] ${issue.title || 'Untitled comment'}`);
-      if (issue.note) lines.push(`    ${issue.note.replace(/\n/g, '\n    ')}`);
-      markList(issue).forEach((item) => lines.push(`    ${item.n}. ${item.note.replace(/\n/g, ' ')}`));
-      if (issue.after) lines.push(`    ${recheckCaption(issue)}`);
-      if (widths && widthShots(issue).length) lines.push(`    ${widthsLine(issue)}`);
-      lines.push(`    ${factLine(issue).replace(/&amp;/g, '&')}`, '');
+/**
+ * Plain text version, used as the second clipboard flavour. It follows the Docs layout line for line.
+ * @param {object[]} issues The comments, in the order they were made.
+ * @param {object} [options] The same options as buildDocsHtml.
+ */
+export function buildDocsText(issues, options = {}) {
+  const model = buildReviewModel(issues, { title: 'UI review comments', ...options });
+  const lines = [model.title, `${model.date}, ${model.summary}`, ''];
+  model.sections.forEach((section) => {
+    lines.push(`${section.label}: ${section.route}`, ...(section.url ? [section.url] : []), '');
+    section.comments.forEach((comment) => {
+      lines.push(`${comment.label}  [${comment.severity.label}, ${comment.status.label}] ${comment.title}`);
+      if (comment.note) lines.push(`    ${comment.note.replace(/\n/g, '\n    ')}`);
+      comment.marks.forEach((item) => lines.push(`    ${item.n}. ${item.note.replace(/\n/g, ' ')}`));
+      if (comment.images.afterCaption) lines.push(`    ${comment.images.afterCaption}`);
+      if (comment.images.widths.length) lines.push(`    ${comment.images.widths.map((shot) => shot.caption).join('. ')}`);
+      comment.rows.forEach((row) => lines.push(`    ${row.label}: ${row.value}`));
+      lines.push('');
     });
   });
   return lines.join('\n');
@@ -280,37 +208,30 @@ export function buildDocsText(issues, { title = 'UI review comments', widths = t
  * Renders the report as a document for Google Docs, Word, or any editor that
  * imports HTML. Used for both the .doc download and the clipboard copy.
  */
-export function buildDocsHtml(
-  issues,
-  { title = 'UI review comments', generatedAt = new Date(), group = null, shots = 'both', fields = DEFAULT_FIELDS, widths = true } = {},
-) {
-  const groups = groupByPage(issues);
-  const numberOf = numbering(issues);
-  const total = issues.length;
+export function buildDocsHtml(issues, { group = null, ...options } = {}) {
+  const model = buildReviewModel(issues, { title: 'UI review comments', ...options });
   const meta = [
-    esc(generatedAt.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })),
-    `${total} ${total === 1 ? 'comment' : 'comments'} on ${groups.length} ${groups.length === 1 ? 'page' : 'pages'}`,
+    esc(model.date),
+    esc(model.summary),
     group?.jira?.key ? `Ticket ${linked(group.jira.key, group.jira.url)}${group.jira.status ? ` (${esc(group.jira.status)})` : ''}` : '',
     group?.figma?.fileKey ? `Design ${linked(group.figma.name || 'Figma file', group.figma.url)}` : '',
   ].filter(Boolean);
 
-  const body = groups.length
-    ? groups.map((pageGroup, index) => commSection(pageGroup, index + 1, numberOf, shots, withDefaults(fields), widths)).join('\n')
-    : `<p style="${P}">No comments captured.</p>`;
+  const body = model.total ? model.sections.map(commSection).join('\n') : `<p style="${P}">No comments captured.</p>`;
 
   return `<!doctype html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
 <head>
 <meta charset="utf-8" />
-<title>${esc(title)}</title>
+<title>${esc(model.title)}</title>
 <style>${PAGE_CSS}</style>
 </head>
 <body style="background: #ffffff; color: ${INK};">
 <div class="WordSection1">
-  <h1 style="${H1}">${esc(title)}</h1>
+  <h1 style="${H1}">${esc(model.title)}</h1>
   <p style="${SMALL} margin: 0;">${meta.join('&nbsp;&nbsp;&middot;&nbsp;&nbsp;')}</p>
-  ${total ? severityStrip(issues) : ''}
-  ${total ? `<h2 style="${H2} margin-top: 18px;">Overview</h2>\n  ${overviewTable(groups, numberOf)}` : ''}
+  ${model.total ? severityStrip(model.severities) : ''}
+  ${model.total ? `<h2 style="${H2} margin-top: 18px;">Overview</h2>\n  ${overviewTable(model.sections)}` : ''}
   ${body}
   <p style="${SMALL} margin-top: 24px;">Made with Margin</p>
 </div>

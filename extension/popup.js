@@ -1,7 +1,7 @@
 import { readGroups, readIssues, removeIssue, readRaw, writeRaw, readImages, writeImages, writeIssues, addGroup, patchGroup, setActiveGroup } from './lib/store.js';
 import { severityOf } from './lib/severity.js';
 import { statusOf } from './lib/status.js';
-import { routeOf } from './lib/report-template.js';
+import { routeOf } from './lib/review-model.js';
 import { cleanJiraLink, cleanFigmaLink } from './lib/review-file.js';
 import { refreshLinks, detailsAt, timeAgo, statusTone } from './lib/review-links.js';
 import { mountReviewSheet, pendingDraft } from './lib/review-sheet.js';

@@ -37,11 +37,3 @@ export function widthCaption(shot) {
   const note = PLACEMENT_NOTES[shot.placed];
   return `${shot.label}, ${size}${note ? `. ${note}` : ''}`;
 }
-
-/**
- * One line naming every width a comment was captured at, for text and Markdown exports.
- * @param {object} issue The stored comment.
- */
-export function widthsLine(issue) {
-  return widthShots(issue).map(widthCaption).join('. ');
-}

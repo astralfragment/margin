@@ -6,6 +6,7 @@
   "license": "MIT",
   "description": "Chrome extension for marking up UI issues and exporting them as an HTML report.",
   "scripts": {
-    "package": "node tools/package.mjs"
+    "package": "node tools/package.mjs",
+    "test": "node extension/tests/consistency.test.mjs"
   }
 }

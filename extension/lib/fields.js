@@ -1,6 +1,6 @@
 /**
- * The detail rows a comment can carry. Which of them appear in the report and
- * in the exports is a stored preference, so a review can stay terse.
+ * The detail rows a comment can carry, in the order every report format lists them.
+ * Which of them appear is a stored preference, so a review can stay terse.
  */
 export const FACT_FIELDS = [
   { key: 'page', label: 'Page' },
@@ -11,8 +11,8 @@ export const FACT_FIELDS = [
   { key: 'text', label: 'Text' },
   { key: 'styles', label: 'Styles' },
   { key: 'position', label: 'Position' },
-  { key: 'captured', label: 'Captured' },
   { key: 'browser', label: 'Browser' },
+  { key: 'captured', label: 'Captured' },
 ];
 
 export const DEFAULT_FIELDS = Object.fromEntries(FACT_FIELDS.map((f) => [f.key, f.key !== 'element']));

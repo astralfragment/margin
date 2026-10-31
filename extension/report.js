@@ -2,16 +2,8 @@ import { issuesInGroup, readRaw, addGroup, patchGroup, hydrate } from './lib/sto
 import { refreshLinks, statusTone } from './lib/review-links.js';
 import { mountReviewSheet } from './lib/review-sheet.js';
 import { icon, addIcons } from './lib/icons.js';
-import {
-  buildReport,
-  renderBody,
-  orderIssues,
-  numbering,
-  routeOf,
-  recheckCaption,
-  REPORT_CSS,
-  PREVIEW_DARK_CSS,
-} from './lib/report-template.js';
+import { buildReport, renderBody, REPORT_CSS, PREVIEW_DARK_CSS } from './lib/report-template.js';
+import { buildReviewModel, numbering, routeOf, recheckCaption } from './lib/review-model.js';
 import { buildDocsHtml, buildDocsText } from './lib/docs-template.js';
 import { buildMarkdown, commentHtml, commentMarkdown } from './lib/share-template.js';
 import { buildReviewFile, cleanJiraLink, cleanFigmaLink } from './lib/review-file.js';
@@ -360,14 +352,21 @@ let issues = await hydrate(await issuesInGroup(groupId));
 let sortOrder = readPref(SORT_KEY) === 'number' ? 'number' : 'severity';
 /** The comments in the order the sidebar and preview list them. The same array is kept, so the Send dialogs see changes. */
 const ordered = [];
+/** The page sections the sidebar groups its rows under when sorted by severity, as in every export, or none when sorted by number. */
+let pageSections = [];
 let numbers = numbering(issues);
 /** A comment's number, the order it was made in within its review, the same in the report, every export, the popup and the overlay. */
 const numberOf = (issue) => numbers(issue);
 
-/** Recomputes the numbers and the listed order after comments change or the sort changes. */
+/** Recomputes the numbers and the listed order from the review model after comments change or the sort changes, so card ids match the exports. */
 function reorder() {
   numbers = numbering(issues);
-  ordered.splice(0, ordered.length, ...orderIssues(issues, sortOrder));
+  const model = buildReviewModel(issues, { order: sortOrder });
+  ordered.splice(0, ordered.length, ...model.comments.map((comment) => comment.issue));
+  pageSections =
+    sortOrder === 'number'
+      ? []
+      : model.sections.map((section) => ({ ...section, first: section.comments[0].id, ids: new Set(section.comments.map((comment) => comment.id)) }));
 }
 reorder();
 
@@ -384,19 +383,6 @@ const options = {
   shots: stored.shotMode ?? 'both',
   fields: withDefaults(stored.fields),
   widths: (stored.widthMode ?? 'show') === 'show',
-};
-const docsOptions = {
-  generatedAt,
-  get shots() {
-    return options.shots;
-  },
-  get fields() {
-    return options.fields;
-  },
-  get widths() {
-    return options.widths;
-  },
-  title: group?.name ?? (hosts.length === 1 ? `${hosts[0]} comments` : 'UI review comments'),
   group,
 };
 const slug = (group?.name ?? hosts[0] ?? 'report').replace(/[^a-z0-9.]+/gi, '-').toLowerCase();
@@ -456,7 +442,12 @@ function renderSidebar() {
           const sev = severityOf(issue.severity);
           const status = statusOf(issue.status);
           const name = issue.title || 'Untitled comment';
-          return `<button class="index-row" type="button" data-jump="${index + 1}" data-sev="${sev.key}" data-status="${status.key}" title="${pad(numberOf(issue))} ${escapeText(name)}"
+          const section = pageSections.find((s) => s.ids.has(issue.id));
+          const head =
+            section?.first === issue.id
+              ? `<p class="index-page" data-page-head="${section.number}" title="${escapeText(section.url)}"><span class="route">${section.label} ${escapeText(section.route)}</span><span>${section.comments.length}</span></p>`
+              : '';
+          return `${head}<button class="index-row" type="button" data-jump="${index + 1}"${section ? ` data-page="${section.number}"` : ''} data-sev="${sev.key}" data-status="${status.key}" title="${pad(numberOf(issue))} ${escapeText(name)}"
             data-text="${escapeText(`${pad(numberOf(issue))} ${issue.title ?? ''} ${issue.note ?? ''} ${issue.element?.selector ?? ''} ${issue.jira?.key ?? ''} ${hostOf(issue.page?.url)}`.toLowerCase())}">
           <span class="n">${pad(numberOf(issue))}</span>
           <span class="dot"></span>
@@ -487,6 +478,10 @@ function applyFilter() {
     if (visible) shown += 1;
     doc?.getElementById(`c-${row.dataset.jump}`)?.classList.toggle('hide', !visible);
   }
+  indexEl.querySelectorAll('[data-page-head]').forEach((head) => {
+    head.hidden = !rows.some((row) => !row.hidden && row.dataset.page === head.dataset.pageHead);
+  });
+  doc?.querySelectorAll('.comm').forEach((section) => section.classList.toggle('hide', !section.querySelector('.issue:not(.hide)')));
   const none = term ? `No comments match "${findEl.value.trim()}"` : 'No comments match these filters';
   const sideNone = indexEl.querySelector('[data-index-none]');
   if (sideNone) {
@@ -878,7 +873,8 @@ function onPreviewClick(event) {
   const copy = event.target.closest?.('.card-copy');
   if (copy) {
     const { issue } = issueOfCard(copy);
-    copyOut(copy, commentMarkdown(issue, { fields: options.fields, widths: options.widths }), commentHtml(issue, options.fields, options.widths));
+    const share = { ...options, number: numberOf(issue) };
+    copyOut(copy, commentMarkdown(issue, share), commentHtml(issue, share));
     return;
   }
   const open = event.target.closest?.('[data-open-editor]');
@@ -968,7 +964,7 @@ document.querySelector('[data-download]').addEventListener('click', () => {
 });
 
 document.querySelector('[data-doc]').addEventListener('click', () => {
-  saveBlob(new Blob([buildDocsHtml(issues, docsOptions)], { type: 'application/msword' }), `${basename}.doc`);
+  saveBlob(new Blob([buildDocsHtml(issues, options)], { type: 'application/msword' }), `${basename}.doc`);
   toast(`Downloaded ${basename}.doc. Word opens it with a note about the format, choose Yes.`);
 });
 
@@ -977,8 +973,8 @@ document.querySelector('[data-copy]').addEventListener('click', async (event) =>
   try {
     await navigator.clipboard.write([
       new ClipboardItem({
-        'text/html': new Blob([buildDocsHtml(issues, docsOptions)], { type: 'text/html' }),
-        'text/plain': new Blob([buildDocsText(issues, docsOptions)], { type: 'text/plain' }),
+        'text/html': new Blob([buildDocsHtml(issues, options)], { type: 'text/html' }),
+        'text/plain': new Blob([buildDocsText(issues, options)], { type: 'text/plain' }),
       }),
     ]);
     flash(button, 'Copied');
@@ -1021,7 +1017,7 @@ async function copyOut(button, plain, html, done) {
 }
 
 document.querySelector('[data-markdown]').addEventListener('click', (event) => {
-  copyOut(event.currentTarget, buildMarkdown(issues, { title: docsOptions.title, fields: options.fields, widths: options.widths }), undefined, 'Copied the review as Markdown');
+  copyOut(event.currentTarget, buildMarkdown(issues, options), undefined, 'Copied the review as Markdown');
 });
 
 document.querySelector('[data-save-review]').addEventListener('click', async () => {
@@ -1059,7 +1055,7 @@ document.querySelector('[data-recrop]').addEventListener('click', async () => {
   toast(`Redid ${res.updated} ${res.updated === 1 ? 'crop' : 'crops'}`);
 });
 
-wireSend({ ordered, numberOf, group, options, reviewTitle: docsOptions.title, send, onChange: rerender });
+wireSend({ ordered, numberOf, group, options, reviewTitle: title, send, onChange: rerender });
 
 const fieldsDialog = document.querySelector('[data-fields-dialog]');
 const fieldsBody = document.querySelector('[data-fields-body]');
