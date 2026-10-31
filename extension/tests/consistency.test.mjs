@@ -8,6 +8,7 @@ import { buildDocsHtml, buildDocsText } from '../lib/docs-template.js';
 import { buildMarkdown, commentHtml, commentMarkdown } from '../lib/share-template.js';
 import { buildReviewModel } from '../lib/review-model.js';
 import { EXPORT_PRESETS, applyPreset, editExportConfig, withExportDefaults } from '../lib/export-config.js';
+import { reviewName } from '../lib/review-name.js';
 
 const LABELS = ['Page', 'Figma', 'Links', 'Jira', 'Selector', 'Element', 'Text', 'Styles', 'Position', 'Browser', 'Captured'];
 const LABEL_GROUP = `(${LABELS.join('|')})`;
@@ -175,6 +176,13 @@ same('unknown statuses are dropped', withExportDefaults({ statuses: ['fixed', 'n
 const developer = buildReviewModel(issues, { config: applyPreset('developer') });
 same('filtered comments keep their numbers', developer.comments.map((c) => c.number), [6, 1, 2, 5]);
 same('filtered pages keep their COMM numbers', developer.sections.map((s) => s.label), ['COMM1', 'COMM2']);
+
+const day = new Date(Date.UTC(2026, 9, 31, 12));
+const dayText = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' }).format(day);
+same('review name from the site part of the title', reviewName(pages.a, [], day), 'Shop');
+same('review name from the host without www', reviewName({ url: 'https://www.acme.io/pricing', title: 'Pricing' }, [], day), 'acme.io');
+same('review name adds the day when taken', reviewName(pages.a, ['Shop'], day), `Shop ${dayText}`);
+same('review name never uses a numeric date', /\d+\/\d+/.test(reviewName({ url: 'chrome://newtab/' }, [], day)), false);
 
 if (failures) {
   console.error(`\n${failures} check${failures === 1 ? '' : 's'} failed`);

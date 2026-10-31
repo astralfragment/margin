@@ -41,7 +41,7 @@ async function toggleTab(tab) {
   await ensureContent(tab);
   const res = await chrome.tabs.sendMessage(tab.id, {
     type: 'toggle',
-    groupName: (await activeGroup()).name,
+    groupName: (await activeGroup(tab)).name,
     zoom: await chrome.tabs.getZoom(tab.id).catch(() => 1),
   });
   return res?.active === true;
@@ -99,7 +99,7 @@ async function resumeTab(tabId, info, tab) {
     await ensureContent(tab);
     await chrome.tabs.sendMessage(tabId, {
       type: 'start',
-      groupName: (await activeGroup()).name,
+      groupName: (await activeGroup(tab)).name,
       zoom: await chrome.tabs.getZoom(tabId).catch(() => 1),
       notice,
     });
@@ -233,7 +233,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       await ensureContent(tab);
       await chrome.tabs.sendMessage(tab.id, {
         type: 'captureViewport',
-        groupName: (await activeGroup()).name,
+        groupName: (await activeGroup(tab)).name,
         zoom: await chrome.tabs.getZoom(tab.id).catch(() => 1),
       });
     } else if (info.menuItemId === 'margin-widths' && tab?.id) {
@@ -819,7 +819,7 @@ const handlers = {
     const { lastSeverity } = await chrome.storage.local.get('lastSeverity');
     const issue = {
       id: crypto.randomUUID(),
-      groupId: (await activeGroup()).id,
+      groupId: (await activeGroup(sender.tab)).id,
       createdAt: new Date().toISOString(),
       severity: SEVERITY_ORDER.includes(lastSeverity) ? lastSeverity : 'major',
       status: 'open',
