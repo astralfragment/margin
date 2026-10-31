@@ -14,6 +14,7 @@ import { buildReport, renderBody } from '@/lib/report-template.js';
 import { SEVERITIES, severityOf } from '@/lib/severity.js';
 import { buildMarkdown, commentHtml, commentMarkdown } from '@/lib/share-template.js';
 import { STATUSES, statusOf } from '@/lib/status.js';
+import { reviewName } from '@/lib/review-name.js';
 import { addGroup, patchGroup, readRaw } from '@/lib/store.js';
 import { queryClient } from '@/lib/query';
 import { cn } from '@/lib/utils';
@@ -385,6 +386,7 @@ function Loaded({ report }: { report: Report }) {
       <ReviewSheetDialog
         sheet={ui.sheet}
         group={group}
+        newName={reviewName(issues.at(-1)?.page, groups.map((g) => g.name))}
         onClose={() => set({ sheet: null })}
         onSubmit={async ({ name, jira, figma }) => {
           const links = { jira: cleanJiraLink(jira), figma: cleanFigmaLink(figma) };

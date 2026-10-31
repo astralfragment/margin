@@ -21,6 +21,8 @@ import {
 import { parseReviewFile } from './lib/review-file.js';
 import { WIDTHS, widthShots } from './lib/widths.js';
 import { openReportTab } from './lib/report-tab.js';
+import { SEVERITY_ORDER } from './lib/severity.js';
+import { SHORTCUTS_URL } from './lib/controls.js';
 
 const HIGHLIGHT = '#e5484d';
 const MAX_SHOT_WIDTH = 1400;
@@ -39,7 +41,7 @@ async function toggleTab(tab) {
   await ensureContent(tab);
   const res = await chrome.tabs.sendMessage(tab.id, {
     type: 'toggle',
-    groupName: (await activeGroup()).name,
+    groupName: (await activeGroup(tab)).name,
     zoom: await chrome.tabs.getZoom(tab.id).catch(() => 1),
   });
   return res?.active === true;
@@ -97,7 +99,7 @@ async function resumeTab(tabId, info, tab) {
     await ensureContent(tab);
     await chrome.tabs.sendMessage(tabId, {
       type: 'start',
-      groupName: (await activeGroup()).name,
+      groupName: (await activeGroup(tab)).name,
       zoom: await chrome.tabs.getZoom(tabId).catch(() => 1),
       notice,
     });
@@ -231,7 +233,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       await ensureContent(tab);
       await chrome.tabs.sendMessage(tab.id, {
         type: 'captureViewport',
-        groupName: (await activeGroup()).name,
+        groupName: (await activeGroup(tab)).name,
         zoom: await chrome.tabs.getZoom(tab.id).catch(() => 1),
       });
     } else if (info.menuItemId === 'margin-widths' && tab?.id) {
@@ -814,11 +816,12 @@ const handlers = {
    */
   async capture(msg, sender) {
     const { raw, shot, detail } = msg.skipShot ? { raw: null, shot: null, detail: null } : await captureShots(sender.tab, msg);
+    const { lastSeverity } = await chrome.storage.local.get('lastSeverity');
     const issue = {
       id: crypto.randomUUID(),
-      groupId: (await activeGroup()).id,
+      groupId: (await activeGroup(sender.tab)).id,
       createdAt: new Date().toISOString(),
-      severity: 'major',
+      severity: SEVERITY_ORDER.includes(lastSeverity) ? lastSeverity : 'major',
       status: 'open',
       title: '',
       note: '',
@@ -882,6 +885,17 @@ const handlers = {
 
   async openReport() {
     await openReportTab();
+    return { ok: true };
+  },
+
+  /** Chrome's commands for the overlay's controls reference, since a content script cannot read them. */
+  async commands() {
+    return chrome.commands.getAll();
+  },
+
+  /** Opens Chrome's shortcut page for the overlay, since a content script cannot open tabs. */
+  async openShortcuts() {
+    await chrome.tabs.create({ url: SHORTCUTS_URL });
     return { ok: true };
   },
 

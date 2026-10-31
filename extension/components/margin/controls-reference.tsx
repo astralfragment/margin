@@ -11,7 +11,7 @@ export function ControlsReference({ only }: { only?: string[] }) {
   const groups = (CONTROLS as Group[]).filter((group) => !only || only.includes(group.id));
   return (
     <div className="grid gap-4">
-      <div className="flex items-center justify-between gap-3 rounded-lg bg-muted p-3">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
         <div className="grid">
           <span className="text-sm font-semibold">Start and stop</span>
           <span className="text-xs text-muted-foreground">{shortcut ? 'Works on any page' : 'No shortcut yet. Pick one in Chrome.'}</span>

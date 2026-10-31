@@ -13,23 +13,25 @@ export type SheetResult = { name: string; jira: JiraLink | null; figma: FigmaLin
 type Props = {
   sheet: SheetMode | null;
   group: Group | null;
+  /** The name a new review starts with. */
+  newName: string;
   onClose: () => void;
   onSubmit: (result: SheetResult) => Promise<void>;
 };
 
 /** Starts a review, or changes this one's name and its Jira ticket and Figma file. Both links are optional. */
-export function ReviewSheetDialog({ sheet, group, onClose, onSubmit }: Props) {
+export function ReviewSheetDialog({ sheet, group, newName, onClose, onSubmit }: Props) {
   return (
     <Dialog open={Boolean(sheet)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">{sheet && <Sheet sheet={sheet} group={sheet.mode === 'edit' ? group : null} onSubmit={onSubmit} />}</DialogContent>
+      <DialogContent className="sm:max-w-md">{sheet && <Sheet sheet={sheet} group={sheet.mode === 'edit' ? group : null} newName={newName} onSubmit={onSubmit} />}</DialogContent>
     </Dialog>
   );
 }
 
 /** The form, mounted each time the dialog opens, so it starts from the review as it is. */
-function Sheet({ sheet, group, onSubmit }: { sheet: SheetMode; group: Group | null; onSubmit: Props['onSubmit'] }) {
+function Sheet({ sheet, group, newName, onSubmit }: { sheet: SheetMode; group: Group | null; newName: string; onSubmit: Props['onSubmit'] }) {
   const editing = sheet.mode === 'edit';
-  const [name, setName] = useState(group?.name ?? `Review ${new Date().toLocaleDateString()}`);
+  const [name, setName] = useState(group?.name ?? newName);
   const [links, setLinks] = useState<Record<Kind, LinkState>>({ jira: initialLink('jira', group?.jira), figma: initialLink('figma', group?.figma) });
   const jiraConnection = useConnection<{ sites?: unknown[] }>('jira');
   const figmaConnection = useConnection('figma');

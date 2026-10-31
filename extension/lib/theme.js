@@ -4,7 +4,7 @@
  */
 export const THEME_KEY = 'theme';
 export const THEMES = [
-  { key: 'system', label: 'Match system' },
+  { key: 'system', label: 'Match system default' },
   { key: 'light', label: 'Light' },
   { key: 'dark', label: 'Dark' },
 ];
@@ -22,7 +22,8 @@ export const ACCENTS = [
 /** The stored accent, lime when unset or unknown. */
 export const resolveAccent = (choice) => (ACCENTS.some((a) => a.key === choice) ? choice : 'lime');
 
-const systemDark = matchMedia('(prefers-color-scheme: dark)');
+/** Read on use, so importing this module needs no window, as when the build loads the overlay script. */
+const systemDark = () => matchMedia('(prefers-color-scheme: dark)');
 
 /**
  * Resolves a stored theme choice to the theme that is actually shown.
@@ -30,7 +31,7 @@ const systemDark = matchMedia('(prefers-color-scheme: dark)');
  */
 function resolve(choice) {
   if (choice === 'dark' || choice === 'light') return choice;
-  return systemDark.matches ? 'dark' : 'light';
+  return systemDark().matches ? 'dark' : 'light';
 }
 
 /**
@@ -54,5 +55,5 @@ export async function applyTheme(onChange) {
     choice = changes[THEME_KEY].newValue;
     paint();
   });
-  systemDark.addEventListener('change', () => choice !== 'dark' && choice !== 'light' && paint());
+  systemDark().addEventListener('change', () => choice !== 'dark' && choice !== 'light' && paint());
 }

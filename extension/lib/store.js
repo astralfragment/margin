@@ -1,3 +1,5 @@
+import { reviewName } from './review-name.js';
+
 const KEY = 'issues';
 const GROUPS_KEY = 'groups';
 const ACTIVE_KEY = 'activeGroupId';
@@ -308,14 +310,19 @@ async function writeGroups(groups) {
   await chrome.storage.local.set({ [GROUPS_KEY]: groups });
 }
 
-/** Creates a group and makes it the one new captures land in. */
-export async function addGroup(name) {
+/**
+ * Creates a group and makes it the one new captures land in.
+ * @param {string} [name] The name. Without one the group is named after the page.
+ * @param {{ url?: string, title?: string }} [page] The page the group starts on.
+ */
+export async function addGroup(name, page) {
+  const groups = await readGroups();
   const group = {
     id: crypto.randomUUID(),
-    name: name?.trim() || `Review ${new Date().toLocaleDateString()}`,
+    name: name?.trim() || reviewName(page, groups.map((g) => g.name)),
     createdAt: new Date().toISOString(),
   };
-  await writeGroups([...(await readGroups()), group]);
+  await writeGroups([...groups, group]);
   await chrome.storage.local.set({ [ACTIVE_KEY]: group.id });
   return group;
 }
@@ -345,11 +352,14 @@ export async function setActiveGroup(id) {
   await chrome.storage.local.set({ [ACTIVE_KEY]: id });
 }
 
-/** The group new captures belong to, created on first use. */
-export async function activeGroup() {
+/**
+ * The group new captures belong to, created on first use and named after the page it starts on.
+ * @param {{ url?: string, title?: string }} [page] The page asking.
+ */
+export async function activeGroup(page) {
   const groups = await readGroups();
   const active = (await chrome.storage.local.get(ACTIVE_KEY))[ACTIVE_KEY];
-  return groups.find((s) => s.id === active) ?? groups.at(-1) ?? addGroup();
+  return groups.find((s) => s.id === active) ?? groups.at(-1) ?? addGroup('', page);
 }
 
 /** Issues captured in one group, or every issue when no id is given, without images. */

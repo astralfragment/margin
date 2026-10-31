@@ -45,19 +45,23 @@ export const CONTROLS = [
   },
 ];
 
-/** The shortcut that starts and stops annotating, or an empty string when none is set. */
+/**
+ * The shortcut that starts and stops annotating, or an empty string when none is set.
+ * A content script has no chrome.commands, so the on-page overlay asks the background instead.
+ */
 export async function annotateShortcut() {
   try {
-    const command = (await chrome.commands.getAll()).find((c) => c.name === 'toggle-annotate');
-    return command?.shortcut ?? '';
+    const commands = chrome.commands ? await chrome.commands.getAll() : await chrome.runtime.sendMessage({ type: 'commands' });
+    return commands?.find((c) => c.name === 'toggle-annotate')?.shortcut ?? '';
   } catch {
     return '';
   }
 }
 
-/** Opens Chrome's shortcut page, the only place an extension shortcut can be changed. */
+/** Opens Chrome's shortcut page, the only place an extension shortcut can be changed. A content script asks the background. */
 export function openShortcutSettings() {
-  chrome.tabs.create({ url: SHORTCUTS_URL });
+  if (chrome.tabs) chrome.tabs.create({ url: SHORTCUTS_URL });
+  else chrome.runtime.sendMessage({ type: 'openShortcuts' });
 }
 
 const kbd = (keys) => keys.map((key) => `<kbd>${key}</kbd>`).join(' ');
