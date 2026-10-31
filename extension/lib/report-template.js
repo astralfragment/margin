@@ -297,7 +297,7 @@ export function renderBody(issues, { preview = false, ...options } = {}) {
         ].join('\n    ')
       : '';
   const empty = preview
-    ? 'No comments yet. Open the page you want to review and press Alt+Shift+A to add a comment.'
+    ? 'No comments yet. Open the page you want to review, then click Margin in the toolbar to start.'
     : 'No comments in this review.';
   const listed = flat
     ? model.comments.map((comment) => cards.get(comment)).join('\n')
