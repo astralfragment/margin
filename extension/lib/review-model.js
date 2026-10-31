@@ -49,7 +49,7 @@ const screenWord = (part) => {
  * The site name in a tab title. "Page | Site" and "Page - Site" put it last, "Site: tagline" puts it first.
  * @param {string} [title] The tab title.
  */
-function appOf(title) {
+export function appOf(title) {
   const text = title?.trim() ?? '';
   const parts = text.split(/\s[|-]\s/);
   if (parts.length > 1) return parts.at(-1).trim();

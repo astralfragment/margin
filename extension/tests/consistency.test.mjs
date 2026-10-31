@@ -6,6 +6,7 @@ import { buildReport, renderBody } from '../lib/report-template.js';
 import { buildDocsHtml, buildDocsText } from '../lib/docs-template.js';
 import { buildMarkdown, commentHtml, commentMarkdown } from '../lib/share-template.js';
 import { buildReviewModel } from '../lib/review-model.js';
+import { reviewName } from '../lib/review-name.js';
 
 const LABELS = ['Page', 'Figma', 'Links', 'Jira', 'Selector', 'Element', 'Text', 'Styles', 'Position', 'Browser', 'Captured'];
 const LABEL_LINE = new RegExp(`^(?:    |- )(${LABELS.join('|')}): `);
@@ -119,6 +120,13 @@ check('custom fields', { fields: { page: false, element: true, position: false }
 
 const byNumber = buildReviewModel(issues, { order: 'number' });
 same('number order lists every comment by number', byNumber.comments.map((c) => c.number), [1, 2, 3, 4, 5, 6]);
+
+const day = new Date(Date.UTC(2026, 9, 31, 12));
+const dayText = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' }).format(day);
+same('review name from the site part of the title', reviewName(pages.a, [], day), 'Shop');
+same('review name from the host without www', reviewName({ url: 'https://www.acme.io/pricing', title: 'Pricing' }, [], day), 'acme.io');
+same('review name adds the day when taken', reviewName(pages.a, ['Shop'], day), `Shop ${dayText}`);
+same('review name never uses a numeric date', /\d+\/\d+/.test(reviewName({ url: 'chrome://newtab/' }, [], day)), false);
 
 if (failures) {
   console.error(`\n${failures} check${failures === 1 ? '' : 's'} failed`);
