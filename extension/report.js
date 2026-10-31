@@ -1,7 +1,7 @@
 import { issuesInGroup, readRaw, addGroup, patchGroup, hydrate } from './lib/store.js';
 import { refreshLinks, statusTone } from './lib/review-links.js';
 import { mountReviewSheet } from './lib/review-sheet.js';
-import { icon } from './lib/icons.js';
+import { icon, addIcons } from './lib/icons.js';
 import {
   buildReport,
   renderBody,
@@ -25,6 +25,14 @@ import { applyTheme } from './lib/theme.js';
 
 const send = (type, payload = {}) => chrome.runtime.sendMessage({ type, ...payload });
 const frame = document.querySelector('[data-preview]');
+applyTheme((theme) => {
+  frame.contentDocument?.documentElement?.setAttribute('data-theme', theme);
+});
+addIcons();
+document.querySelector('[data-more-chevron]').outerHTML = icon('chevronDown');
+const loadingDone = () => document.body.classList.remove('is-loading');
+frame.addEventListener('load', loadingDone, { once: true });
+setTimeout(loadingDone, 8000);
 const pad = (n) => String(n).padStart(2, '0');
 const SORT_KEY = 'margin.reportSort';
 const COPY_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 3.5v-.5A1.5 1.5 0 0 0 9 1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h.5"/></svg>';
@@ -112,11 +120,11 @@ function saveBlob(blob, filename) {
 
 /** Shows a short confirmation on the button that was pressed. */
 function flash(button, text) {
-  const original = button.textContent;
+  const original = button.innerHTML;
   button.textContent = text;
   button.disabled = true;
   setTimeout(() => {
-    button.textContent = original;
+    button.innerHTML = original;
     button.disabled = false;
   }, 1600);
 }
@@ -378,9 +386,6 @@ const slug = (group?.name ?? hosts[0] ?? 'report').replace(/[^a-z0-9.]+/gi, '-')
 const basename = `ui-issues-${slug}-${stamp(generatedAt)}`;
 
 document.title = title;
-applyTheme((theme) => {
-  frame.contentDocument?.documentElement?.setAttribute('data-theme', theme);
-});
 
 /**
  * The preview document. Links open in a new tab, the font and tokens match the rest of Margin,

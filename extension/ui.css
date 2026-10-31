@@ -55,6 +55,13 @@
   --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.12), 0 2px 4px -2px hsl(0 0% 0% / 0.08);
   --shadow-lg: 0 16px 40px -8px hsl(0 0% 0% / 0.24);
 }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --background: #000000; --foreground: #ffffff; --sidebar: #000000;
+    --border: #2f2a45; --sidebar-border: #2f2a45; --muted: #1c1830;
+  }
+}
 :root[data-theme="dark"] {
   color-scheme: dark;
   --background: #000000;
@@ -180,7 +187,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { border-color
 .topbar .link-chips { flex: 0 1 auto; overflow: hidden; }
 .topbar .spacer { margin-left: auto; }
 .topbar .menu:not(.review-menu) > .menu-body { max-height: calc(100vh - 68px); overflow: auto; }
-.narrow-only { display: none; }
+.narrow-only, .menu-item.narrow-only, .menu-sep.narrow-only { display: none; }
 .skip-link {
   position: fixed; left: var(--s2); top: var(--s2); z-index: 70; padding: var(--s2) var(--s3);
   font-weight: 800; color: var(--primary-foreground); background: var(--primary); border-radius: var(--radius-sm);
@@ -859,3 +866,59 @@ kbd {
 .mk-pair figure { margin: 0; display: grid; gap: 0.6cqw; color: var(--muted-foreground); font-size: 1.3cqw; font-weight: 600; }
 .mk-pair i { display: block; height: 9cqw; border: 1px solid var(--border); border-radius: 1cqw; background: var(--muted); }
 .mk-pair figure:first-child i { box-shadow: inset 0 0 0 2px #e5484d; }
+
+/* Menus with icons */
+.menu-body { width: 248px; }
+.menu-item { gap: 10px; min-height: 32px; padding: 6px var(--s2); }
+.menu-item > .ico { width: 16px; height: 16px; color: var(--muted-foreground); }
+.menu-item:hover > .ico, .menu-item:focus-visible > .ico { color: var(--foreground); }
+.menu-item.danger > .ico { color: var(--destructive); }
+.menu-label {
+  padding: 8px var(--s2) 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+  color: var(--muted-foreground);
+}
+.menu-sep { margin: 2px var(--s1); }
+.menu[open] > summary.btn { background: var(--secondary); }
+.more-menu > summary .ico { width: 14px; height: 14px; transition: transform 150ms ease-out; }
+.more-menu[open] > summary .ico { transform: rotate(180deg); }
+.more-menu > .menu-body { animation: menu-in 120ms ease-out; transform-origin: top right; }
+@keyframes menu-in { from { opacity: 0; transform: translateY(-4px) scale(0.98); } }
+
+/* Top bar: secondary actions drop to icons before they drop into More */
+.topbar .spacer { flex: 1 1 0; min-width: 0; }
+@media (max-width: 1320px) {
+  .topbar .btn.wide-only { width: 32px; padding: 0; font-size: 0; gap: 0; }
+  .topbar .btn.wide-only .ico { width: 16px; height: 16px; }
+}
+
+/* Report loading: a calm skeleton, then the report fades in */
+.canvas { position: relative; }
+.canvas iframe { transition: opacity 180ms ease-out; }
+.canvas-skeleton {
+  position: absolute; inset: 0; display: grid; align-content: start; gap: 14px;
+  max-width: 1100px; margin: 0 auto; padding: 56px 48px; pointer-events: none;
+  opacity: 0; transition: opacity 180ms ease-out;
+}
+.canvas-skeleton i, .index .sk-row { display: block; border-radius: var(--radius-sm); background: var(--muted); animation: sk-pulse 1.2s ease-in-out infinite alternate; }
+.canvas-skeleton .sk-title { width: 280px; height: 22px; }
+.canvas-skeleton .sk-line { width: 60%; height: 12px; }
+.canvas-skeleton .sk-line.short { width: 40%; }
+.canvas-skeleton .sk-shot { height: 280px; border-radius: var(--radius); }
+.index .sk-row { height: 40px; margin: 3px var(--s2); }
+@keyframes sk-pulse { from { opacity: 0.55; } to { opacity: 1; } }
+.is-loading .canvas iframe { opacity: 0; }
+.is-loading .canvas-skeleton { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .canvas-skeleton i, .index .sk-row, .more-menu > .menu-body { animation: none; }
+}
+
+/* Popup notice for pages Margin cannot open on: information, not an error */
+.pop-notice {
+  display: grid; grid-template-columns: 16px 1fr; gap: 4px 10px; align-items: start;
+  margin: 0 var(--s4) var(--s3); padding: 12px;
+  font-size: 12px; line-height: 17px; color: var(--muted-foreground);
+  background: var(--muted); border-radius: var(--radius);
+}
+.pop-notice > .ico { width: 16px; height: 16px; margin-top: 1px; color: var(--brand-deep); }
+.pop-notice b { display: block; margin-bottom: 2px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--foreground); }
+.pop-notice .pop-notice-extra { grid-column: 2; margin-top: 6px; color: var(--foreground); }
