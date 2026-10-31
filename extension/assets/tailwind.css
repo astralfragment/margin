@@ -19,7 +19,7 @@
 
 :root {
   color-scheme: light;
-  --radius: 16px;
+  --radius: 8px;
   --background: #ffffff;
   --foreground: #09090b;
   --card: #ffffff;
@@ -117,10 +117,13 @@
 
 @theme inline {
   --font-sans: Manrope, ui-sans-serif, system-ui, "Segoe UI", sans-serif;
-  --radius-sm: calc(var(--radius) - 8px);
-  --radius-md: calc(var(--radius) - 4px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 4px);
+  --radius-3xl: calc(var(--radius) + 4px);
+  --radius-4xl: calc(var(--radius) + 4px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
