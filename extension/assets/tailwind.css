@@ -1,0 +1,128 @@
+/*
+ * Tailwind and shadcn/ui entry for pages rebuilt in React. Legacy pages link
+ * public/ui.css only, so Tailwind's preflight never reaches them.
+ * The tokens repeat the Lilac values at the top of ui.css under shadcn's names.
+ */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* lib/theme.js sets data-theme on <html>, so dark keys off that instead of a class. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@font-face { font-family: Manrope; font-weight: 500; font-display: swap; src: url("/fonts/manrope-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: Manrope; font-weight: 600; font-display: swap; src: url("/fonts/manrope-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: Manrope; font-weight: 800; font-display: swap; src: url("/fonts/manrope-latin-800-normal.woff2") format("woff2"); }
+
+:root {
+  color-scheme: light;
+  --radius: 16px;
+  --background: #ffffff;
+  --foreground: #000000;
+  --card: #ffffff;
+  --card-foreground: #000000;
+  --popover: #ffffff;
+  --popover-foreground: #000000;
+  --primary: #000000;
+  --primary-foreground: #ffffff;
+  --secondary: #f0eefe;
+  --secondary-foreground: #000000;
+  --muted: #f0eefe;
+  --muted-foreground: #5b5670;
+  --accent: #f0eefe;
+  --accent-foreground: #000000;
+  --destructive: #ce2c31;
+  --border: #e2ddf5;
+  --input: #f0eefe;
+  --ring: #7549d2;
+  --action: #c1f354;
+  --action-foreground: #000000;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #000000;
+  --sidebar-primary: #000000;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f0eefe;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #e2ddf5;
+  --sidebar-ring: #7549d2;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #000000;
+  --card-foreground: #ffffff;
+  --popover: #0d0b16;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #1c1830;
+  --secondary-foreground: #ffffff;
+  --muted: #1c1830;
+  --muted-foreground: #ada7c4;
+  --accent: #1c1830;
+  --accent-foreground: #ffffff;
+  --destructive: #ff9592;
+  --border: #2f2a45;
+  --input: #1c1830;
+  --ring: #c1b0fe;
+  --sidebar: #000000;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #1c1830;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2f2a45;
+  --sidebar-ring: #c1b0fe;
+}
+
+@theme inline {
+  --font-sans: Manrope, ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-action: var(--action);
+  --color-action-foreground: var(--action-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* Chrome injects an unlayered font-family into extension pages, which beats any rule inside @layer base. */
+body {
+  @apply font-sans;
+}

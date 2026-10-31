@@ -10,3 +10,5 @@ Thumbs.db
 store/assets/
 .playwright-mcp/
 tools/
+.output/
+.wxt/
