@@ -8,6 +8,7 @@ import { mountReviewSheet, pendingDraft } from './lib/review-sheet.js';
 import { connection } from './lib/oauth.js';
 import { icon, addIcons } from './lib/icons.js';
 import { openReportTab } from './lib/report-tab.js';
+import { reportProblem } from './lib/feedback.js';
 import { tourOnce } from './lib/tour.js';
 import { applyTheme } from './lib/theme.js';
 
@@ -157,6 +158,7 @@ function openSettings(kind) {
 $('[data-mark]').innerHTML = icon('mark');
 $('[data-more-icon]').innerHTML = icon('more');
 addIcons();
+$('[data-report-problem]').addEventListener('click', () => reportProblem('popup').finally(() => window.close()));
 $('[data-options]').innerHTML = icon('help');
 $('[data-alert-icon]').outerHTML = icon('alert');
 for (const [selector, name] of [

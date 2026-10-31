@@ -100,16 +100,44 @@ details.full { margin-top: var(--s3); }
 details.full > summary { width: fit-content; font-size: 12px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
 details.full > summary:hover { color: var(--ink); }
 details.full figure { margin-top: var(--s2); }
+.issue { scroll-margin-top: var(--s4); }
+details.tech { margin: var(--s3) 0 0 calc(24px + var(--s3)); }
+details.tech > summary, details.full > summary {
+  display: inline-flex; align-items: center; gap: 6px; width: fit-content; list-style: none;
+  font-size: 12px; font-weight: 600; color: var(--ink-2); cursor: pointer; user-select: none;
+}
+details.tech > summary::-webkit-details-marker, details.full > summary::-webkit-details-marker { display: none; }
+details.tech > summary::before, details.full > summary::before {
+  content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg); transition: transform 120ms ease-out;
+}
+details.tech[open] > summary::before, details.full[open] > summary::before { transform: rotate(45deg); }
+details.tech > summary:hover { color: var(--ink); }
+details.tech dl.facts { margin-left: 0; margin-top: var(--s2); }
+.toc { margin: 0 0 var(--s5); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.toc ol { list-style: none; margin: 0; padding: var(--s1); display: grid; gap: 1px; }
+.toc a { display: grid; grid-template-columns: 24px 8px minmax(0, 1fr) auto; gap: var(--s2); align-items: center; padding: 6px var(--s2); border-radius: 8px; text-decoration: none; color: var(--ink); font-size: 13px; }
+.toc a:hover { background: var(--surface); }
+.toc .num { font-size: 12px; font-weight: 800; color: var(--ink-2); }
+.toc .dot { width: 8px; height: 8px; border-radius: 2px; background: var(--sev); }
+.toc li[data-sev="blocker"] { --sev: var(--sev-blocker); }
+.toc li[data-sev="major"] { --sev: var(--sev-major); }
+.toc li[data-sev="minor"] { --sev: var(--sev-minor); }
+.toc li[data-sev="nit"] { --sev: var(--sev-nit); }
+.toc .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.toc .s { font-size: 12px; color: var(--ink-2); }
+.made { margin: var(--s6) 0 0; font-size: 12px; color: var(--ink-2); text-align: center; }
 .empty { border: 1px dashed var(--line); border-radius: var(--radius); padding: var(--s6); text-align: center; color: var(--ink-2); }
 .empty[hidden] { display: none; }
 @media (max-width: 560px) {
-  .note, ol.marks, dl.facts, .issue figure, .pair, .widths, .where, details.full { margin-left: 0; }
+  details.tech, .note, ol.marks, dl.facts, .issue figure, .pair, .widths, .where, details.full { margin-left: 0; }
   .pair, .widths { grid-template-columns: minmax(0, 1fr); }
   dl.facts { grid-template-columns: 74px minmax(0, 1fr); }
 }
 @media print {
   body { padding: 0; }
-  .stats { display: none; }
+  .stats, .toc { display: none; }
+  details.tech > summary, details.full > summary { display: none; }
   .issue { break-inside: avoid; }
 }
 `;
@@ -145,6 +173,11 @@ export function wireFilters(root) {
         const byStatus = picked.statusFilter === 'all' || issue.dataset.status === picked.statusFilter;
         issue.classList.toggle('hide', !(bySeverity && byStatus));
       });
+    });
+  });
+  root.defaultView?.addEventListener('beforeprint', () => {
+    root.querySelectorAll('details:not([open])').forEach((d) => {
+      d.open = true;
     });
   });
 }
@@ -224,7 +257,7 @@ export function routeOf(page) {
 export function environmentText(issue) {
   const env = issue.env;
   if (!env) return '';
-  return `${env.browser}${env.os ? ` on ${env.os}` : ''}, zoom ${env.zoom}%`;
+  return `${env.browser}${env.os ? ` on ${env.os}` : ''}${env.zoom ? `, zoom ${env.zoom}%` : ''}`;
 }
 
 const isFigma = (url) => /^https:\/\/([\w-]+\.)?figma\.com\//i.test(url);
@@ -402,6 +435,7 @@ function issueCard(issue, index, { shots, fields, widths, preview }, number) {
   const sev = severityOf(issue.severity);
   const status = statusOf(issue.status);
   const region = issue.detail && shots !== 'viewport';
+  const facts = factRows(issue, fields);
   return `
     <article class="issue" id="c-${index + 1}" data-sev="${esc(sev.key)}" data-status="${esc(status.key)}">
       <header>
@@ -426,10 +460,10 @@ function issueCard(issue, index, { shots, fields, widths, preview }, number) {
       }
       ${region ? regionFigures(issue, number) : ''}
       ${widths ? widthFigures(issue, number) : ''}
-      <dl class="facts">
-        ${factRows(issue, fields)}
-      </dl>
-      ${issue.shot && shots !== 'detail' ? fullFigure(issue, number, preview && region) : ''}
+      ${facts ? `<details class="tech"><summary>Technical details</summary><dl class="facts">
+        ${facts}
+      </dl></details>` : ''}
+      ${issue.shot && shots !== 'detail' ? fullFigure(issue, number, region) : ''}
     </article>`;
 }
 
@@ -500,13 +534,24 @@ export function renderBody(
     ${statusButtons}
   </div>`;
 
+  const contents =
+    preview || sorted.length < 2
+      ? ''
+      : `<nav class="toc" aria-label="Contents"><ol>${sorted
+          .map((issue, index) => {
+            const sev = severityOf(issue.severity);
+            return `<li data-sev="${esc(sev.key)}"><a href="#c-${index + 1}"><span class="num">${pad(numberOf(issue))}</span><span class="dot"></span><span class="t">${esc(issue.title || 'Untitled comment')}</span><span class="s">${esc(statusOf(issue.status).label)}</span></a></li>`;
+          })
+          .join('')}</ol></nav>`;
   return `<div class="wrap">
   <header class="top">
     <h1>${esc(title)}</h1>
     <div class="meta-top">${esc(generatedAt.toLocaleString())}, ${sorted.length} ${sorted.length === 1 ? 'comment' : 'comments'} on ${pages.length} page${pages.length === 1 ? '' : 's'}</div>
   </header>
   ${stats}
+  ${contents}
   ${body}
+  ${preview ? '' : '<p class="made">Made with Margin</p>'}
 </div>`;
 }
 
