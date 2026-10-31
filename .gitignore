@@ -12,3 +12,5 @@ store/assets/
 tools/
 .output/
 .wxt/
+scripts/
+docs/

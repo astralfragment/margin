@@ -99,19 +99,20 @@ The install itself has no host permissions, so Margin cannot read pages in the b
 
 | Path | What lives there |
 | --- | --- |
-| `extension/content.js` | The overlay you draw on, with the note panel and markers |
+| `extension/entrypoints/` | The pages and scripts WXT builds: popup, report, settings, welcome, the overlay and the background |
+| `extension/components/overlay/` | The overlay you draw on, with the comment card and markers |
+| `extension/components/report/` | The review report, the image editor and the Send to Jira and Figma dialogs |
+| `extension/components/popup/` | The toolbar popup |
+| `extension/components/settings/` | Help and settings |
+| `extension/components/welcome/` | The first-run guide |
+| `extension/components/ui/` | Shared interface components |
 | `extension/background.js` | Screenshots, image rendering, storage and the right-click menu |
-| `extension/report.html` | The review report and its exports |
-| `extension/editor.js` | The image editor for markers, boxes and arrows |
-| `extension/send.js` | The Send to Jira and Send to Figma dialogs of the report |
-| `extension/lib/` | Shared helpers for storage, templates, sign-in, Jira, Figma and the guided tour |
+| `extension/lib/` | Shared helpers for storage, exports, sign-in, Jira and Figma |
 | `server/` | The sign-in helper that runs on lilacfragment.co.za, and its settings template |
-| `extension/welcome.html` | The first-run guide |
-| `extension/options.html` | Help and settings |
 
 ## Development
 
-Margin is plain JavaScript modules with no build step and no dependencies. Edit a file, then click reload on the extension card in `chrome://extensions`.
+Margin is built with WXT, React and TypeScript. Run `npm install`, then `npm run dev` for a Chrome build that reloads on save. `npm run build` writes the extension to `.output/chrome-mv3`, `npm run typecheck` and `npm test` check it, and `npm run zip` makes the Chrome Web Store zip.
 
 Packaging, store listing and screenshot tools are kept outside this repository.
 
