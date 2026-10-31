@@ -5,7 +5,6 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { bridgeChrome } from '@/components/overlay/chrome-bridge';
 import { hideForCapture, setActive, start } from '@/components/overlay/controller';
 import { container, createHost, loadFont } from '@/components/overlay/host';
 import { Overlay } from '@/components/overlay/overlay';
@@ -15,7 +14,6 @@ import { queryClient, watchStorage } from '@/lib/query';
 export default defineUnlistedScript(() => {
   if (window.__uiAnnotator) return;
   window.__uiAnnotator = { setActive, isActive: () => getState().active, hideForCapture };
-  bridgeChrome();
   createHost();
   loadFont();
   watchStorage();
