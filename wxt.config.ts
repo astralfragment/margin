@@ -19,7 +19,7 @@ export default defineConfig({
       'Annotate any website and mark up screenshots for UI review, design QA and client feedback. Send bug reports to Jira, Figma or Docs.',
     permissions: ['activeTab', 'scripting', 'storage', 'unlimitedStorage', 'clipboardWrite', 'contextMenus', 'identity'],
     optional_host_permissions: ['https://api.atlassian.com/*', 'https://api.figma.com/*', 'https://*.atlassian.net/*'],
-    web_accessible_resources: [{ resources: ['fonts/*.woff2', 'icons/ui/*.svg'], matches: ['<all_urls>'] }],
+    web_accessible_resources: [{ resources: ['fonts/*.woff2'], matches: ['<all_urls>'] }],
     action: { default_icon: ICONS },
     icons: ICONS,
     commands: {
