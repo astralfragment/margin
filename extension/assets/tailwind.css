@@ -19,7 +19,7 @@
 
 :root {
   color-scheme: light;
-  --radius: 8px;
+  --radius: 10px;
   --background: #ffffff;
   --foreground: #09090b;
   --card: #ffffff;
