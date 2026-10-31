@@ -20,6 +20,7 @@ import {
 } from './lib/store.js';
 import { parseReviewFile } from './lib/review-file.js';
 import { WIDTHS, widthShots } from './lib/widths.js';
+import { openReportTab } from './lib/report-tab.js';
 
 const HIGHLIGHT = '#e5484d';
 const MAX_SHOT_WIDTH = 1400;
@@ -864,7 +865,7 @@ const handlers = {
   },
 
   async openReport() {
-    await chrome.tabs.create({ url: chrome.runtime.getURL('report.html') });
+    await openReportTab();
     return { ok: true };
   },
 

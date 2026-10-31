@@ -17,13 +17,13 @@
       <details class="menu" data-more>
         <summary class="icon-btn" title="Review menu" aria-label="Review menu" data-more-icon></summary>
         <div class="menu-body" role="menu">
-          <button class="menu-item" type="button" role="menuitem" data-settings>Help and settings</button>
-          <button class="menu-item" type="button" role="menuitem" data-all>All reviews</button>
-          <button class="menu-item" type="button" role="menuitem" data-new-group>New review</button>
-          <button class="menu-item" type="button" role="menuitem" data-rename-group hidden>Rename review</button>
-          <button class="menu-item" type="button" role="menuitem" data-edit-links hidden>Edit links</button>
+          <button class="menu-item" type="button" role="menuitem" data-settings data-icon="settings">Help and settings</button>
+          <button class="menu-item" type="button" role="menuitem" data-all data-icon="report">All reviews</button>
+          <button class="menu-item" type="button" role="menuitem" data-new-group data-icon="plus">New review</button>
+          <button class="menu-item" type="button" role="menuitem" data-rename-group data-icon="pencil" hidden>Rename review</button>
+          <button class="menu-item" type="button" role="menuitem" data-edit-links data-icon="pencil" hidden>Edit links</button>
           <div class="menu-sep" data-clear-sep hidden></div>
-          <button class="menu-item danger" type="button" role="menuitem" data-clear hidden>Delete review</button>
+          <button class="menu-item danger" type="button" role="menuitem" data-clear data-icon="trash" hidden>Delete review</button>
         </div>
       </details>
     </header>
@@ -52,9 +52,10 @@
       <button class="btn primary start" type="button" data-toggle><span data-toggle-label>Start annotating</span><span class="key-hint" data-shortcut></span></button>
     </div>
 
-    <div class="link-error pop-alert" role="alert" data-restricted hidden>
+    <div class="pop-notice" role="status" data-restricted hidden>
       <span data-alert-icon></span>
       <span><b data-alert-title></b><span data-alert-text></span></span>
+      <span class="pop-notice-extra" data-alert-extra hidden></span>
     </div>
 
     <section class="pop-page" data-page hidden>

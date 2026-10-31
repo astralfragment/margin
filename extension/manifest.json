@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Margin - Website Annotation, Screenshots & Bug Reports",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Annotate any website and mark up screenshots for UI review, design QA and client feedback. Send bug reports to Jira, Figma or Docs.",
   "permissions": [
     "activeTab",
