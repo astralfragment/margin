@@ -764,7 +764,7 @@
           const node = document.createElement('div');
           node.className = 'saved';
           node.dataset.status = comment.status ?? 'open';
-          node.innerHTML = `<i class="halo"></i><i class="outline"></i><button type="button" class="flag" aria-label="Edit comment ${pad(comment.n)}, ${esc(comment.title || 'Untitled comment')}">${pad(comment.n)}</button>`;
+          node.innerHTML = `<i class="halo"></i><i class="outline"></i><button type="button" class="flag" aria-label="Edit comment ${pad(comment.number)}, ${esc(comment.title || 'Untitled comment')}">${pad(comment.number)}</button>`;
           const flag = node.querySelector('.flag');
           flag.addEventListener('mouseenter', () => showTip(comment, node, flag));
           flag.addEventListener('mouseleave', hideTip);
@@ -2331,7 +2331,7 @@
       id: full.id,
       rect: full.rect,
       element: full.element ?? null,
-      number: comment.n,
+      number: comment.number,
       reopened: true,
       hasShot: full.hasShot,
       viewport: full.viewport,
