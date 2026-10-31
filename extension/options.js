@@ -3,6 +3,7 @@ import { resetTours } from './lib/tour.js';
 import { PROVIDERS, readConnections, requestAccess, connect, disconnect } from './lib/oauth.js';
 import { THEME_KEY, THEMES, applyTheme } from './lib/theme.js';
 import { openReportTab } from './lib/report-tab.js';
+import { reportProblem } from './lib/feedback.js';
 
 applyTheme();
 const themeEl = document.querySelector('[data-theme-choice]');
@@ -172,3 +173,5 @@ document.querySelector('[data-replay]').addEventListener('click', async () => {
   await resetTours();
   document.querySelector('[data-replay-state]').textContent = 'The tips show next time you open the popup or the report.';
 });
+
+document.querySelector('[data-report-problem]').addEventListener('click', () => reportProblem('settings'));

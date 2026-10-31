@@ -22,6 +22,7 @@ import { openEditor, editorOpen, closeEditor } from './editor.js';
 import { startTour, tourOnce } from './lib/tour.js';
 import { wireSend } from './send.js';
 import { applyTheme } from './lib/theme.js';
+import { reportProblem } from './lib/feedback.js';
 
 const send = (type, payload = {}) => chrome.runtime.sendMessage({ type, ...payload });
 const frame = document.querySelector('[data-preview]');
@@ -29,6 +30,10 @@ applyTheme((theme) => {
   frame.contentDocument?.documentElement?.setAttribute('data-theme', theme);
 });
 addIcons();
+document.querySelector('[data-report-problem]').addEventListener('click', (event) => {
+  event.currentTarget.closest('details')?.removeAttribute('open');
+  reportProblem('report');
+});
 document.querySelector('[data-more-chevron]').outerHTML = icon('chevronDown');
 const loadingDone = () => document.body.classList.remove('is-loading');
 frame.addEventListener('load', loadingDone, { once: true });
@@ -975,7 +980,7 @@ document.querySelector('[data-copy]').addEventListener('click', async (event) =>
 });
 
 document.querySelector('[data-print]').addEventListener('click', () => {
-  const folded = [...frame.contentDocument.querySelectorAll('details.full:not([open])')];
+  const folded = [...frame.contentDocument.querySelectorAll('details.full:not([open]), details.tech:not([open])')];
   folded.forEach((details) => {
     details.open = true;
   });
