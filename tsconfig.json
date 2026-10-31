@@ -4,6 +4,8 @@
     "jsx": "react-jsx",
     // React screens import the plain JS modules in lib/, typed from their JSDoc but not checked.
     "allowJs": true,
+    // Margin calls the chrome.* APIs directly, as the plain JS modules do.
+    "types": ["chrome"],
     // Restated from .wxt/tsconfig.json because the shadcn CLI reads them relative to this file.
     "paths": {
       "@": ["./extension"],
