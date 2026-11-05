@@ -1,0 +1,38 @@
+@import "../assets/tailwind.css";
+
+/*
+ * The severity and status colours the other screens take from ui.css, under names Tailwind can use here.
+ * Solid dots keep one value in both themes. Text colours change for contrast.
+ */
+:root {
+  --sev-blocker-solid: #e5484d;
+  --sev-major-solid: #f76b15;
+  --sev-minor-solid: #0090ff;
+  --sev-nit-solid: #8b8d98;
+  --success: #18794e;
+  --warning: #c2410c;
+  --info: #0d74ce;
+}
+
+:root[data-theme="dark"] {
+  --success: #3dd68c;
+  --warning: #ffa057;
+  --info: #70b8ff;
+}
+
+@theme inline {
+  --color-sev-blocker: var(--sev-blocker-solid);
+  --color-sev-major: var(--sev-major-solid);
+  --color-sev-minor: var(--sev-minor-solid);
+  --color-sev-nit: var(--sev-nit-solid);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+}
+
+@layer base {
+  body {
+    width: 360px;
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+}
