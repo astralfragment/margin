@@ -711,23 +711,17 @@ async function settledWidth(tabId: number, before: number) {
  * @param windowId The window to resize.
  * @param tabId The tab whose layout width is measured.
  * @param width The layout width wanted, in CSS pixels.
+ * @param area The screen area the window may use, from screenArea.
  */
-async function fitWidth(windowId: number, tabId: number, width: number) {
+async function fitWidth(windowId: number, tabId: number, width: number, area: Bounds) {
   const frame = await chrome.windows.get(windowId);
   let asked = frame.width ?? width;
   let reached = await layoutWidth(tabId);
   let best = { asked, reached };
   const resize = async (next: number) => {
-    let size = next;
-    try {
-      await chrome.windows.update(windowId, { width: size });
-    } catch {
-      // Chrome refuses a window that would run off the screen, so it is moved back on and sized to fit.
-      const screen = await inTab(tabId, () => ({ left: window.screen.availLeft ?? 0, width: window.screen.availWidth }), []);
-      size = Math.min(size, screen.width);
-      await chrome.windows.update(windowId, { left: Math.max(screen.left, Math.min(frame.left ?? 0, screen.left + screen.width - size)), width: size });
-    }
-    asked = size;
+    const bounds = onScreen(area, { left: frame.left ?? area.left, top: frame.top ?? area.top, width: next, height: frame.height ?? area.height });
+    await chrome.windows.update(windowId, bounds);
+    asked = bounds.width;
     reached = await settledWidth(tabId, reached);
   };
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -749,6 +743,30 @@ interface Bounds {
   top: number;
   width: number;
   height: number;
+}
+
+/**
+ * Runs in the page. The part of the tab's screen Chrome lets a window use, in DIPs like chrome.windows bounds: the
+ * work area, cut to the screen size, since Chrome checks resized windows against the screen size and a forced scale
+ * factor can make it smaller than the work area.
+ */
+function screenArea(): Bounds {
+  const { availLeft, availTop, availWidth, availHeight, width, height }: Screen & { availTop?: number } = window.screen;
+  return { left: availLeft ?? 0, top: availTop ?? 0, width: Math.min(availWidth, width), height: Math.min(availHeight, height) };
+}
+
+/**
+ * Moves and sizes window bounds so Chrome accepts them. The window fits the area's height and stays inside it, and
+ * is at most twice the area's width, so at least half of it is always on screen.
+ * @param area The screen area, from screenArea.
+ * @param bounds The bounds wanted.
+ */
+function onScreen(area: Bounds, bounds: Bounds): Bounds {
+  const width = Math.min(bounds.width, area.width * 2);
+  const height = Math.min(bounds.height, area.height);
+  const left = Math.max(area.left, Math.min(bounds.left, area.left + area.width - width));
+  const top = Math.max(area.top, Math.min(bounds.top, area.top + area.height - height));
+  return { left, top, width, height };
 }
 
 /**
@@ -846,11 +864,13 @@ async function captureAtWidth(tab: TabWithId, windowId: number, comments: Commen
  * @param tab The tab to move.
  * @param home The window it comes from.
  * @param width The window width to open at.
+ * @param area The screen area the window may use, from screenArea.
  */
-async function intoPopup(tab: TabWithId, home: chrome.windows.Window, width: number) {
+async function intoPopup(tab: TabWithId, home: chrome.windows.Window, width: number, area: Bounds) {
   const siblings = await chrome.tabs.query({ windowId: home.id });
   const placeholder = siblings.length === 1 ? await chrome.tabs.create({ windowId: home.id, url: 'about:blank', active: false }) : null;
-  const popup = await chrome.windows.create({ tabId: tab.id, type: 'popup', focused: true, width, height: Math.min(home.height ?? 900, 900), left: home.left, top: home.top });
+  const bounds = onScreen(area, { left: home.left ?? area.left, top: home.top ?? area.top, width, height: Math.min(home.height ?? 900, 900) });
+  const popup = await chrome.windows.create({ tabId: tab.id, type: 'popup', focused: true, ...bounds });
   if (popup?.id === undefined) throw new Error('Chrome did not open the narrow window');
   return { popupId: popup.id, placeholderId: placeholder?.id ?? null };
 }
@@ -885,9 +905,10 @@ async function captureWidths(tab: TabWithId, comments: Comment[]) {
     }
     const normal = await chrome.windows.get(homeId);
     bounds = { left: normal.left ?? 0, top: normal.top ?? 0, width: normal.width ?? 0, height: normal.height ?? 0 };
+    const area = await inTab(tab.id, screenArea, []);
 
     for (const target of WIDTHS.toReversed().filter((entry) => entry.key !== 'mobile')) {
-      const reached = await fitWidth(homeId, tab.id, target.width);
+      const reached = await fitWidth(homeId, tab.id, target.width, area);
       await captureAtWidth(tab, homeId, comments, reached, target.key as WidthKey, shotsById);
     }
 
@@ -895,8 +916,8 @@ async function captureWidths(tab: TabWithId, comments: Comment[]) {
     if (!mobile) throw new Error('Margin has no mobile width set');
     let mobileDone = false;
     try {
-      moved = await intoPopup(tab, normal, mobile.width);
-      const reached = await fitWidth(moved.popupId, tab.id, mobile.width);
+      moved = await intoPopup(tab, normal, mobile.width, area);
+      const reached = await fitWidth(moved.popupId, tab.id, mobile.width, area);
       await captureAtWidth(tab, moved.popupId, comments, reached, 'mobile', shotsById);
       mobileDone = true;
     } catch (error) {
@@ -908,7 +929,7 @@ async function captureWidths(tab: TabWithId, comments: Comment[]) {
       moved = null;
     }
     if (!mobileDone) {
-      const reached = await fitWidth(homeId, tab.id, mobile.width);
+      const reached = await fitWidth(homeId, tab.id, mobile.width, area);
       await captureAtWidth(tab, homeId, comments, reached, 'mobile', shotsById);
     }
   } finally {
