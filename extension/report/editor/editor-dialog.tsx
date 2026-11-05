@@ -133,7 +133,7 @@ function MarkList() {
                   <span
                     className={cn(
                       'mt-1 flex size-6 items-center justify-center rounded-full bg-mark text-xs font-extrabold text-white',
-                      selected === index && 'ring-2 ring-ink ring-offset-2 ring-offset-background',
+                      selected === index && 'ring-2 ring-canvas-ink ring-offset-2 ring-offset-background',
                     )}
                   >
                     {index + 1}

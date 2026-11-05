@@ -31,7 +31,7 @@ import { arrowHead, arrowTo, boxAround, clamp, discRadius, handlePoints, handleS
 
 const MARKER = MARK_COLOUR;
 const HALO = 'rgba(255,255,255,0.92)';
-/** The light theme --ink purple as a literal, since Konva cannot read CSS variables. Selection is UI, so it is purple while the marks stay red. */
+/** The --canvas-ink purple from tokens.css as a literal, since Konva cannot read CSS variables. Selection is UI, so it is purple while the marks stay red, and it is the same in both themes so it reads on any screenshot. */
 const SELECTION = '#7549d2';
 
 /** What a pointer landed on, read from the shape's name. */

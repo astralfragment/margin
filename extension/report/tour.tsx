@@ -90,8 +90,8 @@ export function Tour() {
     <>
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed z-40 rounded-lg ring-2 ring-ink"
-        style={{ left: rect.left - 4, top: rect.top - 4, width: rect.width + 8, height: rect.height + 8, boxShadow: '0 0 0 100vmax rgb(0 0 0 / 0.45)' }}
+        className="pointer-events-none fixed z-40 rounded-lg"
+        style={{ left: rect.left - 4, top: rect.top - 4, width: rect.width + 8, height: rect.height + 8, boxShadow: '0 0 0 2px var(--ink), 0 0 0 100vmax rgb(0 0 0 / 0.45)' }}
       />
       <Popover open onOpenChange={(open) => !open && finish()}>
         <PopoverTrigger

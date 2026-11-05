@@ -32,6 +32,8 @@
   --action-foreground: #ffffff;
   --ink: #7549d2;
   --ink-foreground: #ffffff;
+  /* Selection drawn on a screenshot in the image editor. The canvas is a picture of a page, not themed chrome, so it keeps the light purple in both themes and reads on any screenshot. */
+  --canvas-ink: #7549d2;
   /* Red for everything Margin draws on a page or a screenshot, the same in both themes. White text on it passes 4.5 to 1. */
   --mark: #d93036;
   --mark-foreground: #ffffff;
@@ -132,6 +134,7 @@
   --color-action-foreground: var(--action-foreground);
   --color-ink: var(--ink);
   --color-ink-foreground: var(--ink-foreground);
+  --color-canvas-ink: var(--canvas-ink);
   --color-mark: var(--mark);
   --color-mark-foreground: var(--mark-foreground);
   --color-blocker: var(--blocker);
