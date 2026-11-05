@@ -1,10 +1,12 @@
 import { create, useStore } from 'zustand';
 import { temporal } from 'zundo';
 import { toast } from 'sonner';
-import type { Comment, CommentImages, Marker, Rect } from '@/lib/model';
+import type { Comment, CommentImages, Marker, Rect, WidthKey } from '@/lib/model';
+import { WIDTHS } from '@/lib/widths.js';
+import { confirm } from '../confirm';
 import { ask, putImages, queryClient } from '../data';
 import { putMarks } from '../quick-marks';
-import { confirm } from '../confirm';
+import { pad } from '../format';
 import { useReportUi } from '../ui-store';
 
 /**
@@ -25,6 +27,7 @@ export interface Draft {
 interface EditorState {
   commentId: string | null;
   number: number;
+  title: string;
   image: HTMLImageElement | null;
   /** The size of the area the image shows in, for Fit. */
   view: { width: number; height: number };
@@ -44,6 +47,8 @@ interface EditorState {
   fit: boolean;
   draft: Draft | null;
   status: string;
+  /** True while Done waits for the last save. */
+  closing: boolean;
 }
 
 const EMPTY_RECT: Rect = { x: 0, y: 0, w: 0, h: 0 };
@@ -53,6 +58,7 @@ export const useEditor = create<EditorState>()(
     (): EditorState => ({
       commentId: null,
       number: 0,
+      title: '',
       image: null,
       view: { width: 0, height: 0 },
       hasBox: false,
@@ -68,6 +74,7 @@ export const useEditor = create<EditorState>()(
       fit: true,
       draft: null,
       status: '',
+      closing: false,
     }),
     {
       partialize: ({ marks, rect }) => ({ marks, rect }),
@@ -201,13 +208,26 @@ export function setMarksQuietly(marks: Marker[]) {
 }
 
 /**
- * The images a comment has that were cut at its region, named for the confirm message.
+ * Joins words the way a sentence lists them, such as mobile, tablet and desktop.
+ * @param words The words.
+ */
+const listed = (words: string[]) => (words.length > 1 ? `${words.slice(0, -1).join(', ')} and ${words.at(-1)}` : (words[0] ?? ''));
+
+/**
+ * The screenshots a comment has that were cut at its region, named the way the report labels them: mobile, tablet,
+ * desktop and recheck.
  * @param images The comment's images.
  */
 function cutAtRegion(images: CommentImages) {
-  const widths = Object.values(images.shots ?? {}).filter((shot) => shot?.src).length;
-  return [widths ? `the ${widths} width ${widths === 1 ? 'shot' : 'shots'}` : '', images.after ? 'the recheck image' : ''].filter(Boolean);
+  const widths = WIDTHS.filter(({ key }) => images.shots?.[key as WidthKey]?.src).map(({ label }) => label.toLowerCase());
+  return images.after ? [...widths, 'recheck'] : widths;
 }
+
+/**
+ * Says which screenshots show the old region, such as The mobile and desktop screenshots show the old region.
+ * @param cut The screenshots cut at the old region.
+ */
+export const oldRegionSentence = (cut: string[]) => `The ${listed(cut)} ${cut.length === 1 ? 'screenshot shows' : 'screenshots show'} the old region.`;
 
 /**
  * Opens the editor on a comment once its clean screenshot has loaded.
@@ -216,6 +236,7 @@ function cutAtRegion(images: CommentImages) {
  */
 export async function openEditor(comment: Comment, number: number) {
   try {
+    await pending.saving;
     const base = await ask('editorBase', { id: comment.id });
     const image = new Image();
     image.src = base.src;
@@ -225,6 +246,7 @@ export async function openEditor(comment: Comment, number: number) {
     useEditor.setState({
       commentId: comment.id,
       number,
+      title: comment.title || 'Untitled comment',
       image,
       hasBox: base.hasBox,
       width,
@@ -237,23 +259,36 @@ export async function openEditor(comment: Comment, number: number) {
       tool: 'select',
       fit: true,
       draft: null,
-      status: base.hasBox ? 'Captured before clean screenshots were kept, so the region is fixed. Annotations still work.' : '',
+      closing: false,
+      status: base.hasBox ? 'This comment was captured before clean screenshots were kept, so its red frame can not move. Marks still work.' : '',
     });
     useEditor.temporal.getState().clear();
+    pending.touched = false;
+    pending.error = '';
     useReportUi.setState({ editorId: comment.id });
   } catch (error) {
     toast.error(error instanceof Error ? error.message : String(error));
   }
 }
 
-/** True when the region has moved since the editor opened. */
-const regionMoved = () => {
-  const { hasBox, rect, startRect } = useEditor.getState();
-  return !hasBox && JSON.stringify(rect) !== JSON.stringify(startRect);
-};
+/**
+ * True when the region has moved since the editor opened.
+ * @param state The editor state.
+ */
+const regionMoved = ({ hasBox, rect, startRect }: Pick<EditorState, 'hasBox' | 'rect' | 'startRect'>) => !hasBox && JSON.stringify(rect) !== JSON.stringify(startRect);
 
-/** The pending save: its timer, whether there is anything to save, and the save in flight. */
-const pending = { timer: 0, dirty: false, saving: Promise.resolve() };
+const NOTHING_CUT: string[] = [];
+
+/** The images closing would drop because the region moved, named for the warning, or an empty list. */
+export function useDroppedImages() {
+  return useEditor((state) => (regionMoved(state) ? state.cut : NOTHING_CUT));
+}
+
+/**
+ * The pending save: its timer, whether there is anything to save, whether anything changed since the editor opened,
+ * the last save's error, and the save in flight.
+ */
+const pending = { timer: 0, dirty: false, touched: false, error: '', saving: Promise.resolve() };
 
 /**
  * Stores the markers and region, and puts the redrawn images in the report.
@@ -261,11 +296,12 @@ const pending = { timer: 0, dirty: false, saving: Promise.resolve() };
  */
 function save(drop = false) {
   clearTimeout(pending.timer);
-  const { commentId, marks, rect, hasBox, cut } = useEditor.getState();
+  const { commentId, marks, rect, hasBox } = useEditor.getState();
   if (!commentId || (!pending.dirty && !drop)) return pending.saving;
   pending.dirty = false;
   pending.saving = pending.saving.then(async () => {
     useEditor.setState({ status: 'Saving' });
+    pending.error = '';
     try {
       const reply = await ask('annotate', { id: commentId, marks, rect, drop });
       putImages(commentId, { ...reply, ...(drop ? { after: null, shots: null } : {}) });
@@ -273,18 +309,10 @@ function save(drop = false) {
       if (!hasBox) {
         queryClient.setQueriesData<Comment[]>({ queryKey: ['comments'] }, (list) => list?.map((comment) => (comment.id === commentId ? { ...comment, rect } : comment)));
       }
-      if (useEditor.getState().commentId !== commentId) return;
-      const blank = marks.filter((mark) => !mark.note?.trim()).length;
-      useEditor.setState({
-        status:
-          regionMoved() && cut.length
-            ? `Saved. Closing with the region moved drops ${cut.join(' and ')}.`
-            : blank
-              ? `Saved. Write a note for ${blank} so ${blank === 1 ? 'it shows' : 'they show'} in the list.`
-              : 'Saved',
-      });
+      if (useEditor.getState().commentId === commentId) useEditor.setState({ status: 'All changes saved' });
     } catch (error) {
-      useEditor.setState({ status: error instanceof Error ? error.message : String(error) });
+      pending.error = `The image was not saved. ${error instanceof Error ? error.message : String(error)}`;
+      useEditor.setState({ status: pending.error });
     }
   });
   return pending.saving;
@@ -294,37 +322,52 @@ useEditor.subscribe((state, previous) => {
   if (!state.commentId || state.commentId !== previous.commentId) return;
   if (state.marks === previous.marks && state.rect === previous.rect) return;
   pending.dirty = true;
+  pending.touched = true;
   clearTimeout(pending.timer);
   pending.timer = window.setTimeout(() => save(), 500);
 });
 
 /**
- * Closes the editor after the last save. When the region moved and images were cut at the old one, asks first
- * whether to keep the move, which drops them, or put the region back.
- * @returns False when the reviewer chose to keep editing.
+ * Saves what is left to save and closes the editor. When the region moved and screenshots were cut at the old one,
+ * it asks first whether to keep the new region, which removes them, or move it back. Escape on that question keeps the
+ * editor open. A failed save keeps the editor open too.
  */
 export async function closeEditor() {
-  const { commentId, cut, startRect } = useEditor.getState();
-  if (!commentId) return true;
-  let drop = false;
-  if (regionMoved() && cut.length) {
+  const state = useEditor.getState();
+  if (!state.commentId || state.closing) return;
+  let drop = regionMoved(state);
+  if (drop && state.cut.length) {
+    const them = state.cut.length === 1 ? 'it' : 'them';
     const choice = await confirm({
-      title: 'Keep the moved region?',
-      body: `Moving the region drops ${cut.join(' and ')}, which were cut at the old region. Capture them again from the page afterwards.`,
+      title: 'Keep the new region?',
+      body: `${oldRegionSentence(state.cut)} Keeping the new region removes ${them}. You can take ${them} again from the page later.`,
       choices: [
-        { label: 'Keep editing', value: null },
-        { label: 'Put the region back', value: 'back', variant: 'outline' },
-        { label: 'Keep the move', value: 'keep' },
+        { label: 'Move it back', value: 'back', variant: 'outline' },
+        { label: 'Keep new region', value: 'keep', variant: 'default' },
       ],
     });
-    if (!choice) return false;
-    if (choice === 'back') useEditor.setState({ rect: { ...startRect } });
-    drop = choice === 'keep';
-  } else {
-    drop = regionMoved();
+    if (!choice) return;
+    if (choice === 'back') {
+      resetRegion();
+      drop = false;
+    }
   }
+  useEditor.setState({ closing: true, selected: null, draft: null });
+  if (pending.error) pending.dirty = true;
   await save(drop);
-  useEditor.setState({ commentId: null, draft: null });
+  if (pending.error) {
+    useEditor.setState({ closing: false });
+    toast.error(pending.error, { action: { label: 'Close without saving', onClick: hideEditor } });
+    return;
+  }
+  if (pending.touched) toast.success(`Saved the image for comment ${pad(state.number)}`);
+  hideEditor();
+}
+
+/** Takes the editor off screen without saving. */
+function hideEditor() {
+  clearTimeout(pending.timer);
+  pending.dirty = false;
+  useEditor.setState({ commentId: null, closing: false });
   useReportUi.setState({ editorId: null });
-  return true;
 }

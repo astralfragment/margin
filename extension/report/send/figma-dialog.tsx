@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ExternalLink } from 'lucide-react';
+import { CircleAlert, ExternalLink, Frame } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Spinner } from '@/components/ui/spinner';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Comment, FigmaFile, FigmaPost } from '@/lib/model';
@@ -12,7 +14,7 @@ import { closeDialog, useReportUi } from '../ui-store';
 import { useReportComments, useReviews } from '../use-report';
 import { pad } from '../format';
 import { figmaMessage, figmaTargets, postComment, type FigmaTarget } from '../shared';
-import { ConnectCard, connectionLine } from './connect-card';
+import { ConnectButton, ConnectIntro, connectionLine, useConnect } from './connect-card';
 
 /**
  * Send to Figma: posts each comment on the frame its Figma link points at, with its marker notes as a list. Comments
@@ -110,6 +112,45 @@ function FramePicker({ file, value, label, onChange }: { file: FigmaFile; value:
   );
 }
 
+/**
+ * The name of the Figma file a link points at, read from the words after the file key, such as Shop in
+ * figma.com/design/AbC123/Shop. Empty when the link has none.
+ * @param url The Figma link.
+ */
+function fileNameOf(url: string) {
+  try {
+    const slug = new URL(url).pathname.split('/').filter(Boolean).at(-1) ?? '';
+    const words = decodeURIComponent(slug).replace(/[-_]+/g, ' ').trim();
+    return /^[A-Za-z0-9]{15,}$/.test(words) ? '' : words;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * What a frame a comment posts to is called: its name in the linked file, or the file it is in. Never Figma's node id,
+ * which nobody recognises.
+ * @param target The frame.
+ * @param file The review's linked Figma file.
+ */
+function frameLabel(target: FigmaTarget, file: FigmaFile | null) {
+  const named = file?.fileKey === target.fileKey ? file.frames?.find((frame) => frame.id === target.nodeId)?.name : undefined;
+  if (named) return named;
+  const fileName = file?.fileKey === target.fileKey && file.name ? file.name : fileNameOf(target.url);
+  return fileName ? `A frame in ${fileName}` : 'A linked frame';
+}
+
+/**
+ * Whether a comment was posted in this send or an earlier one.
+ * @param props.now True when this send posted it.
+ * @param props.before True when it has been posted at any time.
+ */
+function PostedBadge({ now, before }: { now: boolean; before: boolean }) {
+  if (now) return <Badge className="bg-success-tint text-success">Posted just now</Badge>;
+  if (before) return <Badge variant="ghost" className="bg-muted text-muted-foreground">Posted before</Badge>;
+  return null;
+}
+
 /** Every comment with a Figma link, or every comment when the review links a file, ticked unless already posted. */
 function FigmaSend() {
   const { review } = useReviews();
@@ -146,93 +187,113 @@ function FigmaSend() {
     });
   };
 
+  const postLabel = () => {
+    if (busy) return 'Posting';
+    if (!chosen.length) return 'Post comments';
+    return `Post ${chosen.length} ${chosen.length === 1 ? 'comment' : 'comments'}`;
+  };
+
   const run = async () => {
     setBusy(true);
     setFailures([]);
-    const { now, failed, posted } = await postAll(
-      chosen.map(({ comment }) => ({ comment, targets: targetsFor(comment, frames.get(comment.id), file) })),
-      label,
-      (count) => setState(`Posted ${count}`),
-    );
+    const sends = chosen.map(({ comment }) => ({ comment, targets: targetsFor(comment, frames.get(comment.id), file) }));
+    const total = sends.reduce((sum, entry) => sum + entry.targets.length, 0);
+    setState(`Posted 0 of ${total}`);
+    const { now, failed, posted } = await postAll(sends, label, (count) => setState(`Posted ${count} of ${total}`));
     setPostedNow(now);
     setUnticked(new Set());
     setTicked(new Set());
     setFailures(failed);
-    setState(`Posted ${posted} ${posted === 1 ? 'comment' : 'comments'} to Figma`);
+    setState(failed.length ? `Posted ${posted} of ${total}` : `Posted ${posted} ${posted === 1 ? 'comment' : 'comments'} to Figma`);
     setBusy(false);
   };
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-3 overflow-y-auto">
-        {file && (
-          <p className="text-sm text-muted-foreground">
-            Posting to <b className="text-foreground">{file.name || 'the linked Figma file'}</b>
-            {picking ? '. Comments without a frame can pick one here, for this send only.' : '.'}
-          </p>
-        )}
+      <div className="-mx-6 grid min-h-0 gap-6 overflow-y-auto px-6">
+        <p className="text-sm text-muted-foreground">
+          {file ? (
+            <>
+              Posting to <b className="font-medium text-foreground">{file.name || 'the linked Figma file'}</b>.{' '}
+              {picking ? 'A comment without a frame link can pick a frame here, for this send only.' : ''}
+            </>
+          ) : (
+            'Each ticked comment is posted on the Figma frame its link points at, with its marker notes as a numbered list.'
+          )}
+        </p>
         {failures.length > 0 && (
-          <div className="grid gap-1 rounded-lg border border-destructive/40 p-3 text-sm">
-            <b>Some comments did not post</b>
+          <div role="alert" className="grid gap-1 text-sm">
+            <p className="flex items-center gap-2 font-medium text-destructive">
+              <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
+              Some comments did not post
+            </p>
             {failures.map((failure) => (
-              <p key={failure} className="text-xs text-muted-foreground">
+              <p key={failure} className="pl-6 text-xs text-muted-foreground">
                 {failure}
               </p>
             ))}
           </div>
         )}
-        {!rows.length && <p className="text-sm text-muted-foreground">No comment in this review has a Figma link. Add one in Edit comments, then send again.</p>}
-        {rows.map(({ comment, targets, skipped }) => {
-          const last = comment.figmaPosts?.at(-1);
-          return (
-            <div key={comment.id} className={cn('grid gap-2 rounded-lg border p-3', !ready(comment) && 'opacity-80')}>
-              <label className="flex items-center gap-2 text-sm">
-                <Checkbox checked={isTicked(comment)} disabled={!ready(comment)} onCheckedChange={(on) => toggle(comment, on === true)} />
-                <b>{label(comment)}</b>
-              </label>
-              <div className="flex flex-wrap items-center gap-2 pl-6 text-xs">
-                {targets.map((target) => (
-                  <span key={target.url} className="rounded-full bg-muted px-2 py-0.5">
-                    {file?.fileKey === target.fileKey ? (file.frames?.find((frame) => frame.id === target.nodeId)?.name ?? `Frame ${target.nodeId}`) : `Frame ${target.nodeId}`}
-                  </span>
-                ))}
-                {!targets.length && picking && file && (
-                  <FramePicker
-                    file={file}
-                    value={frames.get(comment.id)}
-                    label={pad(numberOf(comment))}
-                    onChange={(frame) => {
-                      setFrames((old) => {
-                        const next = new Map(old);
-                        if (frame) next.set(comment.id, frame);
-                        else next.delete(comment.id);
-                        return next;
-                      });
-                      toggle(comment, Boolean(frame));
-                    }}
-                  />
-                )}
-                {postedNow.has(comment.id) && last ? (
-                  <>
-                    <span className="rounded-full bg-success-tint px-2 py-0.5 text-success">Posted just now</span>
-                    <a href={postUrl(last)} target="_blank" rel="noopener" className="inline-flex items-center gap-1 underline underline-offset-3">
-                      <ExternalLink className="size-3" />
-                      Open in Figma
-                    </a>
-                  </>
-                ) : (
-                  comment.figmaPosts?.length ? <span className="rounded-full bg-muted px-2 py-0.5">Posted before</span> : null
-                )}
-              </div>
-              {skipped.map((skip) => (
-                <p key={skip.url} className="pl-6 text-xs text-muted-foreground">
-                  Skipped {skip.url}.{' '}
-                  {skip.reason === 'no-node' ? 'This link has no frame in it. In Figma, right-click the frame and choose Copy link to selection.' : 'This is not a Figma file link.'}
-                </p>
-              ))}
-            </div>
-          );
-        })}
+        {!rows.length && <p className="text-sm">No comment in this review has a Figma link. Add a link to a Figma frame to a comment, then send again.</p>}
+        {rows.length > 0 && (
+          <section className="grid gap-2">
+            <h3 className="text-sm font-medium">Comments to post</h3>
+            <ul className="grid divide-y">
+              {rows.map(({ comment, targets, skipped }) => {
+                const last = comment.figmaPosts?.at(-1);
+                return (
+                  <li key={comment.id} className="grid gap-2 py-3">
+                    <label className={cn('flex items-center gap-3 text-sm', ready(comment) ? 'cursor-pointer' : 'text-muted-foreground')}>
+                      <Checkbox checked={isTicked(comment)} disabled={!ready(comment)} onCheckedChange={(on) => toggle(comment, on === true)} />
+                      <span className="text-xs font-extrabold text-muted-foreground tabular-nums">{pad(numberOf(comment))}</span>
+                      <span className="min-w-0 flex-1 truncate font-medium">{comment.title || 'Untitled comment'}</span>
+                      <PostedBadge now={postedNow.has(comment.id)} before={Boolean(comment.figmaPosts?.length)} />
+                    </label>
+                    {(targets.length > 0 || (picking && file) || (postedNow.has(comment.id) && last)) && (
+                      <div className="flex flex-wrap items-center gap-2 pl-7 text-xs">
+                        {targets.map((target) => (
+                          <Badge key={target.url} variant="outline">
+                            <Frame />
+                            {frameLabel(target, file)}
+                          </Badge>
+                        ))}
+                        {!targets.length && picking && file && (
+                          <FramePicker
+                            file={file}
+                            value={frames.get(comment.id)}
+                            label={pad(numberOf(comment))}
+                            onChange={(frame) => {
+                              setFrames((old) => {
+                                const next = new Map(old);
+                                if (frame) next.set(comment.id, frame);
+                                else next.delete(comment.id);
+                                return next;
+                              });
+                              toggle(comment, Boolean(frame));
+                            }}
+                          />
+                        )}
+                        {postedNow.has(comment.id) && last && (
+                          <Button size="xs" variant="ghost" render={<a href={postUrl(last)} target="_blank" rel="noopener" />} nativeButton={false}>
+                            Open in Figma
+                            <ExternalLink />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    {skipped.map((skip) => (
+                      <p key={skip.url} className="pl-7 text-xs text-muted-foreground">
+                        {skip.reason === 'no-node'
+                          ? 'Its Figma link points at a whole file, not a frame. In Figma, right-click the frame, choose Copy link to selection, and add that link to the comment.'
+                          : `${skip.url} is not a Figma file link.`}
+                      </p>
+                    ))}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
         {without > 0 && rows.length > 0 && (
           <p className="text-sm text-muted-foreground">
             {without} {without === 1 ? 'comment has' : 'comments have'} no Figma link and {without === 1 ? 'is' : 'are'} left out.
@@ -240,15 +301,35 @@ function FigmaSend() {
         )}
       </div>
       <DialogFooter className="items-center">
-        <span className="mr-auto text-sm text-muted-foreground" role="status">
+        <span className="text-sm text-muted-foreground sm:mr-auto" role="status">
           {state}
         </span>
         <Button variant="outline" disabled={busy} onClick={closeDialog}>
           Close
         </Button>
         <Button disabled={busy || !chosen.length} onClick={run}>
-          {chosen.length ? `Post ${chosen.length} ${chosen.length === 1 ? 'comment' : 'comments'}` : 'Post comments'}
+          {busy && <Spinner />}
+          {postLabel()}
         </Button>
+      </DialogFooter>
+    </>
+  );
+}
+
+/** Not connected: what connecting gives, and the sign-in. */
+function ConnectFigma() {
+  const connection = useConnect('figma');
+  return (
+    <>
+      <ConnectIntro
+        body="Connect Figma and Margin posts each comment on the Figma frame its link points at, with the numbered marker notes as a list. It takes one sign-in."
+        state={connection.state}
+      />
+      <DialogFooter>
+        <Button variant="outline" onClick={closeDialog}>
+          Close
+        </Button>
+        <ConnectButton connection={connection} />
       </DialogFooter>
     </>
   );
@@ -258,27 +339,15 @@ function FigmaSend() {
 export default function FigmaDialog() {
   const open = useReportUi((state) => state.dialog === 'figma');
   const current = useQuery(connectionQuery('figma'));
+  const popup = useRef<HTMLDivElement>(null);
   return (
     <Dialog open={open} onOpenChange={(next) => !next && closeDialog()}>
-      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
-        <DialogHeader>
+      <DialogContent ref={popup} initialFocus={popup} className="flex max-h-[90vh] flex-col sm:max-w-2xl">
+        <DialogHeader className="gap-1 pr-8">
           <DialogTitle>Send to Figma</DialogTitle>
           <DialogDescription>{connectionLine(current.data, 'your Figma account')}</DialogDescription>
         </DialogHeader>
-        {current.data ? (
-          <FigmaSend />
-        ) : (
-          !current.isPending && (
-            <>
-              <ConnectCard provider="figma" body="Margin posts each comment on the frame its Figma link points at, with the numbered marker notes as a list. It takes one sign-in." />
-              <DialogFooter>
-                <Button variant="outline" onClick={closeDialog}>
-                  Close
-                </Button>
-              </DialogFooter>
-            </>
-          )
-        )}
+        {current.data ? <FigmaSend /> : !current.isPending && <ConnectFigma />}
       </DialogContent>
     </Dialog>
   );

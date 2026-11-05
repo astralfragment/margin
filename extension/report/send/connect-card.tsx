@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import type { Connection, Provider } from '@/lib/model';
 import { queryClient } from '../data';
 import { connect, requestAccess } from '../shared';
@@ -20,10 +21,9 @@ export function connectionLine(current: Connection | null | undefined, fallback:
 /**
  * Signs in to Jira or Figma from inside a send dialog. Host access is asked for in the click itself, which Chrome
  * requires, and the dialog redraws once the connection is stored.
- * @param props.provider The service.
- * @param props.body What connecting gives.
+ * @param provider The service.
  */
-export function ConnectCard({ provider, body }: { provider: Provider; body: string }) {
+export function useConnect(provider: Provider) {
   const [state, setState] = useState('');
   const [busy, setBusy] = useState(false);
   const name = NAMES[provider];
@@ -40,18 +40,34 @@ export function ConnectCard({ provider, body }: { provider: Provider; body: stri
       setBusy(false);
     }
   };
+  return { name, state, busy, start };
+}
+
+/**
+ * The button that starts the sign-in, the one main action of a send dialog that is not connected yet.
+ * @param props.connection What `useConnect` returned.
+ */
+export function ConnectButton({ connection }: { connection: ReturnType<typeof useConnect> }) {
   return (
-    <div className="grid gap-2 rounded-lg border p-3">
-      <b className="text-sm">Connect {name}</b>
-      <p className="text-sm text-muted-foreground">{body}</p>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button className="bg-action text-action-foreground hover:bg-action/80" disabled={busy} onClick={start}>
-          Connect {name}
-        </Button>
-        <span className="text-sm text-muted-foreground" role="status">
-          {state}
-        </span>
-      </div>
+    <Button disabled={connection.busy} onClick={connection.start}>
+      {connection.busy && <Spinner />}
+      Connect {connection.name}
+    </Button>
+  );
+}
+
+/**
+ * What connecting gives, and the sign-in's progress or error under it.
+ * @param props.body What connecting gives.
+ * @param props.state The sign-in's progress or error.
+ * @param props.children More lines after the first.
+ */
+export function ConnectIntro({ body, state, children }: { body: string; state: string; children?: React.ReactNode }) {
+  return (
+    <div className="grid gap-3 text-sm" aria-live="polite">
+      <p>{body}</p>
+      {children}
+      {state && <p className="text-muted-foreground">{state}</p>}
     </div>
   );
 }

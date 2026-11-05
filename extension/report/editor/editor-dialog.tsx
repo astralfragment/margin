@@ -1,7 +1,10 @@
+import { useRef } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { CircleDot, Maximize, MousePointer2, MoveUpRight, Redo2, Square, Trash2, Undo2, ZoomIn, ZoomOut } from 'lucide-react';
+import { CircleDot, Maximize, MousePointer2, MoveUpRight, Redo2, Square, Trash2, TriangleAlert, Undo2, ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -10,18 +13,34 @@ import { MARK_LABELS } from '../shared';
 import { pad } from '../format';
 import { EditorCanvas } from './editor-canvas';
 import { moved } from './geometry';
-import { closeEditor, redo, removeMark, replaceMark, select, setNote, setTool, setZoom, undo, useEditor, useHistory, type Tool } from './editor-store';
+import {
+  closeEditor,
+  oldRegionSentence,
+  redo,
+  removeMark,
+  replaceMark,
+  resetRegion,
+  select,
+  setNote,
+  setTool,
+  setZoom,
+  undo,
+  useDroppedImages,
+  useEditor,
+  useHistory,
+  type Tool,
+} from './editor-store';
 
-const TOOLS: { value: Tool; label: string; key: string; Icon: typeof Square }[] = [
-  { value: 'select', label: 'Select', key: 'V', Icon: MousePointer2 },
-  { value: 'dot', label: 'Marker', key: 'M', Icon: CircleDot },
-  { value: 'box', label: 'Box', key: 'B', Icon: Square },
-  { value: 'arrow', label: 'Arrow', key: 'A', Icon: MoveUpRight },
+const TOOLS: { value: Tool; label: string; key: string; Icon: typeof Square; hint: string }[] = [
+  { value: 'select', label: 'Select', key: 'V', Icon: MousePointer2, hint: 'Drag a mark or the dashed frame to move it. Right-click for more.' },
+  { value: 'dot', label: 'Marker', key: 'M', Icon: CircleDot, hint: 'Click the image to place a numbered marker.' },
+  { value: 'box', label: 'Box', key: 'B', Icon: Square, hint: 'Drag across the image to draw a box.' },
+  { value: 'arrow', label: 'Arrow', key: 'A', Icon: MoveUpRight, hint: 'Drag from the start of the arrow to what it points at.' },
 ];
 
 /**
- * Focuses the note field of a marker in the side list.
- * @param index The marker's place.
+ * Focuses the note field of a mark in the side list.
+ * @param index The mark's place.
  */
 function focusNote(index: number) {
   const note = document.getElementById(`editor-note-${index}`);
@@ -30,14 +49,14 @@ function focusNote(index: number) {
 }
 
 /**
- * A toolbar button with its shortcut in a tooltip.
+ * An icon button with its name and shortcut in a tooltip.
  * @param props.label What it does.
  * @param props.shortcut Its key.
  */
 function ToolButton({ label, shortcut, ...props }: React.ComponentProps<typeof Button> & { label: string; shortcut: string }) {
   return (
     <Tooltip>
-      <TooltipTrigger render={<Button variant="ghost" size="icon" aria-label={label} {...props} />} />
+      <TooltipTrigger render={<Button variant="ghost" size="icon-sm" aria-label={label} {...props} />} />
       <TooltipContent>
         {label} ({shortcut})
       </TooltipContent>
@@ -45,97 +64,130 @@ function ToolButton({ label, shortcut, ...props }: React.ComponentProps<typeof B
   );
 }
 
-/** Pick a tool, undo and redo, and zoom. */
+/** The tools, undo and redo on the left, and the zoom on the right. */
 function Toolbar() {
   const { tool, zoom, fit } = useEditor();
   const { canUndo, canRedo } = useHistory();
+  const view: string[] = [];
+  if (fit) view.push('fit');
+  else if (zoom === 1) view.push('actual');
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <ToggleGroup aria-label="Tools" value={[tool]} onValueChange={(next) => next[0] && setTool(next[0] as Tool)} variant="outline" size="sm" spacing={0}>
+    <div role="toolbar" aria-label="Image tools" className="flex flex-wrap items-center gap-2">
+      <ToggleGroup aria-label="Tool" value={[tool]} onValueChange={(next) => next[0] && setTool(next[0] as Tool)} variant="outline" size="sm" spacing={1}>
         {TOOLS.map(({ value, label, key, Icon }) => (
           <Tooltip key={value}>
             <TooltipTrigger render={<ToggleGroupItem value={value} aria-label={label} />}>
               <Icon />
-              <span className="hidden md:inline">{label}</span>
+              {label}
             </TooltipTrigger>
-            <TooltipContent>
-              {label} ({key})
-            </TooltipContent>
+            <TooltipContent>Shortcut {key}</TooltipContent>
           </Tooltip>
         ))}
       </ToggleGroup>
-      <div className="flex items-center">
-        <ToolButton label="Undo" shortcut="Ctrl+Z" disabled={!canUndo} onClick={undo}>
-          <Undo2 />
-        </ToolButton>
-        <ToolButton label="Redo" shortcut="Ctrl+Shift+Z" disabled={!canRedo} onClick={redo}>
-          <Redo2 />
-        </ToolButton>
-      </div>
-      <div className="flex items-center">
+      <Separator orientation="vertical" className="mx-1 data-vertical:h-5 data-vertical:self-center" />
+      <ToolButton label="Undo" shortcut="Ctrl+Z" disabled={!canUndo} onClick={undo}>
+        <Undo2 />
+      </ToolButton>
+      <ToolButton label="Redo" shortcut="Ctrl+Shift+Z" disabled={!canRedo} onClick={redo}>
+        <Redo2 />
+      </ToolButton>
+      <div className="ml-auto flex items-center gap-1">
         <ToolButton label="Zoom out" shortcut="-" onClick={() => setZoom('out')}>
           <ZoomOut />
         </ToolButton>
-        <span className="w-12 text-center text-xs text-muted-foreground tabular-nums" aria-live="polite">
+        <span className="w-10 text-center text-xs text-muted-foreground tabular-nums" aria-live="polite">
           {Math.round(zoom * 100)}%
         </span>
         <ToolButton label="Zoom in" shortcut="+" onClick={() => setZoom('in')}>
           <ZoomIn />
         </ToolButton>
-        <Button variant={fit ? 'secondary' : 'ghost'} size="sm" onClick={() => setZoom('fit')} title="Fit to window (0)">
-          <Maximize />
-          Fit
-        </Button>
-        <Button variant={!fit && zoom === 1 ? 'secondary' : 'ghost'} size="sm" onClick={() => setZoom(1)} title="Actual size (1)">
-          100%
-        </Button>
+        <ToggleGroup aria-label="Zoom" value={view} onValueChange={(next) => next[0] && setZoom(next[0] === 'fit' ? 'fit' : 1)} variant="outline" size="sm" spacing={1} className="ml-1">
+          <ToggleGroupItem value="fit" aria-label="Fit to window (0)">
+            <Maximize />
+            Fit
+          </ToggleGroupItem>
+          <ToggleGroupItem value="actual" aria-label="Actual size (1)">
+            100%
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
     </div>
   );
 }
 
-/** The numbered markers with their notes. */
-function MarkerList() {
+/** The numbered marks with their notes, or how to add the first one. */
+function MarkList() {
   const { marks, selected } = useEditor();
   return (
-    <aside className="flex min-h-0 flex-col gap-3 overflow-y-auto md:w-80 md:shrink-0">
-      <p className="text-xs text-muted-foreground">
-        Right-click a number, a box, an arrow, the region or empty space for its actions. Double-click an item to write its note. Delete removes the selected item.
-      </p>
-      {!marks.length && <p className="text-sm text-muted-foreground">Pick Marker, Box or Arrow, then click or drag on the image. Each one gets a number and a note, and the notes export as a numbered list.</p>}
-      <ol className="grid gap-2">
-        {marks.map((mark, index) => (
-          <li
-            key={index}
-            className={cn('grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-start gap-2 rounded-lg border p-2', selected === index && 'border-ring ring-2 ring-ring/30')}
-            onPointerDown={() => select(index)}
-          >
-            <span className="flex size-6 items-center justify-center rounded-full bg-marker text-xs font-extrabold text-white">{index + 1}</span>
-            <div className="grid gap-1">
-              <b className="text-xs">{MARK_LABELS[mark.kind] ?? 'Marker'}</b>
-              <Textarea
-                id={`editor-note-${index}`}
-                value={mark.note ?? ''}
-                rows={2}
-                placeholder="What this number points out"
-                className="field-sizing-content min-h-14 text-sm"
-                onFocus={() => select(index)}
-                onChange={(event) => setNote(index, event.target.value)}
-              />
-              {!mark.note?.trim() && <span className="text-xs text-muted-foreground">Shows on the image. Write a note to list it.</span>}
-            </div>
-            <Button size="icon-sm" variant="ghost" className="text-destructive" aria-label={`Remove ${index + 1}`} title={`Remove ${index + 1}`} onClick={() => removeMark(index)}>
-              <Trash2 />
-            </Button>
-          </li>
-        ))}
-      </ol>
+    <aside aria-label="Marks" className="flex min-h-0 flex-col gap-3 md:w-80 md:shrink-0">
+      <h3 className="text-sm font-semibold">Marks</h3>
+      {!marks.length ? (
+        <p className="text-sm text-muted-foreground">No marks yet. Pick Marker, Box or Arrow, then click or drag on the image. Each mark gets a number and a note.</p>
+      ) : (
+        <>
+          <ol className="grid min-h-0 content-start gap-3 overflow-y-auto p-1">
+            {marks.map((mark, index) => {
+              const kind = (MARK_LABELS[mark.kind] ?? 'Marker').toLowerCase();
+              return (
+                <li key={index} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3" onPointerDown={() => select(index)}>
+                  <span
+                    className={cn(
+                      'mt-1 flex size-6 items-center justify-center rounded-full bg-marker text-xs font-extrabold text-white',
+                      selected === index && 'ring-2 ring-foreground ring-offset-2 ring-offset-background',
+                    )}
+                  >
+                    {index + 1}
+                  </span>
+                  <Textarea
+                    id={`editor-note-${index}`}
+                    aria-label={`Note for ${kind} ${index + 1}`}
+                    value={mark.note ?? ''}
+                    rows={2}
+                    placeholder={`Note for this ${kind}`}
+                    className="field-sizing-content min-h-16"
+                    onFocus={() => select(index)}
+                    onChange={(event) => setNote(index, event.target.value)}
+                  />
+                  <Button size="icon-sm" variant="ghost" aria-label={`Delete ${kind} ${index + 1}`} title={`Delete ${kind} ${index + 1}`} onClick={() => removeMark(index)}>
+                    <Trash2 />
+                  </Button>
+                </li>
+              );
+            })}
+          </ol>
+          <p className="text-xs text-muted-foreground">Marks with a note are listed under the comment in the report.</p>
+        </>
+      )}
     </aside>
   );
 }
 
+/** The save state on the left of the footer, or the warning once the region has moved. */
+function SaveState() {
+  const status = useEditor((state) => state.status);
+  const dropped = useDroppedImages();
+  if (!dropped.length) {
+    return (
+      <span className="mr-auto text-sm text-muted-foreground" role="status">
+        {status || 'Changes save as you go'}
+      </span>
+    );
+  }
+  return (
+    <div className="mr-auto flex flex-wrap items-center gap-3" role="status">
+      <span className="flex items-center gap-2 text-sm text-major">
+        <TriangleAlert className="size-4 shrink-0" aria-hidden="true" />
+        {oldRegionSentence(dropped)}
+      </span>
+      <Button size="sm" variant="outline" onClick={resetRegion}>
+        Move it back
+      </Button>
+    </div>
+  );
+}
+
 /**
- * Moves the selected marker or the region with the arrow keys.
+ * Moves the selected mark or the region with the arrow keys.
  * @param dx Horizontal step.
  * @param dy Vertical step.
  */
@@ -179,11 +231,14 @@ function useEditorKeys() {
 
 /**
  * The image editor for one comment: boxes, arrows and numbered markers on its clean screenshot, and its region.
+ * Changes save as they are made, and Done saves what is left and closes.
  * @param props.commentId The comment open in the editor.
  */
 export default function EditorDialog({ commentId }: { commentId: string }) {
-  const { number, status, commentId: openId } = useEditor();
+  const { number, title, tool, closing, commentId: openId } = useEditor();
   useEditorKeys();
+  const hint = TOOLS.find((entry) => entry.value === tool)?.hint;
+  const popup = useRef<HTMLDivElement>(null);
   return (
     <Dialog
       open={openId === commentId}
@@ -197,20 +252,30 @@ export default function EditorDialog({ commentId }: { commentId: string }) {
         closeEditor();
       }}
     >
-      <DialogContent className="flex h-[calc(100dvh-2rem)] w-full max-w-[min(1400px,calc(100%-2rem))] flex-col sm:max-w-[min(1400px,calc(100%-2rem))]" showCloseButton={false}>
-        <DialogHeader className="flex-row flex-wrap items-center justify-between gap-3">
-          <DialogTitle>Edit image, comment {pad(number)}</DialogTitle>
-          <Toolbar />
+      <DialogContent
+        ref={popup}
+        initialFocus={popup}
+        className="flex h-[calc(100dvh-2rem)] w-full max-w-[min(1400px,calc(100%-2rem))] flex-col sm:max-w-[min(1400px,calc(100%-2rem))]" showCloseButton={false}>
+        <DialogHeader className="gap-1">
+          <DialogTitle>Edit image</DialogTitle>
+          <DialogDescription className="truncate">
+            Comment {pad(number)}, {title}
+          </DialogDescription>
         </DialogHeader>
-        <div className="flex min-h-0 flex-1 flex-col gap-4 md:flex-row">
-          <EditorCanvas onNote={focusNote} />
-          <MarkerList />
+        <Toolbar />
+        <div className="flex min-h-0 flex-1 flex-col gap-6 md:flex-row">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+            <EditorCanvas onNote={focusNote} />
+            <p className="truncate text-xs text-muted-foreground">{hint}</p>
+          </div>
+          <MarkList />
         </div>
         <DialogFooter className="items-center">
-          <span className="mr-auto text-sm text-muted-foreground" role="status">
-            {status}
-          </span>
-          <Button onClick={() => closeEditor()}>Done</Button>
+          <SaveState />
+          <Button disabled={closing} onClick={() => closeEditor()}>
+            {closing && <Spinner />}
+            {closing ? 'Saving' : 'Done'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

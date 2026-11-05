@@ -4,7 +4,9 @@ import type Konva from 'konva';
 import {
   ContextMenu,
   ContextMenuContent,
+  ContextMenuGroup,
   ContextMenuItem,
+  ContextMenuLabel,
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
@@ -28,7 +30,7 @@ import { arrowHead, arrowTo, boxAround, clamp, discRadius, handlePoints, handleS
 
 const MARKER = '#e5484d';
 const HALO = 'rgba(255,255,255,0.92)';
-const RING = '#7549d2';
+const OUTLINE = '#1f2024';
 
 /** What a pointer landed on, read from the shape's name. */
 interface Hit {
@@ -69,12 +71,13 @@ function hitOf(name: string | undefined): Hit {
  * @param props.rect The rectangle.
  * @param props.name The name hits are read from.
  * @param props.selected True to draw it thicker.
- * @param props.fill True to make the inside take clicks too.
+ * @param props.dashed True for the comment's region, which is dashed to set it apart from boxes and takes clicks on
+ * its edge only, so a stray drag inside it never moves it.
  */
-function HaloRect({ rect, name, selected, fill }: { rect: Rect; name: string; selected?: boolean; fill?: boolean }) {
+function HaloRect({ rect, name, selected, dashed }: { rect: Rect; name: string; selected?: boolean; dashed?: boolean }) {
   return (
     <>
-      <KonvaRect {...rect} width={rect.w} height={rect.h} stroke={HALO} strokeWidth={5} strokeScaleEnabled={false} listening={false} />
+      <KonvaRect {...rect} width={rect.w} height={rect.h} stroke={HALO} strokeWidth={dashed ? 3 : 5} strokeScaleEnabled={false} listening={false} />
       <KonvaRect
         {...rect}
         width={rect.w}
@@ -83,8 +86,9 @@ function HaloRect({ rect, name, selected, fill }: { rect: Rect; name: string; se
         stroke={MARKER}
         strokeWidth={selected ? 3 : 2}
         strokeScaleEnabled={false}
+        dash={dashed ? [8, 5] : undefined}
+        fillEnabled={!dashed}
         hitStrokeWidth={14}
-        fill={fill ? 'transparent' : undefined}
       />
     </>
   );
@@ -121,8 +125,16 @@ function MarkShape({ mark, index, zoom, selected }: { mark: Marker; index: numbe
           ))}
         </>
       )}
-      {selected && <Circle x={mark.x} y={mark.y} radius={radius + 4 / zoom} stroke={RING} strokeWidth={2} strokeScaleEnabled={false} dash={[4, 3]} listening={false} />}
-      <Circle x={mark.x} y={mark.y} radius={radius + 2 / zoom} fill={HALO} name={`${name}:badge`} />
+      <Circle
+        x={mark.x}
+        y={mark.y}
+        radius={radius + (selected ? 3 : 2) / zoom}
+        fill={HALO}
+        stroke={selected ? OUTLINE : undefined}
+        strokeWidth={1.5}
+        strokeScaleEnabled={false}
+        name={`${name}:badge`}
+      />
       <Circle x={mark.x} y={mark.y} radius={radius} fill={MARKER} name={`${name}:badge`} />
       <Text
         x={mark.x - radius}
@@ -143,7 +155,7 @@ function MarkShape({ mark, index, zoom, selected }: { mark: Marker; index: numbe
 }
 
 /**
- * The handles of the selected box, arrow end or region.
+ * The handles of the selected box, arrow end or region. A box has no top left handle, because its number sits there.
  * @param props.target What the handles resize.
  * @param props.shape Its shape.
  * @param props.zoom The zoom, which keeps the handles the same size on screen.
@@ -158,7 +170,7 @@ function Handles({ target, shape, zoom }: { target: number | 'region'; shape: Ma
       width={size}
       height={size}
       fill="#ffffff"
-      stroke={RING}
+      stroke={OUTLINE}
       strokeWidth={1.5}
       strokeScaleEnabled={false}
       name={`handle:${target}:${handle}`}
@@ -168,7 +180,8 @@ function Handles({ target, shape, zoom }: { target: number | 'region'; shape: Ma
   if ('kind' in shape && shape.kind !== 'box') return null;
   const rect = { x: shape.x, y: shape.y, w: shape.w ?? 0, h: shape.h ?? 0 };
   const points = handlePoints(rect);
-  return <>{HANDLES.map((handle) => square(points[handle], handle))}</>;
+  const shown = 'kind' in shape ? HANDLES.filter((handle) => handle !== 'nw') : HANDLES;
+  return <>{shown.map((handle) => square(points[handle], handle))}</>;
 }
 
 /**
@@ -206,26 +219,33 @@ function CanvasMenu({ target, onNote }: { target: MenuTarget | null; onNote: (in
     const mark = marks[index];
     return (
       <>
+        <ContextMenuGroup>
+          <ContextMenuLabel>Mark {index + 1}</ContextMenuLabel>
+          <ContextMenuItem onClick={() => onNote(index)}>
+            <NotebookPen />
+            Write a note
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => mark && addMark(moved(mark, 16, 16))}>
+            <Copy />
+            Duplicate
+          </ContextMenuItem>
+        </ContextMenuGroup>
+        <ContextMenuSeparator />
+        <ContextMenuGroup>
+          <ContextMenuLabel>Order</ContextMenuLabel>
+          <ContextMenuItem disabled={index === 0} onClick={() => renumber(index, -1)}>
+            <ArrowUpToLine />
+            Move up the list
+          </ContextMenuItem>
+          <ContextMenuItem disabled={index === marks.length - 1} onClick={() => renumber(index, 1)}>
+            <ArrowDownToLine />
+            Move down the list
+          </ContextMenuItem>
+        </ContextMenuGroup>
+        <ContextMenuSeparator />
         <ContextMenuItem variant="destructive" onClick={() => removeMark(index)}>
           <Trash2 />
-          Remove {index + 1}
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem onClick={() => onNote(index)}>
-          <NotebookPen />
-          Write a note
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => mark && addMark(moved(mark, 16, 16))}>
-          <Copy />
-          Duplicate
-        </ContextMenuItem>
-        <ContextMenuItem disabled={index === 0} onClick={() => renumber(index, -1)}>
-          <ArrowUpToLine />
-          Move earlier in the list
-        </ContextMenuItem>
-        <ContextMenuItem disabled={index === marks.length - 1} onClick={() => renumber(index, 1)}>
-          <ArrowDownToLine />
-          Move later in the list
+          Delete mark {index + 1}
         </ContextMenuItem>
       </>
     );
@@ -233,26 +253,33 @@ function CanvasMenu({ target, onNote }: { target: MenuTarget | null; onNote: (in
   const { point } = target;
   return (
     <>
-      <ContextMenuItem onClick={() => addMark({ kind: 'dot', x: point.x, y: point.y })}>
-        <CircleDot />
-        Add a marker here
-      </ContextMenuItem>
-      <ContextMenuItem onClick={() => addMark({ kind: 'box', ...boxAround(point, bounds) })}>
-        <Square />
-        Add a box here
-      </ContextMenuItem>
-      <ContextMenuItem onClick={() => addMark({ kind: 'arrow', ...arrowTo(point, bounds) })}>
-        <MoveUpRight />
-        Add an arrow pointing here
-      </ContextMenuItem>
+      <ContextMenuGroup>
+        <ContextMenuLabel>Add here</ContextMenuLabel>
+        <ContextMenuItem onClick={() => addMark({ kind: 'dot', x: point.x, y: point.y })}>
+          <CircleDot />
+          Numbered marker
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => addMark({ kind: 'box', ...boxAround(point, bounds) })}>
+          <Square />
+          Box
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => addMark({ kind: 'arrow', ...arrowTo(point, bounds) })}>
+          <MoveUpRight />
+          Arrow pointing here
+        </ContextMenuItem>
+      </ContextMenuGroup>
       <ContextMenuSeparator />
       {target.kind === 'region' ? (
-        <ContextMenuItem disabled={hasBox} onClick={resetRegion}>
-          <RotateCcw />
-          {hasBox ? 'Region is fixed on older captures' : 'Reset the region'}
-        </ContextMenuItem>
+        <ContextMenuGroup>
+          <ContextMenuLabel>Region</ContextMenuLabel>
+          <ContextMenuItem disabled={hasBox} onClick={resetRegion}>
+            <RotateCcw />
+            {hasBox ? 'Fixed on older captures' : 'Move it back'}
+          </ContextMenuItem>
+        </ContextMenuGroup>
       ) : (
-        <>
+        <ContextMenuGroup>
+          <ContextMenuLabel>View</ContextMenuLabel>
           <ContextMenuItem onClick={() => setZoom('fit')}>
             <Maximize />
             Fit to window
@@ -261,7 +288,7 @@ function CanvasMenu({ target, onNote }: { target: MenuTarget | null; onNote: (in
             <Scan />
             Actual size
           </ContextMenuItem>
-        </>
+        </ContextMenuGroup>
       )}
     </>
   );
@@ -397,7 +424,7 @@ export function EditorCanvas({ onNote }: { onNote: (index: number) => void }) {
   const selectedShape = selected === 'region' ? region : typeof selected === 'number' ? shown[selected] : undefined;
 
   return (
-    <div ref={scrollArea} className="min-h-0 min-w-0 flex-1 overflow-auto rounded-lg bg-muted/60">
+    <div ref={scrollArea} className="min-h-0 min-w-0 flex-1 overflow-auto rounded-xl bg-muted">
       <ContextMenu>
         <ContextMenuTrigger
           className={cn('mx-auto my-4 w-fit touch-none select-none', tool === 'select' ? 'cursor-default' : 'cursor-crosshair')}
@@ -414,7 +441,7 @@ export function EditorCanvas({ onNote }: { onNote: (index: number) => void }) {
           <Stage ref={stage} width={width * zoom} height={height * zoom} scaleX={zoom} scaleY={zoom} aria-label="Screenshot being annotated">
             <Layer>
               {image && <KonvaImage image={image} width={width} height={height} listening={false} />}
-              <HaloRect rect={region} name="region" selected={selected === 'region'} fill />
+              <HaloRect rect={region} name="region" selected={selected === 'region'} dashed />
               {shown.map((mark, index) => (
                 <MarkShape key={index} mark={mark} index={index} zoom={zoom} selected={selected === index} />
               ))}

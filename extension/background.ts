@@ -68,6 +68,7 @@ const MAX_WIDTH_SHOT = 900;
 const DETAIL_PADDING = 72;
 const MIN_DETAIL_WIDTH = 640;
 const MIN_DETAIL_HEIGHT = 360;
+const MARK_MARGIN = 32;
 const DRAFT_AGE = 24 * 60 * 60_000;
 const CAPTURE_GAP = 600;
 const DIFF_WIDTH = 240;
@@ -458,13 +459,13 @@ type DrawnComment = Pick<Comment, 'rect' | 'viewport' | 'marks'>;
 
 /**
  * Draws both stored images of a comment from a screenshot: the whole viewport for context, and a padded crop of the
- * region for detail, each with the region and markers.
+ * region and its markers for detail, each with the region and markers drawn.
  * @param bitmap The screenshot.
  * @param comment The comment's region, viewport and markers.
  */
 async function renderImages(bitmap: ImageBitmap, comment: DrawnComment) {
   const scale = bitmap.width / comment.viewport.width;
-  const { box, crop } = cropAround(bitmap, comment.rect, scale);
+  const { box, crop } = cropAround(bitmap, comment.rect, scale, comment.marks);
   const marks = comment.marks ?? [];
   const full = { x: 0, y: 0, w: bitmap.width, h: bitmap.height };
   return {
@@ -505,21 +506,43 @@ async function captureShots(tab: chrome.tabs.Tab, comment: DrawnComment) {
 }
 
 /**
- * Works out the padded crop around a marked region, in image pixels.
+ * The points a marker's drawing reaches, in viewport CSS pixels: its numbered disc, a box's far corner and an
+ * arrow's tip.
+ * @param mark The marker.
+ */
+function markerReach(mark: Marker) {
+  const points = [{ x: mark.x, y: mark.y }];
+  if (mark.kind === 'box') points.push({ x: mark.x + (mark.w ?? 0), y: mark.y + (mark.h ?? 0) });
+  if (mark.kind === 'arrow') points.push({ x: mark.x2 ?? mark.x, y: mark.y2 ?? mark.y });
+  return points;
+}
+
+/**
+ * Works out the padded crop around a marked region, in image pixels. The crop grows to take in every marker, so a
+ * marker drawn away from the region still shows in the detail image.
  * @param image The image's size.
  * @param rect The region in viewport CSS pixels.
  * @param scale Image pixels per CSS pixel.
+ * @param marks The markers the crop must show.
  */
-function cropAround(image: { width: number; height: number }, rect: Rect, scale: number) {
+function cropAround(image: { width: number; height: number }, rect: Rect, scale: number, marks: Marker[] = []) {
   const box = { x: rect.x * scale, y: rect.y * scale, w: rect.w * scale, h: rect.h * scale };
   const padX = Math.max(DETAIL_PADDING, (MIN_DETAIL_WIDTH - rect.w) / 2) * scale;
   const padY = Math.max(DETAIL_PADDING, (MIN_DETAIL_HEIGHT - rect.h) / 2) * scale;
-  const x = Math.max(0, box.x - padX);
-  const y = Math.max(0, box.y - padY);
-  return {
-    box,
-    crop: { x, y, w: Math.min(image.width - x, box.w + padX * 2), h: Math.min(image.height - y, box.h + padY * 2) },
-  };
+  let left = box.x - padX;
+  let top = box.y - padY;
+  let right = box.x + box.w + padX;
+  let bottom = box.y + box.h + padY;
+  const margin = MARK_MARGIN * scale;
+  for (const point of marks.flatMap(markerReach)) {
+    left = Math.min(left, point.x * scale - margin);
+    top = Math.min(top, point.y * scale - margin);
+    right = Math.max(right, point.x * scale + margin);
+    bottom = Math.max(bottom, point.y * scale + margin);
+  }
+  const x = Math.max(0, left);
+  const y = Math.max(0, top);
+  return { box, crop: { x, y, w: Math.min(image.width, right) - x, h: Math.min(image.height, bottom) - y } };
 }
 
 /**
@@ -1176,7 +1199,7 @@ const handlers: Handlers = {
       if (!screenshot) return { error: 'This comment has no screenshot' };
       const bitmap = await decodeImage(screenshot.src);
       const scale = bitmap.width / comment.viewport.width;
-      const area = request.image === 'shot' ? { x: 0, y: 0, w: bitmap.width, h: bitmap.height } : cropAround(bitmap, comment.rect, scale).crop;
+      const area = request.image === 'shot' ? { x: 0, y: 0, w: bitmap.width, h: bitmap.height } : cropAround(bitmap, comment.rect, scale, comment.marks).crop;
       const stale = Boolean(request.aspect) && Math.abs(area.w / area.h - (request.aspect ?? 0)) / (area.w / area.h) > 0.02;
       const point = { x: (area.x + request.fx * area.w) / scale, y: (area.y + request.fy * area.h) / scale };
       const marks = [...(comment.marks ?? [])];
@@ -1360,7 +1383,7 @@ async function recaptureRegion(tab: TabWithId, comment: Comment) {
     [comment.viewport?.scrollY ?? 0],
   );
   const bitmap = await decodeImage(await throttledCapture(tab.windowId));
-  const { box, crop } = cropAround(bitmap, comment.rect, bitmap.width / width);
+  const { box, crop } = cropAround(bitmap, comment.rect, bitmap.width / width, comment.marks);
   const after = await drawRegion(bitmap, crop, box, MAX_DETAIL_WIDTH);
   const change = width === comment.viewport?.width ? await regionChange(comment, bitmap, box) : null;
   bitmap.close();

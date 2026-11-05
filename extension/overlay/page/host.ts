@@ -137,11 +137,13 @@ export class OverlayHost {
   }
 
   /**
-   * Hides the overlay while a screenshot is taken, so it stays out of the image.
+   * Hides the overlay while a screenshot is taken, so it stays out of the image. Opacity hides it at once. Visibility
+   * alone does not, because a control with a transition, such as a switch, keeps showing until its transition ends.
    * @param hidden True to hide it.
    */
   hideForCapture(hidden: boolean) {
     this.host.style.visibility = hidden ? 'hidden' : '';
+    this.host.style.opacity = hidden ? '0' : '';
   }
 
   /**
