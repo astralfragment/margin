@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
+  Bot,
   ClipboardCopy,
   Compass,
   Crop,
@@ -37,7 +38,7 @@ import { refreshLinks, statusTone } from './shared';
 import { cn } from '@/lib/utils';
 import { ALL_REVIEWS, ask, useSettings } from './data';
 import { confirm } from './confirm';
-import { copyForDocs, copyMarkdown, downloadHtml, downloadMarkdown, downloadWord, printPdf, saveReviewFile, type ExportSource } from './exports';
+import { copyForAgents, copyForDocs, copyMarkdown, downloadHtml, downloadMarkdown, downloadWord, printPdf, saveReviewFile, type ExportSource } from './exports';
 import { FigmaIcon, JiraIcon } from './brand-icons';
 import { jiraToneClass } from './badges';
 import { openDialog, showReview, useReportUi } from './ui-store';
@@ -265,6 +266,10 @@ function MoreMenu({ source }: { source: ExportSource | null }) {
             <DropdownMenuItem disabled={empty} onClick={run(copyMarkdown)}>
               <ClipboardCopy />
               Copy as Markdown
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={empty} onClick={run(copyForAgents)}>
+              <Bot />
+              Copy for agents
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => openDialog('options')}>
               <SlidersHorizontal />

@@ -4,6 +4,7 @@ import { readScreenshot, withImages } from '@/lib/review-store';
 import type { Comment, Review } from '@/lib/model';
 import type { ReportSettings } from './data';
 import { hostOf, stamp } from './format';
+import { buildAgentBrief } from './agent-brief';
 
 /**
  * Every way out of the report. The documents come from the templates in lib/, which other apps open, so this file
@@ -142,6 +143,16 @@ export const copyMarkdown = (source: ExportSource) =>
     const { fields, widths } = source.settings;
     await copy(buildMarkdown(comments, { title: names.docsTitle, fields, widths }));
     return 'Copied the review as Markdown';
+  }, 'Copy failed. Try again with this tab in front');
+
+/**
+ * Copies the review as a brief for a coding agent, with open comments first and every locating fact spelled out.
+ * @param source The review, comments and options.
+ */
+export const copyForAgents = (source: ExportSource) =>
+  report(async () => {
+    await copy(buildAgentBrief(source.review, source.comments));
+    return 'Copied for agents. Paste into Claude Code or another agent.';
   }, 'Copy failed. Try again with this tab in front');
 
 /**
