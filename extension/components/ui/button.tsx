@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 /**
- * Margin's button. One `action` (lime) or `default` (black) button per surface carries the main step, `outline` is
+ * Margin's button. One `action` (purple) or `default` (black) button per surface carries the main step, `outline` is
  * the secondary, `ghost` the quiet one. Every size keeps the 6px control radius, and the neutral ring shows on
  * keyboard focus only.
  */

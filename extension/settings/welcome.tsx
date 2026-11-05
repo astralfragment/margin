@@ -64,7 +64,7 @@ function FirstComment() {
         </Step>
       </ol>
       <div className="flex flex-wrap items-center gap-3">
-        <Button size="lg" className="bg-action text-action-foreground hover:bg-action/80" onClick={openSamplePage}>
+        <Button size="lg" variant="action" onClick={openSamplePage}>
           Try it on a sample page
           <ArrowRight data-icon="inline-end" />
         </Button>

@@ -11,6 +11,7 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { ArrowDownToLine, ArrowUpToLine, Copy, Maximize, MoveUpRight, NotebookPen, RotateCcw, Scan, Square, Trash2, CircleDot } from 'lucide-react';
+import { MARK_COLOUR } from '@/lib/marks.js';
 import type { Marker, Rect } from '@/lib/model';
 import { cn } from '@/lib/utils';
 import {
@@ -28,9 +29,10 @@ import {
 } from './editor-store';
 import { arrowHead, arrowTo, boxAround, clamp, discRadius, handlePoints, handleSize, HANDLES, moved, resized, type Point } from './geometry';
 
-const MARKER = '#e5484d';
+const MARKER = MARK_COLOUR;
 const HALO = 'rgba(255,255,255,0.92)';
-const OUTLINE = '#1f2024';
+/** The light theme --ink purple as a literal, since Konva cannot read CSS variables. Selection is UI, so it is purple while the marks stay red. */
+const SELECTION = '#7549d2';
 
 /** What a pointer landed on, read from the shape's name. */
 interface Hit {
@@ -130,7 +132,7 @@ function MarkShape({ mark, index, zoom, selected }: { mark: Marker; index: numbe
         y={mark.y}
         radius={radius + (selected ? 3 : 2) / zoom}
         fill={HALO}
-        stroke={selected ? OUTLINE : undefined}
+        stroke={selected ? SELECTION : undefined}
         strokeWidth={1.5}
         strokeScaleEnabled={false}
         name={`${name}:badge`}
@@ -170,7 +172,7 @@ function Handles({ target, shape, zoom }: { target: number | 'region'; shape: Ma
       width={size}
       height={size}
       fill="#ffffff"
-      stroke={OUTLINE}
+      stroke={SELECTION}
       strokeWidth={1.5}
       strokeScaleEnabled={false}
       name={`handle:${target}:${handle}`}

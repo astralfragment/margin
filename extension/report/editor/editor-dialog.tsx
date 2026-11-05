@@ -132,8 +132,8 @@ function MarkList() {
                 <li key={index} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3" onPointerDown={() => select(index)}>
                   <span
                     className={cn(
-                      'mt-1 flex size-6 items-center justify-center rounded-full bg-marker text-xs font-extrabold text-white',
-                      selected === index && 'ring-2 ring-foreground ring-offset-2 ring-offset-background',
+                      'mt-1 flex size-6 items-center justify-center rounded-full bg-mark text-xs font-extrabold text-white',
+                      selected === index && 'ring-2 ring-ink ring-offset-2 ring-offset-background',
                     )}
                   >
                     {index + 1}

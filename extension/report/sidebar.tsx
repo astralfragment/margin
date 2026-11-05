@@ -90,7 +90,7 @@ export function FilterBar() {
       </InputGroup>
       <div className="grid grid-cols-2 gap-2">
         <Select items={severityItems} value={severity} onValueChange={(next) => next && useReportUi.setState({ severity: next as Severity | 'all' })}>
-          <SelectTrigger size="sm" aria-label="Show severity" className={cn('w-full', severity !== 'all' && 'border-foreground/40 bg-muted')}>
+          <SelectTrigger size="sm" aria-label="Show severity" className={cn('w-full', severity !== 'all' && 'border-ink bg-ink/10 text-ink')}>
             {severity !== 'all' && <SeverityDot severity={severity} />}
             <SelectValue />
           </SelectTrigger>
@@ -109,7 +109,7 @@ export function FilterBar() {
           </SelectContent>
         </Select>
         <Select items={statusItems} value={status} onValueChange={(next) => next && useReportUi.setState({ status: next as CommentStatus | 'all' })}>
-          <SelectTrigger size="sm" aria-label="Show status" className={cn('w-full', status !== 'all' && 'border-foreground/40 bg-muted')}>
+          <SelectTrigger size="sm" aria-label="Show status" className={cn('w-full', status !== 'all' && 'border-ink bg-ink/10 text-ink')}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent alignItemWithTrigger={false} align="start" className="w-52">
@@ -177,7 +177,7 @@ export function Sidebar() {
           return (
             <div
               key={comment.id}
-              className={cn('flex items-start gap-2 rounded-md px-2 hover:bg-muted', comment.id === currentId && 'bg-muted', isSelected && 'bg-muted')}
+              className={cn('flex items-start gap-2 rounded-md px-2 hover:bg-muted', isSelected && 'bg-ink/10 hover:bg-ink/10', comment.id === currentId && 'bg-ink/10 text-ink hover:bg-ink/10')}
             >
               <Checkbox className="mt-2.5" checked={isSelected} onCheckedChange={(on) => setSelected(comment.id, on)} aria-label={`Select comment ${number}`} />
               <button

@@ -19,8 +19,6 @@
   --sev-nit-solid: #8b8d98;
   --success: #18794e;
   --success-tint: #e6f6eb;
-  /* Numbered marker discs carry white digits, so they use the darker red that keeps 5 to 1 in both themes. */
-  --marker: #ce2c31;
 }
 
 :root[data-theme="dark"] {
@@ -51,7 +49,6 @@
   --color-sev-nit-solid: var(--sev-nit-solid);
   --color-success: var(--success);
   --color-success-tint: var(--success-tint);
-  --color-marker: var(--marker);
 }
 
 html,

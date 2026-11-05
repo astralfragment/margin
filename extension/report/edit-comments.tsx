@@ -53,9 +53,9 @@ const SEVERITY_PRESSED: Record<Severity, string> = {
 };
 
 const STATUS_PRESSED: Record<CommentStatus, string> = {
-  open: 'aria-pressed:border-foreground/40 aria-pressed:bg-muted',
+  open: '',
   fixed: 'hover:bg-fixed-tint aria-pressed:border-fixed aria-pressed:bg-fixed-tint aria-pressed:text-fixed',
-  wontfix: 'aria-pressed:border-foreground/40 aria-pressed:bg-muted aria-pressed:text-muted-foreground',
+  wontfix: '',
 };
 
 /**

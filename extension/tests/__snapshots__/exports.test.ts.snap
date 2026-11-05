@@ -76,7 +76,7 @@ div.WordSection1 { page: WordSection1; }
           <h3 style="font-family: Arial, sans-serif; font-size: 11pt; font-weight: 700; color: #12151c; margin: 20px 0 4px; margin: 0 0 2px;">Pay button is the wrong blue</h3>
           <p style="font-family: Arial, sans-serif; font-size: 10pt; color: #12151c; margin: 0 0 8px; margin: 0 0 6px; font-size: 9pt; color: #c2410c;"><b>Major</b></p>
           <p style="font-family: Arial, sans-serif; font-size: 10pt; color: #12151c; margin: 0 0 8px; margin: 0 0 6px;">Expected brand blue.<br />Actual is a lighter tint.</p>
-          <p style="font-family: Arial, sans-serif; font-size: 10pt; color: #12151c; margin: 0 0 8px; margin: 0 0 3px;"><b style="color: #ce2c31;">1.</b> Wrong shade here</p>
+          <p style="font-family: Arial, sans-serif; font-size: 10pt; color: #12151c; margin: 0 0 8px; margin: 0 0 3px;"><b style="color: #d93036;">1.</b> Wrong shade here</p>
           <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Page</span>&nbsp;&nbsp;<a href="https://shop.example.com/cart/12345">https://shop.example.com/cart/12345</a></p>
           <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Figma</span>&nbsp;&nbsp;<a href="https://www.figma.com/design/abc123/Checkout?node-id=1-2">Figma frame</a></p>
           <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Selector</span>&nbsp;&nbsp;<span style="font-family: Consolas, monospace; font-size: 8pt;">#pay</span></p>
@@ -132,7 +132,7 @@ exports[`export templates > builds the same HTML report 1`] = `
   color-scheme: light;
   --bg: #ffffff; --surface: #f0eefe; --line: #e2ddf5;
   --ink: #000000; --ink-2: #5b5670;
-  --accent: #ce2c31; --success: #18794e;
+  --accent: #d93036; --success: #18794e;
   --sev-blocker: #ce2c31; --sev-major: #c2410c; --sev-minor: #0d74ce; --sev-nit: #60646c;
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 40px;
   --radius: 12px;

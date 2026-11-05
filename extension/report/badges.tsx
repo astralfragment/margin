@@ -75,7 +75,7 @@ export function MarkerNumber({ number, className }: { number: number; className?
   return (
     <span
       aria-hidden="true"
-      className={cn('inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-marker text-[11px] font-bold text-white tabular-nums', className)}
+      className={cn('inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-mark text-[11px] font-bold text-white tabular-nums', className)}
     >
       {number}
     </span>

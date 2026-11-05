@@ -1,6 +1,6 @@
 /*
- * Lilac tokens. Black and white carry the screen, lavender marks the brand,
- * lime fills the one lead action.
+ * Lilac tokens. Black and white carry the screen, purple fills the one lead action
+ * and marks what is selected, and red is for what Margin draws.
  * Component recipes follow shadcn/ui. Plain CSS because the extension has no
  * build step.
  */
@@ -24,10 +24,10 @@
   --destructive-tint: #feebec;
   --border: #e2ddf5;
   --input: #f0eefe;
-  --ring: #7549d2;
+  --ring: #8b8d98;
   --brand-deep: #7549d2;
-  --action: #c1f354;
-  --action-foreground: #000000;
+  --action: #7549d2;
+  --action-foreground: #ffffff;
   --sidebar: #ffffff;
   --sidebar-border: #e2ddf5;
   --sidebar-accent: #f0eefe;
@@ -46,7 +46,7 @@
   --sev-nit-solid: #8b8d98;
   --success: #18794e;
   --success-tint: #e6f6eb;
-  --marker: #e5484d;
+  --marker: #d93036;
 
   --radius: 16px;
   --radius-sm: 12px;
@@ -71,8 +71,10 @@
   --destructive-tint: #3b1219;
   --border: #2f2a45;
   --input: #1c1830;
-  --ring: #c1b0fe;
+  --ring: #8b8d98;
   --brand-deep: #c1b0fe;
+  --action: #c1b0fe;
+  --action-foreground: #0d0b16;
   --sidebar: #000000;
   --sidebar-border: #2f2a45;
   --sidebar-accent: #1c1830;
@@ -87,7 +89,7 @@
   --sev-nit-tint: #212225;
   --success: #3dd68c;
   --success-tint: #132d21;
-  --marker: #ff7a7a;
+  --marker: #d93036;
 }
 
 * { box-sizing: border-box; }
@@ -426,8 +428,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { border-color
 .ed-disc-halo { fill: rgb(255 255 255 / 0.92); }
 .ed-disc-fill { fill: var(--marker); }
 .ed-disc-text { fill: #ffffff; font-weight: 800; text-anchor: middle; dominant-baseline: central; }
-.ed-ring { fill: none; stroke: var(--ring); stroke-width: 2; stroke-dasharray: 4 3; pointer-events: none; }
-.ed-handle { fill: #ffffff; stroke: var(--ring); stroke-width: 1.5; }
+.ed-ring { fill: none; stroke: var(--brand-deep); stroke-width: 2; stroke-dasharray: 4 3; pointer-events: none; }
+.ed-handle { fill: #ffffff; stroke: var(--brand-deep); stroke-width: 1.5; }
 .h-nw, .h-se { cursor: nwse-resize; }
 .h-ne, .h-sw { cursor: nesw-resize; }
 .h-n, .h-s { cursor: ns-resize; }
@@ -443,7 +445,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { border-color
   display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: var(--s2); align-items: start;
   padding: var(--s2); border: 1px solid var(--border); border-radius: var(--radius-sm);
 }
-.editor-item[aria-current="true"] { border-color: var(--ring); }
+.editor-item[aria-current="true"] { border-color: var(--brand-deep); }
 .editor-item .num, .disc {
   display: grid; place-items: center; width: 22px; height: 22px; margin-top: 2px;
   font-size: 12px; font-weight: 800; color: #ffffff; background: var(--marker); border-radius: 999px;
@@ -721,7 +723,7 @@ kbd {
 .tour { position: fixed; inset: 0; z-index: 60; }
 .tour-spot {
   position: fixed; border-radius: var(--radius-sm); pointer-events: none;
-  box-shadow: 0 0 0 100vmax hsl(0 0% 0% / 0.55), 0 0 0 2px var(--ring);
+  box-shadow: 0 0 0 100vmax hsl(0 0% 0% / 0.55), 0 0 0 2px var(--brand-deep);
   transition: left 160ms ease-out, top 160ms ease-out, width 160ms ease-out, height 160ms ease-out;
 }
 .tour-tip {
@@ -808,7 +810,7 @@ kbd {
 .mk-bar b { font-weight: 800; }
 .mk-key { padding: 0.2cqw 0.8cqw; border: 1px solid #2f2a45; border-radius: 0.6cqw; background: #1c1830; }
 .mk-target { position: relative; }
-.mk-band { inset: -1cqw; border: 2px solid #e5484d; border-radius: 2px; background: rgb(229 72 77 / 0.12); }
+.mk-band { inset: -1cqw; border: 2px solid var(--marker); border-radius: 2px; background: rgb(217 48 54 / 0.12); }
 .mk-cursor { right: -2.4cqw; bottom: -3cqw; width: 3cqw; height: 3cqw; }
 .mk-panel {
   left: 50.5%; top: 22%; width: 34%; display: grid; gap: 1.2cqw; padding: 1.6cqw;
@@ -822,18 +824,18 @@ kbd {
   color: var(--c); border: 1px solid #756c95; border-radius: 1.4cqw; background: #1c1830;
 }
 .mk-sevs em.on { color: #000000; background: var(--c); border-color: var(--c); }
-.mk-save { justify-self: end; padding: 0.8cqw 1.6cqw; border-radius: 1.4cqw; font-weight: 800; color: #000000; background: #c1f354; }
+.mk-save { justify-self: end; padding: 0.8cqw 1.6cqw; border-radius: 1.4cqw; font-weight: 800; color: var(--action-foreground); background: var(--action); }
 .mk-ctx { left: 38%; top: 42%; display: grid; padding: 0.6cqw; border-radius: 1.4cqw; font-size: 1.4cqw; font-weight: 600; }
 .mk-ctx span { padding: 1cqw 1.4cqw; border-radius: 0.8cqw; white-space: nowrap; }
 .mk-ctx span:first-child { background: #1c1830; }
 .mk-ctx hr { margin: 0.4cqw 0; border: 0; height: 1px; background: #2f2a45; }
-.mk-region { inset: -1cqw; border: 2px solid #e5484d; border-radius: 2px; }
+.mk-region { inset: -1cqw; border: 2px solid var(--marker); border-radius: 2px; }
 .mk-dot {
   display: grid; place-items: center; width: 3.2cqw; height: 3.2cqw; margin: -1.6cqw 0 0 -1.6cqw;
-  font-size: 1.6cqw; font-weight: 800; color: #ffffff; background: #e5484d; border-radius: 999px;
+  font-size: 1.6cqw; font-weight: 800; color: #ffffff; background: var(--marker); border-radius: 999px;
   box-shadow: 0 0 0 0.35cqw rgb(255 255 255 / 0.92);
 }
-.mk-box { left: 51%; top: 26%; width: 11%; height: 7%; border: 2px solid #e5484d; border-radius: 2px; }
+.mk-box { left: 51%; top: 26%; width: 11%; height: 7%; border: 2px solid var(--marker); border-radius: 2px; }
 .mk-list {
   right: 3cqw; bottom: 3cqw; width: 36%; display: grid; gap: 1cqw; padding: 1.6cqw;
   border-radius: 1.6cqw; font-size: 1.35cqw; line-height: 1.4;
@@ -841,7 +843,7 @@ kbd {
 .mk-list p { margin: 0; display: grid; grid-template-columns: 2.6cqw 1fr; gap: 1cqw; align-items: start; }
 .mk-list p b {
   display: grid; place-items: center; width: 2.6cqw; height: 2.6cqw; border-radius: 999px;
-  font-size: 1.3cqw; background: #e5484d;
+  font-size: 1.3cqw; background: var(--marker);
 }
 .mk-report {
   inset: 6% 8%; display: grid; align-content: start; gap: 1.4cqw; padding: 2.6cqw;
@@ -854,8 +856,8 @@ kbd {
 .mk-report header span.lead { color: var(--action-foreground); background: var(--action); border-color: var(--action); }
 .mk-report h3 { font-size: 1.8cqw; }
 .mk-report ol { margin: 0; padding-left: 3cqw; display: grid; gap: 0.6cqw; color: var(--muted-foreground); }
-.mk-report ol li::marker { color: #e5484d; font-weight: 800; }
+.mk-report ol li::marker { color: var(--marker); font-weight: 800; }
 .mk-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4cqw; }
 .mk-pair figure { margin: 0; display: grid; gap: 0.6cqw; color: var(--muted-foreground); font-size: 1.3cqw; font-weight: 600; }
 .mk-pair i { display: block; height: 9cqw; border: 1px solid var(--border); border-radius: 1cqw; background: var(--muted); }
-.mk-pair figure:first-child i { box-shadow: inset 0 0 0 2px #e5484d; }
+.mk-pair figure:first-child i { box-shadow: inset 0 0 0 2px var(--marker); }

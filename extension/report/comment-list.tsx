@@ -170,7 +170,7 @@ function MarkableShot({ comment, number, image, src, alt }: { comment: Comment; 
                     data-pin
                     data-active={active || undefined}
                     aria-label={`Marker ${index + 1}${mark.note ? `: ${mark.note}` : ''}. Click to change or remove it.`}
-                    className="absolute flex size-6 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-marker text-xs font-bold text-white shadow-[0_0_0_2px_#fff,0_2px_6px_rgb(0_0_0/0.35)] outline-none transition-transform duration-150 ease-out hover:scale-115 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-active:scale-125 motion-reduce:transition-none"
+                    className="absolute flex size-6 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-mark text-xs font-bold text-white shadow-[0_0_0_2px_#fff,0_2px_6px_rgb(0_0_0/0.35)] outline-none transition-transform duration-150 ease-out hover:scale-115 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-active:scale-125 motion-reduce:transition-none"
                     style={{ left: `${left}%`, top: `${top}%` }}
                     onPointerEnter={() => useMarkerHover.setState({ commentId: comment.id, index }, true)}
                     onPointerLeave={() => useMarkerHover.setState(null, true)}
@@ -191,7 +191,7 @@ function MarkableShot({ comment, number, image, src, alt }: { comment: Comment; 
       {pending && (
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-marker text-xs font-bold text-white shadow-[0_0_0_2px_#fff]"
+          className="pointer-events-none absolute flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-mark text-xs font-bold text-white shadow-[0_0_0_2px_#fff]"
           style={{ left: `${pending.left}%`, top: `${pending.top}%` }}
         >
           {marks.length + 1}
@@ -205,7 +205,7 @@ function MarkableShot({ comment, number, image, src, alt }: { comment: Comment; 
           tracking && 'opacity-100',
         )}
       >
-        <span className="flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-dashed border-white bg-marker/60 text-xs font-bold text-white">
+        <span className="flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-dashed border-white bg-mark/60 text-xs font-bold text-white">
           {marks.length + 1}
         </span>
       </span>
