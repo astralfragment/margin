@@ -49,11 +49,6 @@ export const jiraChoiceItem = storage.defineItem<JiraChoice>('local:jiraChoice')
 export const recentFigmaFilesItem = storage.defineItem<RecentFigmaFile[]>('local:figmaRecent', { fallback: [] });
 export const connectionsItem = storage.defineItem<Partial<Record<Provider, Connection>>>('local:connections', { fallback: {} });
 
-/** Tabs where annotation is on, so it comes back after the tab loads a new page. Cleared when the browser closes. */
-export const annotatingTabsItem = storage.defineItem<number[]>('session:annotatingTabs', { fallback: [] });
-/** A note per tab about a comment saved when its page went away, shown on the next page. */
-export const annotatingNoticesItem = storage.defineItem<Record<number, string>>('session:annotatingNotices', { fallback: {} });
-
 /** Keys left by the Fragment integration, which has been removed. */
 export const RETIRED_KEYS: StorageItemKey[] = ['local:fragment', 'local:fragmentOutbox', 'local:fragmentStatus'];
 

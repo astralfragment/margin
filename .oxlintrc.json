@@ -6,6 +6,7 @@
     "suspicious": "error"
   },
   "rules": {
+    "react/react-in-jsx-scope": "off",
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "error",
     "typescript/no-explicit-any": "error",
@@ -13,7 +14,7 @@
     "no-empty": "error",
     "id-length": ["error", { "min": 2, "exceptions": ["_", "x", "y", "w", "h"] }],
     "no-console": ["error", { "allow": ["warn", "error"] }],
-    "no-underscore-dangle": ["error", { "allow": ["__uiAnnotator", "__marginVerifyKey"] }]
+    "no-underscore-dangle": ["error", { "allow": ["__uiAnnotator", "__marginVerifyKey", "__marginOverlay"] }]
   },
   "ignorePatterns": [
     ".output/**",

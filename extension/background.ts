@@ -13,6 +13,7 @@ import type {
   WidthShots,
 } from './lib/model';
 import { onMessage, type ActionName, type MessageData, type MessageReply } from './lib/protocol';
+import { sendToOverlay } from './lib/overlay-protocol';
 import {
   activeReview,
   addReview,
@@ -37,15 +38,14 @@ import {
   type WriteSteps,
 } from './lib/review-store';
 import { storage } from 'wxt/utils/storage';
-import { annotatingNoticesItem, annotatingTabsItem, RETIRED_KEYS, verifyRunItem } from './lib/storage';
+import { RETIRED_KEYS, verifyRunItem } from './lib/storage';
+import { annotatingNoticesItem, annotatingTabsItem } from './lib/session-storage';
 import { serveStoreWrites } from './lib/store-server';
 import { parseReviewFile } from './lib/review-file.js';
 import { WIDTHS, widthShots } from './lib/widths.js';
 
 declare global {
   interface Window {
-    /** The overlay's hook for hiding itself while a screenshot is taken. */
-    __uiAnnotator?: { hideForCapture(hidden: boolean): void };
     /** The Escape listener a recheck run adds to the page it checks. */
     __marginVerifyKey?: (event: KeyboardEvent) => void;
   }
@@ -120,13 +120,13 @@ const zoomOf = (tabId: number) => chrome.tabs.getZoom(tabId).catch(() => 1);
 async function toggleTab(tab: chrome.tabs.Tab | undefined) {
   if (!tab?.id) return false;
   await ensureContent(tab);
-  const reply = await chrome.tabs.sendMessage(tab.id, { type: 'toggle', groupName: (await activeReview()).name, zoom: await zoomOf(tab.id) });
-  return reply?.active === true;
+  const reply = await sendToOverlay('toggle', { reviewName: (await activeReview()).name, zoom: await zoomOf(tab.id) }, tab.id);
+  return reply.active;
 }
 
 chrome.tabs.onZoomChange.addListener(({ tabId, newZoomFactor }) => {
   // Most tabs have no overlay to tell, so a refused message is expected.
-  chrome.tabs.sendMessage(tabId, { type: 'zoom', zoom: newZoomFactor }).catch(() => undefined);
+  sendToOverlay('zoom', { zoom: newZoomFactor }, tabId).catch(() => undefined);
 });
 
 /**
@@ -168,7 +168,7 @@ async function resumeTab(tabId: number, info: chrome.tabs.OnUpdatedInfo, tab: ch
   const notice = notices[tabId] ?? '';
   try {
     await ensureContent(tab);
-    await chrome.tabs.sendMessage(tabId, { type: 'start', groupName: (await activeReview()).name, zoom: await zoomOf(tabId), notice });
+    await sendToOverlay('start', { reviewName: (await activeReview()).name, zoom: await zoomOf(tabId), notice }, tabId);
     if (notice) await editAnnotatingTabs((record) => delete record.notices[tabId]);
   } catch {
     // The new page cannot take the overlay, such as a chrome:// page, so annotation ends for this tab.
@@ -266,7 +266,7 @@ async function ensureContent(tab: chrome.tabs.Tab) {
   }
   let ready = false;
   try {
-    ready = (await chrome.tabs.sendMessage(tab.id, { type: 'ping' }))?.ok === true;
+    ready = (await sendToOverlay('ping', undefined, tab.id)).ok;
   } catch {
     // No overlay answers yet, which is what the injection below is for.
     ready = false;
@@ -293,10 +293,10 @@ async function runMenuItem(info: chrome.contextMenus.OnClickData, tab: chrome.ta
   else if (info.menuItemId === 'margin-report') await handlers.openReport(undefined, {});
   else if (info.menuItemId === 'margin-viewport' && tab?.id) {
     await ensureContent(tab);
-    await chrome.tabs.sendMessage(tab.id, { type: 'captureViewport', groupName: (await activeReview()).name, zoom: await zoomOf(tab.id) });
+    await sendToOverlay('captureViewport', { reviewName: (await activeReview()).name, zoom: await zoomOf(tab.id) }, tab.id);
   } else if (info.menuItemId === 'margin-widths' && tab?.id) {
     const reply = await handlers.captureWidths({ page: true }, { tab }).catch((error: unknown) => ({ error: messageOf(error) }));
-    await chrome.tabs.sendMessage(tab.id, { type: 'toast', text: 'error' in reply ? reply.error : reply.message });
+    await sendToOverlay('toast', { text: 'error' in reply ? reply.error : reply.message }, tab.id);
   }
 }
 

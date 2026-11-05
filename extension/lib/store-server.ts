@@ -8,10 +8,23 @@ import {
   removeComment,
   removeReview,
   saveComments,
+  queueWrite,
   selectReview,
   writeImages,
   writeScreenshot,
 } from './review-store';
+import { markerModeItem, selectorModeItem } from './storage';
+
+/**
+ * Saves the overlay's switches that were sent, leaving the other as it is.
+ * @param modes The switches to save.
+ */
+function saveOverlayModes({ selectorMode, markerMode }: { selectorMode?: boolean; markerMode?: boolean }) {
+  return queueWrite(async () => {
+    if (selectorMode !== undefined) await selectorModeItem.setValue(selectorMode);
+    if (markerMode !== undefined) await markerModeItem.setValue(markerMode);
+  });
+}
 
 type StoreWriteHandlers = { [Name in StoreWriteName]: (data: MessageData<Name>) => Promise<MessageReply<Name>> };
 
@@ -28,6 +41,7 @@ const storeWriteHandlers: StoreWriteHandlers = {
   patchReview: ({ id, patch }) => patchReview(id, patch),
   removeReview: (id) => removeReview(id),
   selectReview: (id) => selectReview(id),
+  saveOverlayModes: (modes) => saveOverlayModes(modes),
 };
 
 /**

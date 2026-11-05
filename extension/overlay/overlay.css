@@ -1,0 +1,58 @@
+/*
+ * Tailwind entry for the on-page overlay, loaded as text into its shadow root. Only the overlay's own files are
+ * scanned. Tailwind sizes in rem, which follow the page's root font size, so the scale is restated in px here to
+ * keep the overlay the same size on every site. The font is registered from code in overlay/main.tsx, because a
+ * CSS @font-face would be moved to the page with addresses relative to the page.
+ */
+@import "tailwindcss" source(none);
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "../assets/tokens.css";
+
+@source "./";
+@source "../components/ui";
+
+@theme {
+  --font-sans: "Margin Manrope", Manrope, ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --spacing: 4px;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --container-xs: 320px;
+  --container-sm: 384px;
+}
+
+/* Stops the page's inherited styles at the host, while the host's inline zoom and position still apply. */
+:host {
+  all: initial;
+}
+
+[data-margin] {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer base {
+  [data-margin] * {
+    @apply border-border outline-ring/50;
+  }
+}
+
+@keyframes margin-nudge {
+  25% { translate: -6px 0; }
+  75% { translate: 6px 0; }
+}
+
+@utility animate-nudge {
+  animation: margin-nudge 0.3s ease-in-out;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}

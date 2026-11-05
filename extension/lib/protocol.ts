@@ -87,6 +87,8 @@ export interface StoreWrites {
   patchReview(data: { id: string; patch: Partial<Omit<Review, 'id'>> }): Review | null;
   removeReview(id: string): void;
   selectReview(id: string): void;
+  /** The overlay's two switches, element selectors and numbered markers. */
+  saveOverlayModes(modes: { selectorMode?: boolean; markerMode?: boolean }): void;
 }
 
 /**

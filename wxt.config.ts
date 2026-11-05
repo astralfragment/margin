@@ -19,7 +19,8 @@ export default defineConfig({
       'Annotate any website and mark up screenshots for UI review, design QA and client feedback. Send bug reports to Jira, Figma or Docs.',
     permissions: ['activeTab', 'scripting', 'storage', 'unlimitedStorage', 'clipboardWrite', 'contextMenus', 'identity'],
     optional_host_permissions: ['https://api.atlassian.com/*', 'https://api.figma.com/*', 'https://*.atlassian.net/*'],
-    web_accessible_resources: [{ resources: ['fonts/*.woff2', 'icons/ui/*.svg'], matches: ['<all_urls>'] }],
+    // content.js imports overlay.js and its shared chunks from the page, which needs them web-accessible.
+    web_accessible_resources: [{ resources: ['fonts/*.woff2', 'icons/ui/*.svg', 'overlay.js', 'chunks/*.js'], matches: ['<all_urls>'] }],
     action: { default_title: 'Margin', default_icon: ICONS },
     icons: ICONS,
     commands: {
@@ -30,9 +31,15 @@ export default defineConfig({
     },
   },
   hooks: {
-    /** WXT treats content.ts as a manifest content script, but the background injects it on demand. */
+    /**
+     * WXT treats content.ts as a manifest content script, but the background injects it on demand. overlay.ts is the
+     * React overlay content.js imports, built with the pages as an ES module so it shares their React chunks.
+     */
     'entrypoints:found': (_wxt, infos) => {
-      for (const info of infos) if (info.name === 'content') info.type = 'unlisted-script';
+      for (const info of infos) {
+        if (info.name === 'content') info.type = 'unlisted-script';
+        if (info.name === 'overlay') info.type = 'unlisted-page';
+      }
     },
     /** Help and settings opens in a full tab, which options_page gives and WXT's default options_ui does not. */
     'build:manifestGenerated': (_wxt, manifest) => {
