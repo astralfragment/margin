@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { closeNote, removeNoted, saveNote } from './quick-marks';
+import { MarkerNumber } from './badges';
 import { useReportUi, type NoteTarget } from './ui-store';
 import { useReportComments } from './use-report';
 
@@ -33,22 +35,28 @@ function NoteForm({ target }: { target: NoteTarget }) {
       }}
     >
       <Field data-invalid={missing || undefined}>
-        <FieldLabel htmlFor="marker-note">Note for marker {target.index + 1}</FieldLabel>
+        <FieldLabel htmlFor="marker-note" className="items-center">
+          <MarkerNumber number={target.index + 1} />
+          {target.fresh ? 'What does this number point at?' : `Note for marker ${target.index + 1}`}
+        </FieldLabel>
         <Input
           id="marker-note"
           autoFocus
           value={text}
           aria-invalid={missing || undefined}
-          placeholder="What this number points out"
+          placeholder="Such as: this gap should be 16px"
           onChange={(event) => {
             setText(event.target.value);
             setMissing(false);
           }}
         />
-        <FieldDescription>{missing ? 'Write a note, or remove the marker.' : target.fresh ? 'A marker without a note is removed.' : ''}</FieldDescription>
+        {(missing || target.fresh) && (
+          <FieldDescription>{missing ? 'Write a note, or remove the marker.' : 'Press Enter to save. A marker without a note is removed.'}</FieldDescription>
+        )}
       </Field>
-      <div className="flex justify-between gap-2">
+      <div className="flex items-center justify-between gap-2">
         <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => removeNoted(comment, numberOf(comment))}>
+          <Trash2 />
           Remove marker
         </Button>
         <Button type="submit" size="sm">
@@ -59,7 +67,7 @@ function NoteForm({ target }: { target: NoteTarget }) {
   );
 }
 
-/** The note box beside a marker just placed or being edited, anchored at the marker. */
+/** The note box under a marker just placed or being edited. */
 export function MarkerNote() {
   const note = useReportUi((state) => state.note);
   return (
@@ -68,7 +76,7 @@ export function MarkerNote() {
         nativeButton={false}
         render={<span aria-hidden="true" className="pointer-events-none fixed size-0" style={{ left: note?.x ?? 0, top: note?.y ?? 0 }} />}
       />
-      <PopoverContent side="bottom" align="start" sideOffset={16} className="w-80">
+      <PopoverContent side="bottom" align="center" sideOffset={18} className="w-80">
         {note && <NoteForm key={`${note.commentId}:${note.index}`} target={note} />}
       </PopoverContent>
     </Popover>

@@ -3,10 +3,9 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ConfirmDialog } from './confirm';
 import { TopBar } from './top-bar';
-import { Sidebar, FilterBar } from './sidebar';
+import { Sidebar, FilterBar, ListHeader } from './sidebar';
 import { CommentList, followScroll } from './comment-list';
 import { MarkerNote } from './marker-note';
-import { EditCommentsDialog } from './edit-comments';
 import { OptionsDialog } from './options-dialog';
 import { ReviewSheetDialog } from './review-sheet';
 import { RecheckDialog } from './recheck';
@@ -31,7 +30,7 @@ export function App() {
       <title>{review?.name ?? (key === 'all' ? 'All reviews' : 'Margin review')}</title>
       <a
         href="#comments"
-        className="sr-only z-50 rounded-lg bg-background px-3 py-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:ring-3 focus:ring-ring/50"
+        className="sr-only z-50 rounded-md bg-background px-3 py-2 outline-none focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         Skip to comments
       </a>
@@ -40,15 +39,15 @@ export function App() {
         <div className="flex min-h-0 flex-1">
           <Sidebar />
           <main id="comments" tabIndex={-1} className="min-w-0 flex-1 overflow-y-auto outline-none" onScroll={followScroll}>
-            <div className="border-b px-4 py-3 md:hidden">
+            <div className="flex flex-col gap-3 border-b p-4 md:hidden">
               <FilterBar />
+              <ListHeader />
             </div>
             <CommentList />
           </main>
         </div>
       </div>
       <MarkerNote />
-      <EditCommentsDialog />
       <OptionsDialog />
       <ReviewSheetDialog />
       <RecheckDialog />

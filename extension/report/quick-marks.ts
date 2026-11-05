@@ -1,13 +1,56 @@
+import { create } from 'zustand';
 import { toast } from 'sonner';
-import type { Comment, CommentImages, Marker } from '@/lib/model';
+import type { Comment, CommentImages, Marker, Rect } from '@/lib/model';
 import { ask, putImages, queryClient } from './data';
 import { useReportUi } from './ui-store';
 import { pad } from './format';
 
 /**
- * Numbered markers placed straight on the report's screenshots: a click adds one and asks for its note, a right-click
- * removes the nearest, and every removal offers Undo. The service worker redraws the images and replies with them.
+ * Numbered markers placed straight on the report's screenshots. A click adds one and asks for its note, a click on a
+ * number edits it, and every removal offers Undo. The service worker redraws the images and replies with them.
  */
+
+/** Which image of a comment takes markers: the padded crop round the region, or the whole viewport. */
+export type MarkableImage = 'detail' | 'shot';
+
+/** The marker a person is pointing at, in the notes list or on a screenshot, so both light up together. */
+export const useMarkerHover = create<{ commentId: string; index: number } | null>(() => null);
+
+/*
+ * The padding the service worker cuts round a region for the detail image, in CSS pixels. It matches cropAround in
+ * background.ts, and an image whose shape does not match the crop worked out here gets no overlays.
+ */
+const DETAIL_PADDING = 72;
+const MIN_DETAIL_WIDTH = 640;
+const MIN_DETAIL_HEIGHT = 360;
+
+/**
+ * The part of the viewport an image shows, in viewport CSS pixels.
+ * @param comment The comment, with its region and viewport.
+ * @param image Which image.
+ */
+export function imageArea(comment: Pick<Comment, 'rect' | 'viewport'>, image: MarkableImage): Rect {
+  const { width, height } = comment.viewport;
+  if (image === 'shot') return { x: 0, y: 0, w: width, h: height };
+  const { rect } = comment;
+  const padX = Math.max(DETAIL_PADDING, (MIN_DETAIL_WIDTH - rect.w) / 2);
+  const padY = Math.max(DETAIL_PADDING, (MIN_DETAIL_HEIGHT - rect.h) / 2);
+  const x = Math.max(0, rect.x - padX);
+  const y = Math.max(0, rect.y - padY);
+  return { x, y, w: Math.min(width - x, rect.w + padX * 2), h: Math.min(height - y, rect.h + padY * 2) };
+}
+
+/**
+ * True when an image has the shape its area says it should, so overlays line up with what is drawn in it.
+ * @param area The area from imageArea.
+ * @param naturalWidth The image's width.
+ * @param naturalHeight The image's height.
+ */
+export function areaFits(area: Rect, naturalWidth: number, naturalHeight: number) {
+  if (!naturalWidth || !naturalHeight || !area.w || !area.h) return false;
+  const expected = area.w / area.h;
+  return Math.abs(naturalWidth / naturalHeight - expected) / expected < 0.02;
+}
 
 /**
  * Puts a comment's new markers into every cached comment list, so the card redraws at once.
@@ -81,6 +124,8 @@ function offerUndo(comment: Comment, before: Marker[], index: number, number: nu
  */
 export async function removeMarker(comment: Comment, index: number, number: number) {
   const before = structuredClone(comment.marks ?? []);
+  if (useReportUi.getState().note?.commentId === comment.id) useReportUi.setState({ note: null });
+  useMarkerHover.setState(null, true);
   await drop(comment.id, index);
   offerUndo(comment, before, index, number);
 }
@@ -90,6 +135,18 @@ export async function closeNote() {
   const note = useReportUi.getState().note;
   useReportUi.setState({ note: null });
   if (note?.fresh) await drop(note.commentId, note.index);
+}
+
+/**
+ * Opens the note box of a marker that already exists, under the element that was clicked.
+ * @param commentId The comment id.
+ * @param index The marker's place.
+ * @param anchor The number on the screenshot or the button in the notes list.
+ */
+export async function editNote(commentId: string, index: number, anchor: Element) {
+  await closeNote();
+  const box = anchor.getBoundingClientRect();
+  useReportUi.setState({ note: { commentId, index, fresh: false, x: box.left + box.width / 2, y: box.top + box.height / 2 } });
 }
 
 /**
@@ -122,47 +179,23 @@ export async function removeNoted(comment: Comment, number: number) {
 }
 
 /**
- * Adds a marker where a screenshot was clicked, or removes the one nearest a right-click.
+ * Adds a numbered marker where a screenshot was clicked and opens its note box there.
  * @param comment The comment the screenshot belongs to.
- * @param number Its number.
  * @param image Which of its images was clicked.
- * @param event The click.
- * @param action Add or remove.
+ * @param click Where it was clicked as fractions of the image, the image's width over height, and the point on screen.
  */
-export async function quickMark(
-  comment: Comment,
-  number: number,
-  image: 'detail' | 'shot',
-  event: React.MouseEvent<HTMLImageElement>,
-  action: 'add' | 'remove',
-) {
-  const img = event.currentTarget;
-  const box = img.getBoundingClientRect();
-  const at = { x: event.clientX, y: event.clientY };
+export async function addMarker(comment: Comment, image: MarkableImage, click: { fx: number; fy: number; aspect: number; x: number; y: number }) {
   await closeNote();
-  const before = structuredClone(comment.marks ?? []);
   try {
-    const reply = await ask('quickMark', {
-      id: comment.id,
-      action,
-      image,
-      fx: (at.x - box.left) / box.width,
-      fy: (at.y - box.top) / box.height,
-      aspect: img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 0,
-      reach: 18 / box.width,
-    });
+    const reply = await ask('quickMark', { id: comment.id, action: 'add', image, fx: click.fx, fy: click.fy, aspect: click.aspect });
     if (reply.stale) {
       apply(comment.id, reply);
       toast.info('The image was redrawn with the current crop. Click again to place the marker.');
       return;
     }
-    if (reply.index == null) {
-      if (action === 'remove') toast.info('No marker here. Right-click on a number to remove it.');
-      return;
-    }
+    if (reply.index == null) return;
     apply(comment.id, reply);
-    if (action === 'add') useReportUi.setState({ note: { commentId: comment.id, index: reply.index, fresh: true, ...at } });
-    else offerUndo(comment, before, reply.index, number);
+    useReportUi.setState({ note: { commentId: comment.id, index: reply.index, fresh: true, x: click.x, y: click.y } });
   } catch (error) {
     fail(error);
   }

@@ -2,7 +2,7 @@ import { SEVERITIES, severityOf } from './severity.js';
 import { statusOf as reviewStatusOf } from './status.js';
 import { environmentText, escapeHtml as esc, hexColour, linkName, linksLabel, numbering, recheckCaption, routeOf, sortIssues } from './report-template.js';
 import { DEFAULT_FIELDS, withDefaults } from './fields.js';
-import { markList } from './marks.js';
+import { MARK_COLOUR, markList } from './marks.js';
 import { widthCaption, widthShots, widthsLine } from './widths.js';
 
 /**
@@ -17,7 +17,6 @@ const LINE = '#c9cedb';
 const SANS = 'Arial, sans-serif';
 const MONO_FACE = 'Consolas, monospace';
 const IMAGE_WIDTH = 640;
-const MARK_COLOR = '#e5484d';
 
 /**
  * Absolute column widths in pixels. Google Docs stores column widths
@@ -169,7 +168,7 @@ function commentRow(issue, n, shots, fields, widths) {
           ${markList(issue)
             .map(
               (item) =>
-                `<p style="${P} margin: 0 0 3px;"><b style="color: ${MARK_COLOR};">${item.n}.</b> ${esc(item.note).replace(/\n/g, '<br />')}</p>`,
+                `<p style="${P} margin: 0 0 3px;"><b style="color: ${MARK_COLOUR};">${item.n}.</b> ${esc(item.note).replace(/\n/g, '<br />')}</p>`,
             )
             .join('\n          ')}
           ${factLines(issue, fields)}

@@ -1,46 +1,47 @@
 import { useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Bot,
+  ChevronDown,
   ClipboardCopy,
+  ClipboardList,
   Compass,
   Crop,
+  Download,
   Ellipsis,
   FileCode,
   FileDown,
   FileText,
   FolderOpen,
-  ListChecks,
-  MoreHorizontal,
+  Layers,
   Pencil,
   Plus,
   Printer,
   Save,
+  ScanSearch,
+  Send,
   Settings,
   SlidersHorizontal,
   Trash2,
-  ScanSearch,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { refreshLinks, statusTone } from './shared';
-import { cn } from '@/lib/utils';
 import { ALL_REVIEWS, ask, useSettings } from './data';
 import { confirm } from './confirm';
 import { copyForAgents, copyForDocs, copyMarkdown, downloadHtml, downloadMarkdown, downloadWord, printPdf, saveReviewFile, type ExportSource } from './exports';
 import { FigmaIcon, JiraIcon } from './brand-icons';
-import { jiraToneClass } from './badges';
 import { openDialog, showReview, useReportUi } from './ui-store';
 import { useReportComments, useReviews } from './use-report';
 import { startRecheck } from './recheck';
@@ -56,57 +57,61 @@ function useExportSource(): ExportSource | null {
   return settings ? { review, comments: all, settings } : null;
 }
 
-/** Picks the review the report shows, or every review at once. */
-function ReviewSwitcher() {
-  const { reviews, key } = useReviews();
-  const total = reviews.reduce((sum, review) => sum + review.count, 0);
-  const items = [
-    ...reviews.map((review) => ({ value: review.id, label: `${review.name} (${review.count})` })),
-    { value: ALL_REVIEWS, label: `All reviews (${total})` },
-  ];
-  return (
-    <Select items={items} value={key} onValueChange={(value) => value && showReview(value)}>
-      <SelectTrigger aria-label="Review" className="max-w-[min(18rem,40vw)] min-w-0" data-tour="review">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {items.map((item) => (
-          <SelectItem key={item.value} value={item.value}>
-            {item.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
+/**
+ * A count at the end of a menu row.
+ * @param props.value The count.
+ */
+const RowCount = ({ value }: { value: number }) => <span className="ml-auto pl-4 text-xs text-muted-foreground tabular-nums">{value}</span>;
 
-/** New review, edit the one shown, or delete it. */
-function ReviewMenu() {
-  const { review } = useReviews();
+/**
+ * The review shown, as a button that opens the list of reviews to switch between, then New review, and Edit and
+ * Delete for the one shown.
+ */
+function ReviewSwitcher() {
+  const { reviews, review, key } = useReviews();
+  const total = reviews.reduce((sum, entry) => sum + entry.count, 0);
   return (
     <DropdownMenu>
-      <Tooltip>
-        <TooltipTrigger render={<DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="Review menu" />} />}>
-          <MoreHorizontal />
-        </TooltipTrigger>
-        <TooltipContent>Review menu</TooltipContent>
-      </Tooltip>
-      <DropdownMenuContent className="w-56">
-        <DropdownMenuItem onClick={() => openDialog('newReview')}>
-          <Plus />
-          New review
-        </DropdownMenuItem>
+      <DropdownMenuTrigger render={<Button variant="outline" className="max-w-[min(18rem,50vw)] min-w-0 justify-between" data-tour="review" />}>
+        <span className="truncate">{review?.name ?? (key === ALL_REVIEWS ? 'All reviews' : 'Reviews')}</span>
+        <ChevronDown data-icon="inline-end" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-72">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Reviews</DropdownMenuLabel>
+          <DropdownMenuRadioGroup value={key} onValueChange={(value: string) => showReview(value)}>
+            {reviews.map((entry) => (
+              <DropdownMenuRadioItem key={entry.id} value={entry.id}>
+                <ClipboardList />
+                <span className="truncate">{entry.name}</span>
+                <RowCount value={entry.count} />
+              </DropdownMenuRadioItem>
+            ))}
+            <DropdownMenuRadioItem value={ALL_REVIEWS}>
+              <Layers />
+              All reviews
+              <RowCount value={total} />
+            </DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+          <DropdownMenuItem onClick={() => openDialog('newReview')}>
+            <Plus />
+            New review
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
         {review && (
           <>
-            <DropdownMenuItem onClick={() => openDialog('editReview')}>
-              <Pencil />
-              Edit name and links
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={() => deleteReview(review)}>
-              <Trash2 />
-              Delete review
-            </DropdownMenuItem>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>This review</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => openDialog('editReview')}>
+                <Pencil />
+                Edit name and links
+              </DropdownMenuItem>
+              <DropdownMenuItem variant="destructive" onClick={() => deleteReview(review)}>
+                <Trash2 />
+                Delete review
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
           </>
         )}
       </DropdownMenuContent>
@@ -139,50 +144,6 @@ async function deleteReview(review: ReviewWithCount) {
 }
 
 /**
- * Opens a linked ticket or file, or Help and settings when the link has no address yet.
- * @param url The address.
- */
-const openLink = (url: string | undefined) => (url ? chrome.tabs.create({ url }) : chrome.runtime.openOptionsPage());
-
-/** The review's linked Jira ticket and Figma file, refreshed when Jira or Figma is connected and the details are old. */
-function LinkChips() {
-  const { review } = useReviews();
-  useQuery({
-    queryKey: ['links', review?.id],
-    enabled: Boolean(review?.jira?.key || review?.figma?.fileKey),
-    queryFn: async () => {
-      if (!review) return {};
-      const { patch } = await refreshLinks(review);
-      if (Object.keys(patch).length) await ask('patchReview', { id: review.id, patch });
-      return patch;
-    },
-  });
-  if (!review) return null;
-  const tone = statusTone(review.jira?.statusCategory);
-  return (
-    <div className="hidden min-w-0 items-center gap-1 lg:flex">
-      {review.jira?.key && (
-        <Button variant="outline" size="sm" onClick={() => openLink(review.jira?.url)} title={review.jira.url ? `Open ${review.jira.key}` : 'Connect in Help and settings to bring in details'}>
-          <JiraIcon className="size-3.5" />
-          {review.jira.key}
-          {review.jira.status && (
-            <span className={cn('text-xs', jiraToneClass(tone))}>
-              {review.jira.status}
-            </span>
-          )}
-        </Button>
-      )}
-      {review.figma?.fileKey && (
-        <Button variant="outline" size="sm" className="max-w-48" onClick={() => openLink(review.figma?.url)} title={`Open ${review.figma.name || 'Figma file'}`}>
-          <FigmaIcon className="size-3.5" />
-          <span className="truncate">{review.figma.name || 'Figma file'}</span>
-        </Button>
-      )}
-    </div>
-  );
-}
-
-/**
  * Opens a review file someone saved and shows it as a new review.
  * @param file The picked file.
  */
@@ -209,12 +170,133 @@ async function redoCrops(reviewKey: string) {
   });
 }
 
-/** Every export, share, send and help action, grouped, each with its icon. */
-function MoreMenu({ source }: { source: ExportSource | null }) {
+/**
+ * Runs an export once the review and its settings have loaded.
+ * @param source The export source, or null while it loads.
+ * @param action The export.
+ */
+const runWith = (source: ExportSource | null, action: (from: ExportSource) => unknown) => () => source && action(source);
+
+/**
+ * The download, copy and settings items of the Export menu.
+ * @param props.source The export source.
+ */
+function ExportItems({ source }: { source: ExportSource | null }) {
   const { key } = useReviews();
+  const empty = !source?.comments.length;
+  return (
+    <>
+      <DropdownMenuGroup>
+        <DropdownMenuLabel>Download</DropdownMenuLabel>
+        <DropdownMenuItem disabled={empty} onClick={runWith(source, downloadWord)}>
+          <FileText />
+          Word file (.doc)
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={empty} onClick={runWith(source, printPdf)}>
+          <Printer />
+          PDF or print
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={empty} onClick={runWith(source, downloadHtml)}>
+          <FileCode />
+          HTML file
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={empty} onClick={runWith(source, downloadMarkdown)}>
+          <FileDown />
+          Markdown file (.md)
+        </DropdownMenuItem>
+      </DropdownMenuGroup>
+      <DropdownMenuSeparator />
+      <DropdownMenuGroup>
+        <DropdownMenuLabel>Copy</DropdownMenuLabel>
+        <DropdownMenuItem disabled={empty} onClick={runWith(source, copyMarkdown)}>
+          <ClipboardCopy />
+          Copy as Markdown
+        </DropdownMenuItem>
+      </DropdownMenuGroup>
+      <DropdownMenuSeparator />
+      <DropdownMenuGroup>
+        <DropdownMenuLabel>Options</DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => openDialog('options')}>
+          <SlidersHorizontal />
+          What exports include
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={empty || !key} onClick={() => key && redoCrops(key)}>
+          <Crop />
+          Redo crops
+        </DropdownMenuItem>
+      </DropdownMenuGroup>
+    </>
+  );
+}
+
+/**
+ * The Send to Jira and Send to Figma items.
+ * @param props.empty True when the review has no comments.
+ */
+function SendItems({ empty }: { empty: boolean }) {
+  return (
+    <DropdownMenuGroup>
+      <DropdownMenuLabel>Send</DropdownMenuLabel>
+      <DropdownMenuItem disabled={empty} onClick={() => openDialog('jira')}>
+        <JiraIcon />
+        Send to Jira
+      </DropdownMenuItem>
+      <DropdownMenuItem disabled={empty} onClick={() => openDialog('figma')}>
+        <FigmaIcon />
+        Send to Figma
+      </DropdownMenuItem>
+    </DropdownMenuGroup>
+  );
+}
+
+/** Narrow bars show only the icon of the Export and Send buttons, square like an icon button. */
+const ICON_WHEN_NARROW = 'max-lg:w-8 max-lg:px-0!';
+
+/**
+ * Downloads and copies other than the two copy buttons, in a menu beside them.
+ * @param props.source The export source.
+ */
+function ExportMenu({ source }: { source: ExportSource | null }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger render={<Button variant="outline" aria-label="Export" className={ICON_WHEN_NARROW} />}>
+        <Download />
+        <span className="max-lg:hidden">Export</span>
+        <ChevronDown data-icon="inline-end" className="max-lg:hidden" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <ExportItems source={source} />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/**
+ * Send to Jira or Figma, in a menu beside the copy buttons.
+ * @param props.empty True when the review has no comments.
+ */
+function SendMenu({ empty }: { empty: boolean }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger render={<Button variant="outline" disabled={empty} aria-label="Send" className={ICON_WHEN_NARROW} />}>
+        <Send />
+        <span className="max-lg:hidden">Send</span>
+        <ChevronDown data-icon="inline-end" className="max-lg:hidden" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <SendItems empty={empty} />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/**
+ * Review files and help. Below 1280px it also holds Recheck and Copy for agents, which the bar has no room for.
+ * @param props.source The export source.
+ */
+function MoreMenu({ source }: { source: ExportSource | null }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const empty = !source?.comments.length;
-  const run = (action: (from: ExportSource) => unknown) => () => source && action(source);
   return (
     <>
       <input
@@ -229,83 +311,34 @@ function MoreMenu({ source }: { source: ExportSource | null }) {
         }}
       />
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="outline" data-tour="more" />}>
-          <Ellipsis />
-          More
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
-          <DropdownMenuGroup className="lg:hidden">
+        <Tooltip>
+          <TooltipTrigger render={<DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="More" data-tour="more" />} />}>
+            <Ellipsis />
+          </TooltipTrigger>
+          <TooltipContent>More</TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent align="end" className="w-60">
+          <DropdownMenuGroup className="xl:hidden">
+            <DropdownMenuLabel>Review</DropdownMenuLabel>
             <DropdownMenuItem disabled={empty} onClick={() => startRecheck()}>
               <ScanSearch />
               Recheck this page
             </DropdownMenuItem>
-            <DropdownMenuItem disabled={empty} onClick={() => openDialog('edit')}>
-              <ListChecks />
-              Edit comments
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-          </DropdownMenuGroup>
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>Export</DropdownMenuLabel>
-            <DropdownMenuItem disabled={empty} onClick={run(downloadWord)}>
-              <FileText />
-              Word file (.doc)
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled={empty} onClick={run(printPdf)}>
-              <Printer />
-              PDF or print
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled={empty} onClick={run(downloadHtml)}>
-              <FileCode />
-              HTML file
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled={empty} onClick={run(downloadMarkdown)}>
-              <FileDown />
-              Markdown file (.md)
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled={empty} onClick={run(copyMarkdown)}>
-              <ClipboardCopy />
-              Copy as Markdown
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled={empty} onClick={run(copyForAgents)}>
+            <DropdownMenuItem disabled={empty} onClick={runWith(source, copyForAgents)}>
               <Bot />
               Copy for agents
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => openDialog('options')}>
-              <SlidersHorizontal />
-              Report options
-            </DropdownMenuItem>
           </DropdownMenuGroup>
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator className="xl:hidden" />
           <DropdownMenuGroup>
-            <DropdownMenuLabel>Share</DropdownMenuLabel>
-            <DropdownMenuItem disabled={empty} onClick={run(saveReviewFile)}>
+            <DropdownMenuLabel>Review file</DropdownMenuLabel>
+            <DropdownMenuItem disabled={empty} onClick={runWith(source, saveReviewFile)}>
               <Save />
               Save review file
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => fileInput.current?.click()}>
               <FolderOpen />
               Open review file
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>Send</DropdownMenuLabel>
-            <DropdownMenuItem disabled={empty} onClick={() => openDialog('jira')}>
-              <JiraIcon />
-              Send to Jira
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled={empty} onClick={() => openDialog('figma')}>
-              <FigmaIcon />
-              Send to Figma
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>Images</DropdownMenuLabel>
-            <DropdownMenuItem disabled={empty || !key} onClick={() => key && redoCrops(key)}>
-              <Crop />
-              Redo crops
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
@@ -326,37 +359,33 @@ function MoreMenu({ source }: { source: ExportSource | null }) {
   );
 }
 
-/** The bar across the top: brand, review switcher and menu, linked ticket and file, and the main actions. */
+/**
+ * The bar across the top: brand and review switcher, then the actions. Copy for Docs is the one main action, Copy for
+ * agents, Export and Send sit beside it, and the rest is under More. The review's linked ticket and file sit under its
+ * heading instead, so the bar never runs out of room for them.
+ */
 export function TopBar() {
   const source = useExportSource();
   const empty = !source?.comments.length;
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b px-3 md:px-4">
-      <span className="hidden text-base font-extrabold tracking-tight sm:inline">Margin</span>
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+      <span className="mr-2 hidden text-base font-extrabold tracking-tight sm:inline">Margin</span>
       <ReviewSwitcher />
-      <ReviewMenu />
-      <LinkChips />
       <span className="flex-1" />
-      <Button
-        variant="outline"
-        className="hidden lg:inline-flex"
-        disabled={empty}
-        onClick={() => startRecheck()}
-        title="Recheck every comment on the page you last opened Margin on"
-      >
+      <Button variant="ghost" className="hidden xl:inline-flex" disabled={empty} onClick={() => startRecheck()} title="Recheck every comment on the page you last opened Margin on">
         <ScanSearch />
         Recheck this page
       </Button>
-      <Button variant="outline" className="hidden lg:inline-flex" disabled={empty} onClick={() => openDialog('edit')} data-tour="edit">
-        <ListChecks />
-        Edit comments
+      <div className="flex items-center gap-2" data-tour="export">
+        <ExportMenu source={source} />
+        <SendMenu empty={empty} />
+      </div>
+      <Separator orientation="vertical" className="mx-1 hidden data-vertical:h-5 data-vertical:self-center sm:block" />
+      <Button variant="outline" className="hidden xl:inline-flex" disabled={empty} onClick={runWith(source, copyForAgents)} title="Copy the review as a task list for a coding agent">
+        <Bot />
+        Copy for agents
       </Button>
-      <Button
-        className="bg-action text-action-foreground hover:bg-action/80"
-        disabled={empty}
-        onClick={() => source && copyForDocs(source)}
-        data-tour="copy"
-      >
+      <Button variant="action" disabled={empty} onClick={runWith(source, copyForDocs)} data-tour="copy" title="Copy the review to paste into Google Docs">
         <ClipboardCopy />
         <span className="hidden sm:inline">Copy for Docs</span>
         <span className="sm:hidden">Copy</span>

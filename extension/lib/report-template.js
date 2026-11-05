@@ -1,7 +1,7 @@
 import { SEVERITIES, SEVERITY_ORDER, severityOf } from './severity.js';
 import { STATUSES, statusOf } from './status.js';
 import { DEFAULT_FIELDS, withDefaults } from './fields.js';
-import { markList } from './marks.js';
+import { MARK_COLOUR, markList } from './marks.js';
 import { widthCaption, widthShots } from './widths.js';
 import { icon } from './icons.js';
 
@@ -23,7 +23,7 @@ export const REPORT_CSS = `
   color-scheme: light;
   --bg: #ffffff; --surface: #f0eefe; --line: #e2ddf5;
   --ink: #000000; --ink-2: #5b5670;
-  --accent: #e5484d; --success: #18794e;
+  --accent: ${MARK_COLOUR}; --success: #18794e;
   --sev-blocker: #ce2c31; --sev-major: #c2410c; --sev-minor: #0d74ce; --sev-nit: #60646c;
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 40px;
   --radius: 12px;

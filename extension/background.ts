@@ -43,6 +43,7 @@ import { annotatingNoticesItem, annotatingTabsItem } from './lib/session-storage
 import { serveStoreWrites } from './lib/store-server';
 import { parseReviewFile } from './lib/review-file.js';
 import { WIDTHS, widthShots } from './lib/widths.js';
+import { MARK_COLOUR } from './lib/marks.js';
 
 declare global {
   interface Window {
@@ -59,7 +60,7 @@ declare global {
   }
 }
 
-const HIGHLIGHT = '#e5484d';
+const HIGHLIGHT = MARK_COLOUR;
 const MAX_SHOT_WIDTH = 1400;
 const MAX_DETAIL_WIDTH = 900;
 const MAX_SCREENSHOT_WIDTH = 2400;
@@ -397,6 +398,27 @@ function drawMarks(context: OffscreenCanvasRenderingContext2D, marks: CanvasMark
 }
 
 /**
+ * Outlines the marked region with a dashed red line edged in thin white, so it reads on light and dark pages alike.
+ * @param context The canvas to draw on.
+ * @param rect The region, in canvas pixels.
+ */
+function drawRegionOutline(context: OffscreenCanvasRenderingContext2D, rect: Rect) {
+  const lineWidth = Math.max(2, Math.round(context.canvas.width / 600));
+  const dash = lineWidth * 3;
+  context.save();
+  context.lineCap = 'butt';
+  context.lineJoin = 'miter';
+  context.setLineDash([dash, dash * 0.75]);
+  context.lineWidth = lineWidth + 2;
+  context.strokeStyle = 'rgba(255,255,255,0.92)';
+  context.strokeRect(rect.x, rect.y, rect.w, rect.h);
+  context.lineWidth = lineWidth;
+  context.strokeStyle = HIGHLIGHT;
+  context.strokeRect(rect.x, rect.y, rect.w, rect.h);
+  context.restore();
+}
+
+/**
  * Draws a part of the screenshot with the marked region outlined on top.
  * @param bitmap The screenshot.
  * @param source The part of the bitmap to draw, in bitmap pixels.
@@ -411,16 +433,7 @@ async function drawRegion(bitmap: ImageBitmap, source: Rect, box: Rect, maxWidth
   const context = context2d(canvas);
   context.drawImage(bitmap, source.x, source.y, source.w, source.h, 0, 0, canvas.width, canvas.height);
 
-  const x = (box.x - source.x) * factor;
-  const y = (box.y - source.y) * factor;
-  const w = box.w * factor;
-  const h = box.h * factor;
-  context.lineWidth = 4;
-  context.strokeStyle = 'rgba(255,255,255,0.92)';
-  context.strokeRect(x - 2, y - 2, w + 4, h + 4);
-  context.lineWidth = 2;
-  context.strokeStyle = HIGHLIGHT;
-  context.strokeRect(x, y, w, h);
+  drawRegionOutline(context, { x: (box.x - source.x) * factor, y: (box.y - source.y) * factor, w: box.w * factor, h: box.h * factor });
 
   const canvasX = (value: number) => (value * scale - source.x) * factor;
   const canvasY = (value: number) => (value * scale - source.y) * factor;

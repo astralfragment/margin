@@ -16,11 +16,12 @@ interface Step {
 
 const STEPS: Step[] = [
   { target: '[data-tour="review"]', title: 'One review per round', body: 'Each review holds one round of comments. Switch, edit or start a new one here.' },
-  { target: '[data-tour="sidebar"]', title: 'Every comment', body: 'Sorted by severity or by number. Filter or search to jump to one in the report.' },
-  { target: '[data-comment-id] img', title: 'Number the details', body: 'Click a screenshot to drop a numbered marker. Use Open editor for boxes and arrows.' },
-  { target: '[data-tour="edit"]', title: 'Tidy the wording', body: 'Fix titles, notes and severity for every comment in one place.' },
+  { target: '[data-tour="sidebar"]', title: 'Every comment', body: 'Search, filter or sort, then click one to jump to it. Tick several to delete them or mark them fixed together.' },
+  { target: '[data-tour="mark"]', title: 'Number the details', body: 'Click a screenshot to drop a numbered marker with a note. Click a number to change it.' },
+  { target: '[data-tour="edit"]', title: 'Edit in place', body: 'Change the wording, severity or status of a comment right where it is.' },
   { target: '[data-tour="copy"]', title: 'Hand it over', body: 'Paste the whole review into Google Docs. Numbered notes stay numbered.' },
-  { target: '[data-tour="more"]', title: 'More ways out', body: 'Word, PDF, HTML and Markdown, review files to share, Jira and Figma, report options, and this tour again.' },
+  { target: '[data-tour="export"]', title: 'Other ways out', body: 'Download Word, PDF, HTML or Markdown, or send comments to Jira or Figma.' },
+  { target: '[data-tour="more"]', title: 'Review files and help', body: 'Save or open a review file to share it, and find this tour again.' },
 ];
 
 const useTour = create<{ steps: Step[]; at: number; rect: DOMRect | null }>(() => ({ steps: [], at: 0, rect: null }));
@@ -67,11 +68,15 @@ export function startTour() {
 
 const offered = { done: false };
 
-/** Starts the tour once, the first time the report shows comments, unless it was seen before. */
+/**
+ * Starts the tour once, the first time the report shows comments, unless it was seen before. The first comment calls
+ * it once its screenshots have been read, and the tour waits for the screenshot to load so it can point at it.
+ */
 export async function startTourOnce() {
   if (offered.done) return;
   offered.done = true;
   if ((await toursSeenItem.getValue()).report) return;
+  await document.querySelector<HTMLImageElement>('img[data-tour="mark"]')?.decode().catch(() => undefined);
   requestAnimationFrame(startTour);
 }
 
@@ -85,7 +90,7 @@ export function Tour() {
     <>
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed z-40 rounded-lg ring-2 ring-ring transition-all motion-reduce:transition-none"
+        className="pointer-events-none fixed z-40 rounded-lg ring-2 ring-ring"
         style={{ left: rect.left - 4, top: rect.top - 4, width: rect.width + 8, height: rect.height + 8, boxShadow: '0 0 0 100vmax rgb(0 0 0 / 0.45)' }}
       />
       <Popover open onOpenChange={(open) => !open && finish()}>
@@ -93,7 +98,7 @@ export function Tour() {
           nativeButton={false}
           render={<span aria-hidden="true" className="pointer-events-none fixed" style={{ left: rect.left, top: rect.top, width: rect.width, height: rect.height }} />}
         />
-        <PopoverContent side="bottom" align="start" sideOffset={12} className="w-80">
+        <PopoverContent side="bottom" align="start" sideOffset={12} className="w-80" initialFocus={false}>
           <PopoverHeader>
             <PopoverTitle>{step.title}</PopoverTitle>
             <PopoverDescription>{step.body}</PopoverDescription>
@@ -110,7 +115,7 @@ export function Tour() {
                 Back
               </Button>
             )}
-            <Button size="sm" className="bg-action text-action-foreground hover:bg-action/80" autoFocus onClick={() => (last ? finish() : show(at + 1))}>
+            <Button size="sm" onClick={() => (last ? finish() : show(at + 1))}>
               {last ? 'Done' : 'Next'}
             </Button>
           </div>
