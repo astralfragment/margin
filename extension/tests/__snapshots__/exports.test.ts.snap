@@ -1,0 +1,389 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`export templates > builds the same Docs and Word document 1`] = `
+"<!doctype html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8" />
+<title>Checkout review</title>
+<style>
+@page WordSection1 { size: 29.7cm 21cm; margin: 1.5cm; }
+div.WordSection1 { page: WordSection1; }
+</style>
+</head>
+<body style="background: #ffffff; color: #12151c;">
+<div class="WordSection1">
+  <h1 style="font-family: Arial, sans-serif; font-size: 18pt; font-weight: 700; color: #12151c; margin: 0 0 2px;">Checkout review</h1>
+  <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #565d73; margin: 0 0 12px;">Date: 2026/10/31, 11:30:00, ticket <a href="https://team.atlassian.net/browse/SS-112">SS-112</a>, In Progress in Jira, file <a href="https://www.figma.com/design/abc123/Checkout">Checkout</a></p>
+
+  <h2 style="font-family: Arial, sans-serif; font-size: 13pt; font-weight: 700; color: #12151c; margin: 26px 0 4px;">Introduction, important notes</h2>
+  <p style="font-family: Arial, sans-serif; font-size: 10pt; color: #12151c; margin: 0 0 8px;">2 comments across 1 page: 1 Blocker, 1 Major, 0 Minor, 0 Nit. Each comment keeps the number it has in the Margin report, and carries the element selector, the marked region, and the viewport it was captured at. Every comment starts Open and shows Fixed or Won't fix once it is rechecked. A linked Jira issue shows its own status in the Jira column.</p>
+
+  <h3 style="font-family: Arial, sans-serif; font-size: 11pt; font-weight: 700; color: #12151c; margin: 20px 0 4px;">Statuses</h3>
+  <table cellspacing="0" cellpadding="0" style="border-collapse: collapse; width: 100%; margin: 0 0 8px;">
+    <tbody>
+      <tr>
+      <td style="border: 1px solid #c9cedb; padding: 5px 7px; font-family: Arial, sans-serif; font-size: 9pt; color: #12151c; vertical-align: top; background: #ffffff; color: #12151c; font-weight: 700; text-align: center;">Open</td>
+      <td style="border: 1px solid #c9cedb; padding: 5px 7px; font-family: Arial, sans-serif; font-size: 9pt; color: #12151c; vertical-align: top; background: #e6f6eb; color: #18794e; font-weight: 700; text-align: center;">Fixed</td>
+      <td style="border: 1px solid #c9cedb; padding: 5px 7px; font-family: Arial, sans-serif; font-size: 9pt; color: #12151c; vertical-align: top; background: #f0f0f3; color: #60646c; font-weight: 700; text-align: center;">Won't fix</td>
+      </tr>
+    </tbody>
+  </table>
+  
+  <h2 style="font-family: Arial, sans-serif; font-size: 13pt; font-weight: 700; color: #12151c; margin: 26px 0 4px;">COMM1: Shop &gt; Cart</h2>
+  <p style="font-family: Arial, sans-serif; font-size: 10pt; color: #12151c; margin: 0 0 8px;"><a href="https://shop.example.com/cart/12345">https://shop.example.com/cart/12345</a></p>
+  <table cellspacing="0" cellpadding="0" width="1180" style="border-collapse: collapse; width: 1180px; table-layout: fixed; margin: 0 0 8px;">
+    <colgroup>
+      <col width="44" style="width: 44px;" />
+      <col width="700" style="width: 700px;" />
+      <col width="120" style="width: 120px;" />
+      <col width="316" style="width: 316px;" />
+    </colgroup>
+    <tbody>
+      <tr>
+        <td style="border: 1px solid #c9cedb; padding: 5px 7px; font-family: Arial, sans-serif; font-size: 9pt; color: #12151c; vertical-align: top; font-weight: 700; color: #565d73; width: 44px; border: 0;"></td>
+        <td style="border: 1px solid #c9cedb; padding: 5px 7px; font-family: Arial, sans-serif; font-size: 9pt; color: #12151c; vertical-align: top; font-weight: 700; color: #565d73; width: 700px; border: 0;"></td>
+        <td style="border: 1px solid #c9cedb; padding: 5px 7px; font-family: Arial, sans-serif; font-size: 9pt; color: #12151c; vertical-align: top; font-weight: 700; color: #565d73; width: 120px; border: 0;">Status</td>
+        <td style="border: 1px solid #c9cedb; padding: 5px 7px; font-family: Arial, sans-serif; font-size: 9pt; color: #12151c; vertical-align: top; font-weight: 700; color: #565d73; width: 316px; border: 0;">Jira</td>
+      </tr>
+      <tr>
+        <td style="border: 1px solid #c9cedb; padding: 5px 7px; font-family: Arial, sans-serif; font-size: 9pt; color: #12151c; vertical-align: top; width: 44px; font-weight: 700;">02</td>
+        <td style="border: 1px solid #c9cedb; padding: 5px 7px; font-family: Arial, sans-serif; font-size: 9pt; color: #12151c; vertical-align: top; width: 700px;">
+          <h3 style="font-family: Arial, sans-serif; font-size: 11pt; font-weight: 700; color: #12151c; margin: 20px 0 4px; margin: 0 0 2px;">Card padding collapses on mobile</h3>
+          <p style="font-family: Arial, sans-serif; font-size: 10pt; color: #12151c; margin: 0 0 8px; margin: 0 0 6px; font-size: 9pt; color: #ce2c31;"><b>Blocker</b></p>
+          
+          
+          <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Page</span>&nbsp;&nbsp;<a href="https://shop.example.com/cart/12345">https://shop.example.com/cart/12345</a></p>
+          <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Selector</span>&nbsp;&nbsp;<span style="font-family: Consolas, monospace; font-size: 8pt;">#pay</span></p>
+          <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Text</span>&nbsp;&nbsp;Pay now</p>
+          <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Styles</span>&nbsp;&nbsp;<span style="font-family: Consolas, monospace; font-size: 8pt;">16px Inter, color #3b82f6</span></p>
+          <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Position</span>&nbsp;&nbsp;<span style="font-family: Consolas, monospace; font-size: 8pt;">120 x 44 at 40, 300 in 1280 x 800 at 1x</span></p>
+          <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Captured</span>&nbsp;&nbsp;2026/10/31, 10:20:00</p>
+          <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Browser</span>&nbsp;&nbsp;Google Chrome 141 on Windows, zoom 100%</p>
+          <p style="margin: 8px 0 2px;"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" alt="Marked region for comment 2" width="640" style="max-width: 100%;" /></p>
+          <p style="margin: 8px 0 2px;"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" alt="Same region after recheck for comment 2" width="640" style="max-width: 100%;" /></p>
+        <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #565d73; margin: 0 0 12px; margin: 0 0 4px;">After, rechecked 2026/10/31, 11:00:00</p>
+          <table cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin: 8px 0 4px;"><tbody><tr><td style="padding: 0 8px 0 0; vertical-align: top; width: 205px;"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" alt="Mobile width for comment 2" width="205" /><p style="font-family: Arial, sans-serif; font-size: 8pt; color: #565d73; margin: 0 0 12px; margin: 2px 0 0;">Mobile, 375px</p></td><td style="padding: 0 8px 0 0; vertical-align: top; width: 205px;"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" alt="Desktop width for comment 2" width="205" /><p style="font-family: Arial, sans-serif; font-size: 8pt; color: #565d73; margin: 0 0 12px; margin: 2px 0 0;">Desktop, 1280px. Element not found, cut at the saved position</p></td></tr></tbody></table>
+          <p style="margin: 8px 0 2px;"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" alt="Full viewport for comment 2" width="640" style="max-width: 100%;" /></p>
+        <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #565d73; margin: 0 0 12px; margin: 0 0 4px;">Full viewport</p>
+        </td>
+        <td style="border: 1px solid #c9cedb; padding: 5px 7px; font-family: Arial, sans-serif; font-size: 9pt; color: #12151c; vertical-align: top; width: 120px; background: #e6f6eb; color: #18794e; font-weight: 700;">Fixed</td>
+        <td style="border: 1px solid #c9cedb; padding: 5px 7px; font-family: Arial, sans-serif; font-size: 9pt; color: #12151c; vertical-align: top; width: 316px;"><a href="https://team.atlassian.net/browse/SS-113">SS-113</a></td>
+      </tr>
+      <tr>
+        <td style="border: 1px solid #c9cedb; padding: 5px 7px; font-family: Arial, sans-serif; font-size: 9pt; color: #12151c; vertical-align: top; width: 44px; font-weight: 700;">01</td>
+        <td style="border: 1px solid #c9cedb; padding: 5px 7px; font-family: Arial, sans-serif; font-size: 9pt; color: #12151c; vertical-align: top; width: 700px;">
+          <h3 style="font-family: Arial, sans-serif; font-size: 11pt; font-weight: 700; color: #12151c; margin: 20px 0 4px; margin: 0 0 2px;">Pay button is the wrong blue</h3>
+          <p style="font-family: Arial, sans-serif; font-size: 10pt; color: #12151c; margin: 0 0 8px; margin: 0 0 6px; font-size: 9pt; color: #c2410c;"><b>Major</b></p>
+          <p style="font-family: Arial, sans-serif; font-size: 10pt; color: #12151c; margin: 0 0 8px; margin: 0 0 6px;">Expected brand blue.<br />Actual is a lighter tint.</p>
+          <p style="font-family: Arial, sans-serif; font-size: 10pt; color: #12151c; margin: 0 0 8px; margin: 0 0 3px;"><b style="color: #e5484d;">1.</b> Wrong shade here</p>
+          <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Page</span>&nbsp;&nbsp;<a href="https://shop.example.com/cart/12345">https://shop.example.com/cart/12345</a></p>
+          <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Figma</span>&nbsp;&nbsp;<a href="https://www.figma.com/design/abc123/Checkout?node-id=1-2">Figma frame</a></p>
+          <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Selector</span>&nbsp;&nbsp;<span style="font-family: Consolas, monospace; font-size: 8pt;">#pay</span></p>
+          <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Text</span>&nbsp;&nbsp;Pay now</p>
+          <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Styles</span>&nbsp;&nbsp;<span style="font-family: Consolas, monospace; font-size: 8pt;">16px Inter, color #3b82f6</span></p>
+          <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Position</span>&nbsp;&nbsp;<span style="font-family: Consolas, monospace; font-size: 8pt;">120 x 44 at 40, 300 in 1280 x 800 at 1x</span></p>
+          <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Captured</span>&nbsp;&nbsp;2026/10/31, 10:10:00</p>
+          <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #12151c; margin: 0 0 2px;"><span style="color: #565d73; font-weight: 700;">Browser</span>&nbsp;&nbsp;Google Chrome 141 on Windows, zoom 100%</p>
+          <p style="margin: 8px 0 2px;"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" alt="Marked region for comment 1" width="640" style="max-width: 100%;" /></p>
+          
+          
+          <p style="margin: 8px 0 2px;"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" alt="Full viewport for comment 1" width="640" style="max-width: 100%;" /></p>
+        <p style="font-family: Arial, sans-serif; font-size: 8pt; color: #565d73; margin: 0 0 12px; margin: 0 0 4px;">Full viewport</p>
+        </td>
+        <td style="border: 1px solid #c9cedb; padding: 5px 7px; font-family: Arial, sans-serif; font-size: 9pt; color: #12151c; vertical-align: top; width: 120px; background: #ffffff; color: #12151c; font-weight: 700;">Open</td>
+        <td style="border: 1px solid #c9cedb; padding: 5px 7px; font-family: Arial, sans-serif; font-size: 9pt; color: #12151c; vertical-align: top; width: 316px;"></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</body>
+</html>"
+`;
+
+exports[`export templates > builds the same Docs plain text 1`] = `
+"Checkout review
+
+COMM1: Shop > Cart
+https://shop.example.com/cart/12345
+
+02  [Blocker, Fixed, SS-113] Card padding collapses on mobile
+    After, rechecked 2026/10/31, 11:00:00
+    Mobile, 375px. Desktop, 1280px. Element not found, cut at the saved position
+    #pay, 120 x 44 at 40, 300, viewport 1280 x 800 at 1x, 2026/10/31, 10:20:00
+
+01  [Major, Open] Pay button is the wrong blue
+    Expected brand blue.
+    Actual is a lighter tint.
+    1. Wrong shade here
+    #pay, 120 x 44 at 40, 300, viewport 1280 x 800 at 1x, 2026/10/31, 10:10:00
+"
+`;
+
+exports[`export templates > builds the same HTML report 1`] = `
+"<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Checkout review</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff; --surface: #f0eefe; --line: #e2ddf5;
+  --ink: #000000; --ink-2: #5b5670;
+  --accent: #e5484d; --success: #18794e;
+  --sev-blocker: #ce2c31; --sev-major: #c2410c; --sev-minor: #0d74ce; --sev-nit: #60646c;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 40px;
+  --radius: 12px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: var(--s6) var(--s4) var(--s6);
+  background: var(--bg); color: var(--ink);
+  font: 500 14px/1.55 Manrope, ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1040px; margin: 0 auto; }
+h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+a { color: var(--ink-2); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+a:hover { color: var(--ink); text-decoration-color: currentColor; }
+header.top { display: flex; flex-wrap: wrap; gap: var(--s4); align-items: baseline; justify-content: space-between; }
+.meta-top { font-size: 12px; color: var(--ink-2); }
+.stats { display: flex; flex-wrap: wrap; gap: var(--s1); margin: var(--s4) 0 var(--s4); }
+.stat {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px;
+  padding: 0 var(--s3); font: inherit; font-size: 12px; font-weight: 500;
+  color: var(--ink-2); background: transparent;
+  border: 1px solid var(--line); border-radius: 999px; cursor: pointer;
+}
+.stat b { font-weight: 800; color: var(--sev, var(--ink)); }
+.stat[aria-pressed="true"] { color: var(--bg); background: var(--ink); border-color: var(--ink); }
+.stat[aria-pressed="true"] b { color: inherit; }
+.issue { padding: var(--s5) 0; border-top: 1px solid var(--line); }
+.issue:first-of-type { border-top: 0; padding-top: var(--s3); }
+.issue[data-sev="blocker"] { --sev: var(--sev-blocker); }
+.issue[data-sev="major"] { --sev: var(--sev-major); }
+.issue[data-sev="minor"] { --sev: var(--sev-minor); }
+.issue[data-sev="nit"] { --sev: var(--sev-nit); }
+.issue.hide { display: none; }
+.issue > header { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; }
+.num { font-size: 12px; font-weight: 800; color: var(--ink-2); min-width: 24px; }
+.issue h2 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; flex: 1; min-width: 12ch; }
+.key { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.key-status { font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+.where { margin: 2px 0 0 calc(24px + var(--s3)); font-size: 12px; }
+.ico { display: inline-flex; flex: none; width: 12px; height: 12px; }
+.ico svg { display: block; width: 100%; height: 100%; }
+.chip, .status {
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  font-size: 12px; font-weight: 600;
+}
+.chip { color: var(--sev); }
+.chip .ico { width: 9px; height: 9px; }
+.status { color: var(--ink); }
+.status[data-status="fixed"] { color: var(--success); }
+.status[data-status="wontfix"] { color: var(--ink-2); }
+.stats .sep { width: 1px; align-self: stretch; margin: 0 var(--s1); background: var(--line); }
+.note, ol.marks, dl.facts, .issue figure, .pair, .widths, details.full { margin-left: calc(24px + var(--s3)); }
+.note { margin-top: var(--s2); margin-bottom: 0; white-space: pre-wrap; max-width: 68ch; }
+ol.marks { margin-top: var(--s2); margin-bottom: 0; padding-left: var(--s5); max-width: 68ch; }
+ol.marks li { padding-left: var(--s1); white-space: pre-wrap; }
+ol.marks li::marker { color: var(--accent); font-weight: 800; }
+dl.facts {
+  margin-top: var(--s3); margin-bottom: 0; display: grid; gap: 2px var(--s3);
+  grid-template-columns: 76px minmax(0, 1fr); font-size: 12px;
+}
+dl.facts dt { color: var(--ink-2); font-weight: 600; }
+dl.facts dd { margin: 0; overflow-wrap: anywhere; }
+dl.facts dd code, .mono { font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; }
+figure { margin: var(--s4) 0 0; }
+figure img { display: block; max-width: 100%; border: 1px solid var(--line); border-radius: 8px; }
+figcaption { margin-top: var(--s1); font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); margin-top: var(--s4); }
+.pair figure, .widths figure, details.full figure { margin-left: 0; }
+.pair figure { margin-top: 0; }
+.widths { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); align-items: start; margin-top: var(--s4); }
+.widths figure { margin-top: 0; }
+details.full { margin-top: var(--s3); }
+details.full > summary { width: fit-content; font-size: 12px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
+details.full > summary:hover { color: var(--ink); }
+details.full figure { margin-top: var(--s2); }
+.empty { border: 1px dashed var(--line); border-radius: var(--radius); padding: var(--s6); text-align: center; color: var(--ink-2); }
+.empty[hidden] { display: none; }
+@media (max-width: 560px) {
+  .note, ol.marks, dl.facts, .issue figure, .pair, .widths, .where, details.full { margin-left: 0; }
+  .pair, .widths { grid-template-columns: minmax(0, 1fr); }
+  dl.facts { grid-template-columns: 74px minmax(0, 1fr); }
+}
+@media print {
+  body { padding: 0; }
+  .stats { display: none; }
+  .issue { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Checkout review</h1>
+    <div class="meta-top">2026/10/31, 11:30:00, 2 comments on 1 page</div>
+  </header>
+  <div class="stats">
+    <button class="stat" type="button" data-filter="all" aria-pressed="true"><b>2</b> comments</button>
+    <button class="stat" type="button" data-filter="blocker" style="--sev: var(--sev-blocker)" aria-pressed="false"><b>1</b> Blocker</button>
+    <button class="stat" type="button" data-filter="major" style="--sev: var(--sev-major)" aria-pressed="false"><b>1</b> Major</button>
+    <span class="sep"></span>
+    <button class="stat" type="button" data-status-filter="all" aria-pressed="true">Any status</button>
+    <button class="stat" type="button" data-status-filter="open" aria-pressed="false"><b>1</b> Open</button>
+    <button class="stat" type="button" data-status-filter="fixed" aria-pressed="false"><b>1</b> Fixed</button>
+  </div>
+  
+    <article class="issue" id="c-1" data-sev="blocker" data-status="fixed">
+      <header>
+        <span class="num">02</span>
+        <h2>Card padding collapses on mobile</h2>
+        <a class="key" href="https://team.atlassian.net/browse/SS-113">SS-113</a>
+        <span class="status" data-status="fixed"><span class="ico ico-statusFixed"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 6a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Z"/><path d="M4.25 6l1.25 1.25L7.75 4.75"/></svg></span>Fixed</span>
+        <span class="chip"><span class="ico ico-sevBlocker"><svg viewBox="0 0 10 10" aria-hidden="true"><rect x="1" y="1" width="8" height="8" rx="1" fill="currentColor"/></svg></span>Blocker</span>
+      </header>
+      <p class="where"><a href="https://shop.example.com/cart/12345">Shop &gt; Cart</a></p>
+      
+      
+      <div class="pair">
+        <figure><img alt="Marked region for comment 2" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" /><figcaption>Before</figcaption></figure>
+        <figure><img class="after" alt="Same region after recheck for comment 2" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" /><figcaption>After, rechecked 2026/10/31, 11:00:00</figcaption></figure>
+      </div>
+      <div class="widths">
+        <figure><img class="at-width" alt="Mobile width for comment 2" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" /><figcaption>Mobile, 375px</figcaption></figure>
+        <figure><img class="at-width" alt="Desktop width for comment 2" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" /><figcaption>Desktop, 1280px. Element not found, cut at the saved position</figcaption></figure>
+      </div>
+      <dl class="facts">
+        <dt>Selector</dt><dd><code>#pay</code></dd>
+        <dt>Text</dt><dd>Pay now</dd>
+        <dt>Styles</dt><dd><span class="mono">16px Inter, #3b82f6</span></dd>
+        <dt>Position</dt><dd><span class="mono">120 x 44 at 40, 300 in 1280 x 800 at 1x</span></dd>
+        <dt>Captured</dt><dd>2026/10/31, 10:20:00</dd>
+        <dt>Browser</dt><dd>Google Chrome 141 on Windows, zoom 100%</dd>
+      </dl>
+      <figure class="wide"><img alt="Full viewport for comment 2" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" /><figcaption>Full viewport</figcaption></figure>
+    </article>
+
+    <article class="issue" id="c-2" data-sev="major" data-status="open">
+      <header>
+        <span class="num">01</span>
+        <h2>Pay button is the wrong blue</h2>
+        
+        <span class="status" data-status="open"><span class="ico ico-statusOpen"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 6a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg></span>Open</span>
+        <span class="chip"><span class="ico ico-sevMajor"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 0L9.33 6.75H.67Z" fill="currentColor"/></svg></span>Major</span>
+      </header>
+      <p class="where"><a href="https://shop.example.com/cart/12345">Shop &gt; Cart</a></p>
+      <p class="note">Expected brand blue.
+Actual is a lighter tint.</p>
+      <ol class="marks"><li value="1">Wrong shade here</li></ol>
+      <figure><img alt="Marked region for comment 1" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" /></figure>
+      
+      <dl class="facts">
+        <dt>Figma</dt><dd><a href="https://www.figma.com/design/abc123/Checkout?node-id=1-2">Figma frame</a></dd>
+        <dt>Selector</dt><dd><code>#pay</code></dd>
+        <dt>Text</dt><dd>Pay now</dd>
+        <dt>Styles</dt><dd><span class="mono">16px Inter, #3b82f6</span></dd>
+        <dt>Position</dt><dd><span class="mono">120 x 44 at 40, 300 in 1280 x 800 at 1x</span></dd>
+        <dt>Captured</dt><dd>2026/10/31, 10:10:00</dd>
+        <dt>Browser</dt><dd>Google Chrome 141 on Windows, zoom 100%</dd>
+      </dl>
+      <figure class="wide"><img alt="Full viewport for comment 1" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" /><figcaption>Full viewport</figcaption></figure>
+    </article>
+</div>
+<script>(function wireFilters(root) {
+  const picked = { filter: 'all', statusFilter: 'all' };
+  const buttons = [...root.querySelectorAll('.stats [data-filter], .stats [data-status-filter]')];
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const axis = 'filter' in btn.dataset ? 'filter' : 'statusFilter';
+      picked[axis] = btn.dataset[axis];
+      buttons.filter((b) => axis in b.dataset).forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      root.querySelectorAll('.issue').forEach((issue) => {
+        const bySeverity = picked.filter === 'all' || issue.dataset.sev === picked.filter;
+        const byStatus = picked.statusFilter === 'all' || issue.dataset.status === picked.statusFilter;
+        issue.classList.toggle('hide', !(bySeverity && byStatus));
+      });
+    });
+  });
+})(document);</script>
+</body>
+</html>"
+`;
+
+exports[`export templates > builds the same Markdown 1`] = `
+"# Checkout review
+
+2 comments
+
+## COMM1: Shop > Cart
+
+https://shop.example.com/cart/12345
+
+### 02. Card padding collapses on mobile
+
+**Blocker**, Fixed
+
+_After, rechecked 2026/10/31, 11:00:00_
+
+_Mobile, 375px. Desktop, 1280px. Element not found, cut at the saved position_
+
+- Jira: SS-113 https://team.atlassian.net/browse/SS-113
+- Selector: \`#pay\`
+- Text: Pay now
+- Position: 120 x 44 at 40, 300 in 1280 x 800 at 1x
+- Browser: Google Chrome 141 on Windows, zoom 100%
+- Captured: 2026/10/31, 10:20:00
+
+### 01. Pay button is the wrong blue
+
+**Major**, Open
+
+Expected brand blue.
+Actual is a lighter tint.
+
+1. Wrong shade here
+
+- Figma: https://www.figma.com/design/abc123/Checkout?node-id=1-2
+- Selector: \`#pay\`
+- Text: Pay now
+- Position: 120 x 44 at 40, 300 in 1280 x 800 at 1x
+- Browser: Google Chrome 141 on Windows, zoom 100%
+- Captured: 2026/10/31, 10:10:00
+"
+`;
+
+exports[`export templates > builds the same single comment copies 1`] = `
+"### Pay button is the wrong blue
+
+**Major**, Open
+
+Expected brand blue.
+Actual is a lighter tint.
+
+1. Wrong shade here
+
+- Page: https://shop.example.com/cart/12345
+- Figma: https://www.figma.com/design/abc123/Checkout?node-id=1-2
+- Selector: \`#pay\`
+- Text: Pay now
+- Position: 120 x 44 at 40, 300 in 1280 x 800 at 1x
+- Browser: Google Chrome 141 on Windows, zoom 100%
+- Captured: 2026/10/31, 10:10:00"
+`;
+
+exports[`export templates > builds the same single comment copies 2`] = `
+"<div>
+  <p><b>Card padding collapses on mobile</b><br />Blocker, Fixed</p>
+  
+  
+  <p>Page: https://shop.example.com/cart/12345<br />Jira: SS-113 https://team.atlassian.net/browse/SS-113<br />Selector: #pay<br />Text: Pay now<br />Position: 120 x 44 at 40, 300 in 1280 x 800 at 1x<br />Browser: Google Chrome 141 on Windows, zoom 100%<br />Captured: 2026/10/31, 10:20:00</p>
+  <p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" alt="Marked region" width="640" style="max-width: 100%;" /></p>
+  <p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" alt="Mobile width" width="320" style="max-width: 100%;" /><br />Mobile, 375px</p>
+  <p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" alt="Desktop width" width="320" style="max-width: 100%;" /><br />Desktop, 1280px. Element not found, cut at the saved position</p>
+</div>"
+`;

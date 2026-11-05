@@ -1,0 +1,60 @@
+@import "../assets/tailwind.css";
+
+/*
+ * Severity and status colours from the Margin tokens. Text sits on its tint at 4.5 to 1 or better, and the solid
+ * is for dots and markers only.
+ */
+:root {
+  --sev-blocker: #ce2c31;
+  --sev-blocker-tint: #feebec;
+  --sev-major: #c2410c;
+  --sev-major-tint: #ffefd6;
+  --sev-minor: #0d74ce;
+  --sev-minor-tint: #e6f4fe;
+  --sev-nit: #60646c;
+  --sev-nit-tint: #f0f0f3;
+  --sev-blocker-solid: #e5484d;
+  --sev-major-solid: #f76b15;
+  --sev-minor-solid: #0090ff;
+  --sev-nit-solid: #8b8d98;
+  --success: #18794e;
+  --success-tint: #e6f6eb;
+  --marker: #e5484d;
+}
+
+:root[data-theme="dark"] {
+  --sev-blocker: #ff9592;
+  --sev-blocker-tint: #3b1219;
+  --sev-major: #ffa057;
+  --sev-major-tint: #331e0b;
+  --sev-minor: #70b8ff;
+  --sev-minor-tint: #0d2847;
+  --sev-nit: #b0b4ba;
+  --sev-nit-tint: #212225;
+  --success: #3dd68c;
+  --success-tint: #132d21;
+}
+
+@theme inline {
+  --color-sev-blocker: var(--sev-blocker);
+  --color-sev-blocker-tint: var(--sev-blocker-tint);
+  --color-sev-blocker-solid: var(--sev-blocker-solid);
+  --color-sev-major: var(--sev-major);
+  --color-sev-major-tint: var(--sev-major-tint);
+  --color-sev-major-solid: var(--sev-major-solid);
+  --color-sev-minor: var(--sev-minor);
+  --color-sev-minor-tint: var(--sev-minor-tint);
+  --color-sev-minor-solid: var(--sev-minor-solid);
+  --color-sev-nit: var(--sev-nit);
+  --color-sev-nit-tint: var(--sev-nit-tint);
+  --color-sev-nit-solid: var(--sev-nit-solid);
+  --color-success: var(--success);
+  --color-success-tint: var(--success-tint);
+  --color-marker: var(--marker);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
