@@ -6,7 +6,6 @@ import { currentViewport, fitRect, holds, liveBox, rectBetween, type Point } fro
 import { currentHost } from '../page/host';
 import { anchorFor, describeElement, pickAt, type Pick } from '../page/pick';
 import { currentSettings, messageOf, pageCommentsQuery, queryClient, refreshComments, saveMode } from '../query';
-import { loadComposer } from '../components/composer-loader';
 import type { OverlaySlice } from '.';
 import type { PendingRedraw } from './types';
 
@@ -145,7 +144,6 @@ export const createCaptureSlice: OverlaySlice<CaptureSlice> = (set, get) => ({
         blur: () => get().setPassing(false),
         leave: () => get().keepOnLeave(),
       });
-      loadComposer().catch((error: unknown) => toast.error('Margin could not load the comment card', { description: messageOf(error) }));
       void refreshComments();
     } else {
       const { card, pending } = get();
@@ -171,8 +169,8 @@ export const createCaptureSlice: OverlaySlice<CaptureSlice> = (set, get) => ({
   pointerDown(event) {
     const { menu, card, placing } = get();
     if (onOwnControl(event)) {
-      if (card && (card.moreOpen || card.framePickerOpen) && !(event.target as Element).closest('[data-margin-popup]')) {
-        get().editCard({ moreOpen: false, framePickerOpen: false });
+      if (card?.framePickerOpen && !(event.target as Element).closest('[data-margin-popup]')) {
+        get().editCard({ framePickerOpen: false });
       }
       return;
     }
@@ -185,8 +183,8 @@ export const createCaptureSlice: OverlaySlice<CaptureSlice> = (set, get) => ({
     event.preventDefault();
     const point = pointOf(event);
     if (card) {
-      if (card.moreOpen || card.framePickerOpen) {
-        get().editCard({ moreOpen: false, framePickerOpen: false });
+      if (card.framePickerOpen) {
+        get().editCard({ framePickerOpen: false });
         return;
       }
       if (holds(liveBox(card), point)) {
@@ -260,7 +258,9 @@ export const createCaptureSlice: OverlaySlice<CaptureSlice> = (set, get) => ({
   },
 
   openMenuAt(x, y) {
-    set({ menu: { x, y }, hover: pickAt(x, y) });
+    const saved = queryClient.getQueryData(pageCommentsQuery.queryKey)?.comments ?? [];
+    const onSaved = saved.some((comment) => holds(liveBox(comment), { x, y }));
+    set({ menu: { x, y }, hover: onSaved ? null : pickAt(x, y) });
   },
 
   closeMenu() {

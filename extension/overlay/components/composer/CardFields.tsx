@@ -1,24 +1,26 @@
+import { useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CheckIcon, LinkIcon, PlusIcon, XIcon } from 'lucide-react';
+import { FrameIcon, LinkIcon, MapPinIcon, TextIcon, XIcon } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import type { FigmaFileFrame, Severity } from '@/lib/model';
 import { SEVERITIES } from '@/lib/severity.js';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { Combobox, ComboboxCollection, ComboboxContent, ComboboxEmpty, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxLabel, ComboboxList } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { reviewQuery } from '../../query';
 import { useOverlay, overlayStore } from '../../store';
-import { isFilled } from '../../store/composer';
+import { MARKER_PIN } from '../NumberFlag';
 
-/** The pressed look of each severity, written out so Tailwind finds the classes. */
-const SEVERITY_PRESSED: Record<Severity, string> = {
-  blocker: 'data-[pressed]:bg-blocker-tint data-[pressed]:text-blocker',
-  major: 'data-[pressed]:bg-major-tint data-[pressed]:text-major',
-  minor: 'data-[pressed]:bg-minor-tint data-[pressed]:text-minor',
-  nit: 'data-[pressed]:bg-nit-tint data-[pressed]:text-nit',
+/** Each severity button's tinted hover and selected look, and its dot, written out so Tailwind finds the classes. */
+const SEVERITY_LOOK: Record<Severity, { button: string; dot: string }> = {
+  blocker: { button: 'hover:bg-blocker-tint aria-pressed:border-blocker aria-pressed:bg-blocker-tint aria-pressed:text-blocker', dot: 'bg-blocker-solid' },
+  major: { button: 'hover:bg-major-tint aria-pressed:border-major aria-pressed:bg-major-tint aria-pressed:text-major', dot: 'bg-major-solid' },
+  minor: { button: 'hover:bg-minor-tint aria-pressed:border-minor aria-pressed:bg-minor-tint aria-pressed:text-minor', dot: 'bg-minor-solid' },
+  nit: { button: 'hover:bg-nit-tint aria-pressed:border-nit aria-pressed:bg-nit-tint aria-pressed:text-nit', dot: 'bg-nit-solid' },
 };
 
 /**
@@ -27,70 +29,80 @@ const SEVERITY_PRESSED: Record<Severity, string> = {
  */
 const oneLine = (value: string) => value.replace(/\s*\n\s*/g, ' ');
 
-/** The card's title, with the hint that says what saving needs. */
+/** The comment itself, a labelled box several lines tall. Enter saves. */
 export function TitleField() {
-  const { title, note } = useOverlay(useShallow((state) => ({ title: state.card?.title ?? '', note: state.card?.note ?? '' })));
+  const title = useOverlay((state) => state.card?.title ?? '');
   const { editCard } = overlayStore.getState();
+  const id = useId();
   return (
-    <div className="grid gap-1.5">
+    <Field>
+      <FieldLabel htmlFor={id}>Comment</FieldLabel>
       <Textarea
+        id={id}
         data-card-title
         data-line
-        rows={1}
+        rows={3}
         value={title}
-        placeholder="What is wrong"
-        aria-label="What is wrong"
-        className="max-h-32 min-h-8 resize-none py-1.5 text-[15px] leading-5"
+        placeholder="What is wrong?"
+        className="max-h-40 min-h-20 resize-none"
         onChange={(event) => editCard({ title: oneLine(event.target.value), asking: null })}
       />
-      {!isFilled({ title, note }) && <span className="text-[13px] leading-[18px] text-muted-foreground">Add a title or a note to save</span>}
-    </div>
+    </Field>
   );
 }
 
-/** Blocker, Major, Minor and Nit, picked with a click, the arrow keys, or 1 to 4. */
+/** Blocker, Major, Minor and Nit as four coloured buttons, picked with a click, the arrow keys, or 1 to 4. */
 export function SeverityPicker() {
   const severity = useOverlay((state) => state.card?.severity ?? 'major');
   const { editCard } = overlayStore.getState();
   return (
     <ToggleGroup
       aria-label="Severity"
+      variant="outline"
+      size="sm"
       spacing={1}
       value={[severity]}
       onValueChange={(values: string[]) => values[0] && editCard({ severity: values[0] as Severity })}
-      className="w-full rounded-md bg-muted p-0.5 dark:bg-background dark:ring-1 dark:ring-border"
+      className="w-full"
     >
-      {SEVERITIES.map((entry, index) => (
-        <ToggleGroupItem
-          key={entry.key}
-          value={entry.key}
-          size="sm"
-          title={`${entry.label}, key ${index + 1}`}
-          className={cn('h-7 flex-1 gap-1 rounded-sm text-[13px] font-semibold hover:bg-popover', SEVERITY_PRESSED[entry.key as Severity])}
-        >
-          <CheckIcon className="hidden size-3 group-data-[pressed]/toggle:block" />
-          {entry.label}
-        </ToggleGroupItem>
-      ))}
+      {SEVERITIES.map((entry, index) => {
+        const look = SEVERITY_LOOK[entry.key as Severity];
+        return (
+          <ToggleGroupItem
+            key={entry.key}
+            data-severity={entry.key}
+            value={entry.key}
+            title={`${entry.label}, key ${index + 1}`}
+            className={cn('flex-1 gap-2 border-border text-foreground', look.button)}
+          >
+            <i className={cn('size-2 rounded-full', look.dot)} />
+            {entry.label}
+          </ToggleGroupItem>
+        );
+      })}
     </ToggleGroup>
   );
 }
 
-/** The note, once Add note opens it. Enter adds a line and Ctrl+Enter saves. */
+/** The labelled note, once Add note opens it. Enter adds a line and Ctrl+Enter saves. */
 export function NoteField() {
   const { note, noteOpen } = useOverlay(useShallow((state) => ({ note: state.card?.note ?? '', noteOpen: state.card?.noteOpen ?? false })));
   const { editCard } = overlayStore.getState();
+  const id = useId();
   if (!noteOpen) return null;
   return (
-    <Textarea
-      data-card-note
-      autoFocus
-      value={note}
-      placeholder="What you expected, what happened"
-      aria-label="Note"
-      className="max-h-[200px] min-h-[76px] resize-none"
-      onChange={(event) => editCard({ note: event.target.value, asking: null })}
-    />
+    <Field>
+      <FieldLabel htmlFor={id}>Note</FieldLabel>
+      <Textarea
+        id={id}
+        data-card-note
+        autoFocus
+        value={note}
+        placeholder="What you expected, what happened"
+        className="max-h-48 min-h-16 resize-none"
+        onChange={(event) => editCard({ note: event.target.value, asking: null })}
+      />
+    </Field>
   );
 }
 
@@ -123,7 +135,7 @@ export function MarkerNotes() {
         </div>
       )}
       {placing && (
-        <p className="flex items-center gap-2 text-[13px] leading-[18px] text-muted-foreground">
+        <p className="flex items-center gap-2 text-xs text-muted-foreground">
           <MarkerPin number={markers.length + 1} className="opacity-45" />
           Click inside the area to place marker {markers.length + 1}
         </p>
@@ -138,12 +150,7 @@ export function MarkerNotes() {
  */
 function MarkerPin({ number, className }: { number: number; className?: string }) {
   return (
-    <b
-      className={cn(
-        'grid h-[22px] min-w-[22px] shrink-0 place-items-center rounded-[11px_11px_11px_3px] border-2 border-ink-foreground bg-ink px-1 text-[13px] leading-4 font-extrabold text-ink-foreground',
-        className,
-      )}
-    >
+    <b className={cn(MARKER_PIN, className)}>
       {number}
     </b>
   );
@@ -187,9 +194,9 @@ export function FigmaField() {
       {frame && (
         <div className="flex min-w-0 items-center gap-2">
           <span className="grid min-w-0 flex-1">
-            <span className="text-[13px] leading-[18px] font-semibold text-muted-foreground">Frame</span>
+            <span className="text-xs font-semibold text-muted-foreground">Figma frame</span>
             <b className="truncate font-semibold">{frame.name}</b>
-            <span className="truncate text-[13px] leading-[18px] text-muted-foreground">{[frame.page, file?.name].filter(Boolean).join(' in ')}</span>
+            <span className="truncate text-xs text-muted-foreground">{[frame.page, file?.name].filter(Boolean).join(' in ')}</span>
           </span>
           <Button variant="ghost" size="icon-sm" aria-label="Remove the frame" onClick={() => editCard({ frame: null })}>
             <XIcon />
@@ -259,16 +266,16 @@ export function AddActions() {
   const hasFrames = Boolean(useQuery(reviewQuery).data?.figma?.frames?.length);
   const { editCard, setPlacing } = overlayStore.getState();
   return (
-    <div className="-ml-1 flex items-center gap-0.5">
+    <div className="-ml-2 flex flex-wrap items-center gap-1">
       {!noteOpen && (
-        <Button variant="ghost" size="sm" onClick={() => editCard({ noteOpen: true })}>
-          <PlusIcon />
+        <Button data-add-note variant="ghost" size="sm" onClick={() => editCard({ noteOpen: true })}>
+          <TextIcon />
           Add note
         </Button>
       )}
       {!placing && (
         <Button data-add-marker variant="ghost" size="sm" onClick={() => setPlacing(true)}>
-          <PlusIcon />
+          <MapPinIcon />
           Add marker
         </Button>
       )}
@@ -278,11 +285,11 @@ export function AddActions() {
           variant="ghost"
           size="sm"
           aria-expanded={framePickerOpen}
-          className="aria-expanded:bg-accent aria-expanded:text-ink"
+          className="aria-expanded:text-ink"
           onClick={() => (hasFrames ? editCard({ framePickerOpen: !framePickerOpen }) : editCard({ linkOpen: true }))}
         >
-          <LinkIcon />
-          {hasFrames ? 'Frame' : 'Figma link'}
+          {hasFrames ? <FrameIcon /> : <LinkIcon />}
+          {hasFrames ? 'Figma frame' : 'Figma link'}
         </Button>
       )}
     </div>

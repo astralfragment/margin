@@ -1,8 +1,9 @@
-import { useCallback, type KeyboardEvent } from 'react';
-import { CircleAlertIcon, EllipsisIcon } from 'lucide-react';
+import { useCallback, type KeyboardEvent, type ReactNode } from 'react';
+import { CircleAlertIcon, MonitorSmartphoneIcon, SquareDashedIcon } from 'lucide-react';
 import { padNumber } from '@/lib/format';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Kbd } from '@/components/ui/kbd';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useOverlay, overlayStore } from '../store';
 import { isFilled } from '../store/composer';
 import type { Card } from '../store/types';
@@ -39,35 +40,59 @@ function onCardKey(event: KeyboardEvent<HTMLElement>) {
   else void save();
 }
 
-/** The More menu, which holds the capture at three widths. */
-function MoreMenu({ card }: { card: Card }) {
-  const { editCard, captureWidths } = overlayStore.getState();
-  const ready = Boolean(card.id && card.hasShot);
+/**
+ * An icon button in the card's header, named by its tooltip.
+ * @param props The tooltip text, its key, what it does and its icon.
+ */
+function HeaderButton({ label, shortcut, onClick, children }: { label: string; shortcut?: string; onClick: () => void; children: ReactNode }) {
   return (
-    <DropdownMenu modal={false} open={card.moreOpen} onOpenChange={(open) => editCard({ moreOpen: open })}>
-      <DropdownMenuTrigger data-margin-popup render={<Button variant="ghost" size="icon-sm" aria-label="More actions" />}>
-        <EllipsisIcon />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent data-margin-popup data-margin-float side="right" align="start" sideOffset={8} className="w-60">
-        <DropdownMenuItem
-          disabled={!ready}
-          onClick={() => {
-            editCard({ moreOpen: false });
-            if (card.id) void captureWidths({ ids: [card.id] });
-          }}
-        >
-          Capture at mobile, tablet and desktop widths
-        </DropdownMenuItem>
-        {!ready && <p className="px-2 pb-1.5 text-[13px] leading-[18px] text-muted-foreground">Needs a screenshot of the area first</p>}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Tooltip>
+      <TooltipTrigger render={<Button variant="ghost" size="icon-sm" aria-label={label} onClick={onClick} />}>{children}</TooltipTrigger>
+      <TooltipContent side="top" sideOffset={8}>
+        {label}
+        {shortcut && <Kbd>{shortcut}</Kbd>}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
-/** The card's footer: Save and Discard, a question before something is lost, or saving without a screenshot. */
+/**
+ * Why the screenshot failed and what to do, as plain lines in the card with no box of their own. Try again sits in the
+ * footer, and saving without the screenshot is a link in the sentence.
+ * @param props The card, which holds the error.
+ */
+function CaptureError({ card }: { card: Card }) {
+  const { saveWithoutShot } = overlayStore.getState();
+  const [heading, advice] = errorCopy(card.error ?? '');
+  return (
+    <div role="alert" className="grid gap-1 px-4 pt-3">
+      <span className="flex items-center gap-2 font-semibold text-blocker">
+        <CircleAlertIcon className="size-4 shrink-0" />
+        {heading}
+      </span>
+      <p className="text-xs text-muted-foreground">
+        {advice}{' '}
+        {isFilled(card) ? (
+          <button
+            type="button"
+            disabled={card.busy !== null}
+            className="cursor-pointer font-semibold text-foreground underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:opacity-60"
+            onClick={() => void saveWithoutShot()}
+          >
+            Save it without a screenshot
+          </button>
+        ) : (
+          'Or write the comment and save it without one.'
+        )}
+      </p>
+    </div>
+  );
+}
+
+/** The card's footer: Save and Discard, Try again after a failed screenshot, or a question before something is lost. */
 function CardFooter({ card }: { card: Card }) {
   const markerCount = useOverlay((state) => state.markers.length);
-  const { askDiscard, confirmAsk, keepEditing, save, saveWithoutShot } = overlayStore.getState();
+  const { askDiscard, confirmAsk, keepEditing, save, retry } = overlayStore.getState();
   const filled = isFilled(card);
   if (card.asking) {
     const parts = [card.note.trim() && 'its note', markerCount && `${markerCount} ${markerCount === 1 ? 'marker' : 'markers'}`].filter(Boolean);
@@ -78,10 +103,10 @@ function CardFooter({ card }: { card: Card }) {
       changes: [`Discard your changes to comment ${number}?`, 'Discard changes', 'Keep editing'],
     }[card.asking];
     return (
-      <div className="grid gap-2 border-t p-3">
+      <div className="grid gap-3 border-t px-4 py-3">
         <span className="font-semibold">{question}</span>
         <span className="flex items-center gap-2">
-          <span className="text-[13px] leading-[18px] text-muted-foreground">Esc again keeps it</span>
+          <span className="text-xs text-muted-foreground">Esc again keeps it</span>
           <span className="flex-1" />
           <Button variant="destructive" onClick={confirmAsk}>
             {confirm}
@@ -94,31 +119,38 @@ function CardFooter({ card }: { card: Card }) {
     );
   }
   return (
-    <div className="flex items-center gap-2 border-t p-3">
-      <Button variant={card.reopened ? 'destructive' : 'ghost'} onClick={askDiscard}>
+    <div className="flex items-center gap-2 border-t px-4 py-3">
+      <Button variant={card.reopened ? 'destructive' : 'ghost'} className={card.reopened ? '' : '-ml-3'} onClick={askDiscard}>
         {card.reopened ? 'Delete' : 'Discard'}
       </Button>
       <span className="flex-1" />
       {card.error ? (
-        <Button variant="outline" disabled={!filled || card.busy !== null} title={filled ? '' : 'Add a title or a note first'} onClick={() => void saveWithoutShot()}>
-          Save without screenshot
-        </Button>
+        <Tooltip>
+          <TooltipTrigger render={<Button data-card-retry variant="action" disabled={card.busy !== null} onClick={() => void retry()} />}>
+            {card.busy === 'retrying' ? 'Trying again' : 'Try again'}
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={8}>
+            Try again <Kbd>Enter</Kbd>
+          </TooltipContent>
+        </Tooltip>
       ) : (
-        <>
-          <span className="text-[13px] leading-[18px] whitespace-nowrap text-muted-foreground">Enter to save</span>
-          <Button disabled={!filled || card.busy !== null} title={filled ? '' : 'Add a title or a note first'} onClick={() => void save()}>
+        <Tooltip>
+          <TooltipTrigger render={<Button data-card-save variant="action" disabled={!filled || card.busy !== null} onClick={() => void save()} />}>
             {card.busy === 'saving' ? 'Saving' : 'Save comment'}
-          </Button>
-        </>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={8}>
+            Save <Kbd>Enter</Kbd>
+          </TooltipContent>
+        </Tooltip>
       )}
     </div>
   );
 }
 
-/** The comment card, beside its area and never over it, with the area kept highlighted. Loaded on demand. */
+/** The comment card, beside its area and never over it, with the area kept highlighted. */
 export default function Composer() {
   const card = useOverlay((state) => state.card);
-  const { redraw, retry } = overlayStore.getState();
+  const { redraw, captureWidths } = overlayStore.getState();
   const follow = useCallback((element: HTMLDivElement | null) => {
     const tail = element?.querySelector<HTMLElement>('[data-card-tail]');
     if (!element || !tail) return;
@@ -126,7 +158,7 @@ export default function Composer() {
   }, []);
   if (!card) return null;
   const heading = card.reopened ? 'Edit comment' : 'New comment';
-  const [errorHead, errorBody] = card.error ? errorCopy(card.error) : ['', ''];
+  const shotId = card.hasShot ? card.id : null;
   return (
     <div
       ref={follow}
@@ -134,35 +166,25 @@ export default function Composer() {
       data-margin-float
       role="dialog"
       aria-label={`${heading} ${padNumber(card.number)}`}
-      className="fixed top-0 left-0 flex w-[360px] max-w-[calc(100vw-16px)] cursor-default flex-col rounded-[10px] border bg-popover text-popover-foreground shadow-md"
+      className="fixed top-0 left-0 flex w-[380px] max-w-[calc(100vw-16px)] cursor-default flex-col rounded-xl border bg-popover text-popover-foreground shadow-lg"
       onKeyDown={onCardKey}
     >
       <i data-card-tail className="absolute size-3 border-b border-l bg-popover" />
-      <div className="flex min-h-11 shrink-0 items-center gap-2 border-b px-3 py-2">
-        <NumberFlag draft number={card.number} />
-        <h2 className="text-base leading-[22px] font-extrabold tracking-[-0.01em] whitespace-nowrap">{heading}</h2>
+      <div className="flex shrink-0 items-center gap-2 pt-3 pr-3 pl-4">
+        <NumberFlag number={card.number} />
+        <h2 className="font-semibold whitespace-nowrap">{heading}</h2>
         <span className="flex-1" />
-        <Button variant="ghost" size="sm" title="Drag a new area and keep this draft, key R" onClick={redraw}>
-          Redraw
-        </Button>
-        <MoreMenu card={card} />
+        <HeaderButton label="Draw the area again" shortcut="R" onClick={redraw}>
+          <SquareDashedIcon />
+        </HeaderButton>
+        {shotId && (
+          <HeaderButton label="Screenshot at 3 screen sizes" onClick={() => void captureWidths({ ids: [shotId] })}>
+            <MonitorSmartphoneIcon />
+          </HeaderButton>
+        )}
       </div>
-      {card.error && (
-        <div role="alert" className="grid shrink-0 gap-2 border-l-[3px] border-destructive bg-blocker-tint py-3 pr-3 pl-[13px]">
-          <span className="flex items-center gap-2 font-semibold">
-            <CircleAlertIcon className="size-4 text-destructive" />
-            {errorHead}
-          </span>
-          <p className="text-[13px] leading-[18px] text-muted-foreground">{errorBody}</p>
-          <span className="flex items-center gap-2">
-            <Button disabled={card.busy !== null} onClick={() => void retry()}>
-              {card.busy === 'retrying' ? 'Trying again' : 'Try again'}
-            </Button>
-            <span className="text-[13px] leading-[18px] text-muted-foreground">Enter tries again</span>
-          </span>
-        </div>
-      )}
-      <div className="flex min-h-0 flex-col gap-3 overflow-auto px-3 py-4">
+      {card.error && <CaptureError card={card} />}
+      <div className="flex min-h-0 flex-col gap-3 overflow-auto p-4">
         <TitleField />
         <SeverityPicker />
         <NoteField />

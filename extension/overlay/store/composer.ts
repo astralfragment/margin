@@ -106,7 +106,6 @@ function buildCard(options: OpenCardOptions): Card {
     noteOpen: Boolean(draft.note),
     linkOpen: Boolean(draft.link),
     framePickerOpen: false,
-    moreOpen: false,
     asking: null,
     busy: null,
     original: '',
@@ -230,7 +229,7 @@ export const createComposerSlice: OverlaySlice<ComposerSlice> = (set, get) => ({
   stepBack() {
     const { card, markers, placing } = get();
     if (!card) return;
-    if (card.moreOpen || card.framePickerOpen) get().editCard({ moreOpen: false, framePickerOpen: false });
+    if (card.framePickerOpen) get().editCard({ framePickerOpen: false });
     else if (placing) set({ placing: false });
     else if (card.asking) get().keepEditing();
     else if (!card.reopened) get().askDiscard();

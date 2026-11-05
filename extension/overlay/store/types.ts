@@ -62,7 +62,6 @@ export interface Card extends CardFields {
   noteOpen: boolean;
   linkOpen: boolean;
   framePickerOpen: boolean;
-  moreOpen: boolean;
   asking: Asking | null;
   busy: 'saving' | 'retrying' | null;
   /** The fields as they were when the card opened, to tell whether a saved comment changed. */

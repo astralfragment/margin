@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useState, useSyncExternalStore } from 'react';
+import { useCallback, useState, useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useShallow } from 'zustand/react/shallow';
@@ -11,14 +11,15 @@ import { currentHost } from '../page/host';
 import { isEditable } from '../page/pick';
 import { settingsQuery } from '../query';
 import { useOverlay, overlayStore } from '../store';
-import { loadComposer } from './composer-loader';
+import Composer from './Composer';
 import { HintBar } from './HintBar';
 import { AreaBand, HoverOutline, SavedComments } from './PageLayer';
 import { PageMenu } from './PageMenu';
 import { useHintAtTop } from './use-hint-top';
 
-const Composer = lazy(loadComposer);
 const SEVERITY_KEYS: Severity[] = ['blocker', 'major', 'minor', 'nit'];
+/** Toasts sit just past the bar and, on a narrow screen, keep the bar's 16px side margins so their edges line up. */
+const TOAST_OFFSET = { top: HINT_SPACE + 4, bottom: HINT_SPACE + 4, left: 16, right: 16 };
 const systemDark = matchMedia('(prefers-color-scheme: dark)');
 
 /**
@@ -109,16 +110,14 @@ export function App() {
               <AreaBand />
               <HintBar />
               <PageMenu />
-              <Suspense>
-                <Composer />
-              </Suspense>
+              <Composer />
             </>
           )}
           <Toaster
             theme={dark ? 'dark' : 'light'}
             position={hintTop ? 'top-center' : 'bottom-center'}
-            offset={HINT_SPACE + 4}
-            mobileOffset={HINT_SPACE + 4}
+            offset={TOAST_OFFSET}
+            mobileOffset={TOAST_OFFSET}
             visibleToasts={3}
           />
           <div ref={setPortal} className="contents" />

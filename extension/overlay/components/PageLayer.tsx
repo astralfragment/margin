@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { inView, insetFromEdges, liveBox, mapBetween, rectBetween } from '../page/geometry';
 import { pageCommentsQuery } from '../query';
 import { useOverlay } from '../store';
-import { NumberFlag, flagOffset } from './NumberFlag';
+import { MARKER_PIN, NumberFlag, flagOffset } from './NumberFlag';
 import { useLayout } from './use-layout';
 
 /** The solid dot for each severity, written out so Tailwind finds the classes. */
@@ -19,6 +19,12 @@ const SEVERITY_DOTS: Record<Severity, string> = {
   minor: 'bg-minor-solid',
   nit: 'bg-nit-solid',
 };
+
+/**
+ * The red dashed edge of a region. A faint white glow follows each dash, so the edge reads on dark and red pages while
+ * the gaps stay clear and the red stays the loudest part.
+ */
+const REGION_EDGE = 'rounded-sm border-2 border-dashed border-mark drop-shadow-[0_0_1px_rgb(255_255_255/0.9)]';
 
 /**
  * The style that puts an overlay element over a region of the page.
@@ -44,10 +50,10 @@ export function SavedComments() {
       if (!inView(box)) return null;
       return (
         <div key={comment.id} className="group/saved pointer-events-none fixed" style={boxStyle(box, toOverlay)}>
-          <i className="absolute inset-0 rounded-md border-4 border-ink-foreground" />
           <i
             className={cn(
-              'absolute inset-0 rounded-md border-[1.5px] border-dashed border-ink group-has-[[data-popup-open]]/saved:border-solid dark:border-2',
+              'absolute inset-0 group-has-[[data-popup-open]]/saved:border-solid',
+              REGION_EDGE,
               comment.status === 'fixed' && 'border-fixed',
               comment.status === 'wontfix' && 'border-muted-foreground',
             )}
@@ -72,7 +78,7 @@ function SavedFlag({ comment, top }: { comment: PageComment; top: number }) {
       <TooltipTrigger
         data-margin-float
         aria-label={`Edit comment ${comment.number}, ${comment.title || 'Untitled comment'}`}
-        className="pointer-events-auto absolute left-0 cursor-pointer rounded-[4px_4px_4px_0] outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="pointer-events-auto absolute left-0 cursor-pointer rounded-[4px_4px_4px_0] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         style={{ top }}
         onClick={() => void editSaved(comment)}
       >
@@ -99,8 +105,8 @@ export function HoverOutline() {
   if (!hover) return null;
   const label = hover.full ? 'Fills the whole view' : hover.frame === true ? 'Frame, drag to mark inside it' : '';
   return (
-    <div className="pointer-events-none fixed rounded-md border-[1.5px] border-ink" style={boxStyle(hover.rect, toOverlay)}>
-      {label && <span className="absolute top-2 left-2 rounded-sm bg-ink px-2 py-px text-[13px] leading-[18px] font-semibold text-ink-foreground">{label}</span>}
+    <div className={cn('pointer-events-none fixed', REGION_EDGE, 'border-solid')} style={boxStyle(hover.rect, toOverlay)}>
+      {label && <span className="absolute top-2 left-2 rounded-sm bg-mark px-2 py-0.5 text-xs font-semibold text-mark-foreground">{label}</span>}
     </div>
   );
 }
@@ -114,13 +120,9 @@ export function AreaBand() {
   if (!box) return null;
   return (
     <>
-      <div
-        className="pointer-events-none fixed rounded-md border-2 border-ink shadow-[inset_0_0_0_3px_var(--ink-foreground)]"
-        style={boxStyle(box, toOverlay)}
-      />
+      <div className={cn('pointer-events-none fixed', REGION_EDGE)} style={boxStyle(box, toOverlay)} />
       {card && !drag && (
         <NumberFlag
-          draft
           number={card.number}
           className="pointer-events-none fixed"
           style={{ left: toOverlay(Math.max(2 * scale, box.x)), top: toOverlay(box.y + flagOffset(box, scale, false)) }}
@@ -128,7 +130,7 @@ export function AreaBand() {
       )}
       {saving && !card && !drag && (
         <span
-          className="pointer-events-none fixed inline-flex h-5 items-center rounded-[4px_4px_4px_0] border-[1.5px] border-ink bg-ink-foreground px-1.5 text-[13px] font-extrabold text-ink"
+          className="pointer-events-none fixed inline-flex h-5 items-center rounded-[4px_4px_4px_0] bg-mark px-1.5 text-xs font-extrabold text-mark-foreground shadow-[0_0_0_1px_white]"
           style={{ left: toOverlay(Math.max(2 * scale, box.x)), top: toOverlay(box.y + flagOffset(box, scale)) }}
         >
           Saving
@@ -149,7 +151,7 @@ function Pin({ index, at, toOverlay }: { index: number; at: { x: number; y: numb
     <b
       data-margin-float
       title="Right-click to remove"
-      className="fixed grid h-[22px] min-w-[22px] -translate-y-full cursor-context-menu place-items-center rounded-[11px_11px_11px_3px] border-2 border-ink-foreground bg-ink px-1 text-[13px] leading-4 font-extrabold text-ink-foreground"
+      className={cn(MARKER_PIN, 'fixed -translate-y-full cursor-context-menu')}
       style={{ left: toOverlay(at.x), top: toOverlay(at.y) }}
       onContextMenu={(event) => {
         event.preventDefault();

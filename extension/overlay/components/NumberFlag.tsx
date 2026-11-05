@@ -2,16 +2,19 @@ import type { ComponentProps } from 'react';
 import { padNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
+/** The red teardrop of a numbered marker, on the page and beside its note in the card. */
+export const MARKER_PIN =
+  'grid h-[22px] min-w-[22px] shrink-0 place-items-center rounded-[11px_11px_11px_3px] border-[1.5px] border-white bg-mark px-1 text-xs leading-4 font-extrabold text-mark-foreground';
+
 /**
- * A comment's number in Margin's flag shape. Saved comments get a solid flag, the open card an outlined one.
- * @param props The number, whether it is a draft, and any element props.
+ * A comment's number in Margin's red tag, with a thin white edge so it reads on any page.
+ * @param props The number and any element props.
  */
-export function NumberFlag({ number, draft = false, className, ...props }: { number: number; draft?: boolean } & ComponentProps<'span'>) {
+export function NumberFlag({ number, className, ...props }: { number: number } & ComponentProps<'span'>) {
   return (
     <span
       className={cn(
-        'inline-flex h-5 shrink-0 items-center rounded-[4px_4px_4px_0] px-1.5 text-[13px] leading-4 font-extrabold whitespace-nowrap',
-        draft ? 'border-[1.5px] border-ink bg-ink-foreground text-ink' : 'border-2 border-ink-foreground bg-ink text-ink-foreground',
+        'inline-flex h-5 shrink-0 items-center rounded-[4px_4px_4px_0] bg-mark px-1.5 text-xs leading-4 font-extrabold whitespace-nowrap text-mark-foreground shadow-[0_0_0_1px_white]',
         className,
       )}
       {...props}

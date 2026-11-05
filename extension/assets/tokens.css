@@ -28,10 +28,13 @@
   --border: #e2ddf5;
   --input: #dcd7f0;
   --ring: #8b8d98;
-  --action: #c1f354;
-  --action-foreground: #000000;
+  --action: #7549d2;
+  --action-foreground: #ffffff;
   --ink: #7549d2;
   --ink-foreground: #ffffff;
+  /* Red for everything Margin draws on a page or a screenshot, the same in both themes. White text on it passes 4.5 to 1. */
+  --mark: #d93036;
+  --mark-foreground: #ffffff;
   --blocker: #ce2c31;
   --blocker-tint: #feebec;
   --major: #c2410c;
@@ -77,6 +80,8 @@
   --border: #2f2a45;
   --input: #1c1830;
   --ring: #8b8d98;
+  --action: #c1b0fe;
+  --action-foreground: #0d0b16;
   --ink: #c1b0fe;
   --ink-foreground: #0d0b16;
   --blocker: #ff9592;
@@ -127,6 +132,8 @@
   --color-action-foreground: var(--action-foreground);
   --color-ink: var(--ink);
   --color-ink-foreground: var(--ink-foreground);
+  --color-mark: var(--mark);
+  --color-mark-foreground: var(--mark-foreground);
   --color-blocker: var(--blocker);
   --color-blocker-tint: var(--blocker-tint);
   --color-major: var(--major);
