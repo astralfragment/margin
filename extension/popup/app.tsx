@@ -3,7 +3,9 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { AppWindowIcon, CircleAlertIcon, SettingsIcon, SquareDashedMousePointerIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from '@/components/ui/item';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
+import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import type { Comment, Review } from '@/lib/model';
 import { openAllReviews, openReport, openSettings, openWelcome, pickReview, toggleAnnotating } from './actions';
@@ -111,7 +113,7 @@ function AnnotateButton({ tabId, tabUrl }: { tabId: number | undefined; tabUrl: 
 
   return (
     <div className="flex flex-col gap-2">
-      <Button size="lg" className="h-11 justify-between px-4 text-[0.95rem]" disabled={toggle.isPending} onClick={() => toggle.mutate()} data-toggle>
+      <Button size="lg" className="justify-between" disabled={toggle.isPending} onClick={() => toggle.mutate()} data-toggle>
         <span className="flex items-center gap-2">
           {toggle.isPending && <Spinner />}
           {annotating ? 'Stop annotating' : 'Start annotating'}
@@ -137,31 +139,40 @@ function AnnotateButton({ tabId, tabUrl }: { tabId: number | undefined; tabUrl: 
 }
 
 /**
- * Shown on browser pages, blank tabs and the Web Store, where Chrome lets no extension run. It says so calmly
- * and keeps the way to the report.
+ * Shown on browser pages, blank tabs and the Web Store, where Chrome lets no extension run. A short left-aligned
+ * note says why, and a divider sets off the way to the report.
  * @param props.review The review shown, if any.
  */
 function RestrictedState({ review, comments }: { review: Review | null; comments: Comment[] }) {
   return (
-    <Empty className="gap-3 px-4 py-6" data-restricted>
-      <EmptyHeader>
-        <EmptyMedia variant="icon" className="size-10 rounded-full text-muted-foreground">
-          <AppWindowIcon className="size-5" />
-        </EmptyMedia>
-        <EmptyTitle className="text-base">Open a website to review</EmptyTitle>
-        <EmptyDescription>Chrome keeps its own pages and the Web Store closed to extensions. Switch to the site you want to review and click Margin again.</EmptyDescription>
-      </EmptyHeader>
+    <div className="flex flex-col gap-3" data-restricted>
+      <Item className="items-start px-1 py-2">
+        <ItemMedia className="size-8 rounded-md bg-muted text-muted-foreground">
+          <AppWindowIcon className="size-4" />
+        </ItemMedia>
+        <ItemContent>
+          <ItemTitle>{"Margin can't run on this page"}</ItemTitle>
+          <ItemDescription className="line-clamp-none">
+            Chrome keeps its own pages and the Web Store closed to extensions. Switch to the site you want to review and click Margin again.
+          </ItemDescription>
+        </ItemContent>
+      </Item>
       {review && (
-        <EmptyContent>
-          <Button className="w-full" onClick={() => openReport(review.id)}>
-            Open report
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            {review.name} has {plural(comments.length, 'comment')}.
-          </p>
-        </EmptyContent>
+        <>
+          <Separator />
+          <Item className="px-1 py-0">
+            <ItemContent>
+              <ItemDescription>{plural(comments.length, 'comment')} in this review</ItemDescription>
+            </ItemContent>
+            <ItemActions>
+              <Button variant="outline" onClick={() => openReport(review.id)}>
+                Open report
+              </Button>
+            </ItemActions>
+          </Item>
+        </>
       )}
-    </Empty>
+    </div>
   );
 }
 
@@ -184,8 +195,8 @@ function NoReviewHere({ active, activeComments, host, onStart }: NoReviewHerePro
   return (
     <Empty className="gap-3 px-4 py-6">
       <EmptyHeader>
-        <EmptyMedia variant="icon" className="size-10 rounded-full">
-          <SquareDashedMousePointerIcon className="size-5" />
+        <EmptyMedia variant="icon">
+          <SquareDashedMousePointerIcon />
         </EmptyMedia>
         <EmptyTitle className="text-base">{active ? 'No review on this site yet' : 'Start your first review'}</EmptyTitle>
         <EmptyDescription>Start a review, then drag over anything on the page that looks wrong.</EmptyDescription>
